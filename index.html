@@ -1312,6 +1312,37 @@
   }
   .walk-join-btn:hover { background: var(--bark); }
   .walk-join-btn.joined { background: var(--grass); }
+  .walk-modal-tabs {
+    display: flex; gap: 6px; margin-bottom: 16px;
+  }
+  .walk-modal-tab {
+    flex: 1; padding: 9px; border-radius: 10px; border: 2px solid var(--cream);
+    background: var(--cream); font-family: 'Nunito', sans-serif;
+    font-size: 13px; font-weight: 800; cursor: pointer; transition: all 0.15s;
+    color: var(--bark-light);
+  }
+  .walk-modal-tab.active { background: var(--grass); color: white; border-color: var(--grass); }
+  .walk-days-row {
+    display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px;
+  }
+  .walk-day-btn {
+    width: 38px; height: 38px; border-radius: 50%; border: 2px solid var(--cream);
+    background: var(--cream); font-family: 'Nunito', sans-serif;
+    font-size: 11px; font-weight: 800; cursor: pointer; transition: all 0.15s;
+    color: var(--bark-light); display: flex; align-items: center; justify-content: center;
+  }
+  .walk-day-btn.active { background: var(--grass); color: white; border-color: var(--grass); }
+  .walk-weekly-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; border-radius: 12px; background: var(--cream); margin-bottom: 6px;
+  }
+  .walk-weekly-days {
+    display: flex; gap: 4px; flex-wrap: wrap;
+  }
+  .walk-day-pill {
+    background: var(--grass); color: white; border-radius: 6px;
+    padding: 2px 7px; font-size: 11px; font-weight: 800;
+  }
 
   /* ── LIKES POPUP ── */
   .likes-popup-overlay {
@@ -1854,6 +1885,16 @@
       <label class="form-label">Wiek</label>
       <input class="form-input" id="pet-age" type="number" placeholder="np. 3" min="0" max="30">
     </div>
+    <div style="display:flex;gap:10px">
+      <div class="form-group" style="flex:1">
+        <label class="form-label">🎂 Data urodzin</label>
+        <input class="form-input" id="pet-birthdate" type="date">
+      </div>
+      <div class="form-group" style="flex:1">
+        <label class="form-label">🏠 Dzień adopcji</label>
+        <input class="form-input" id="pet-adoptdate" type="date">
+      </div>
+    </div>
     <div class="form-group">
       <label class="form-label">Strefa spacerów (mapa)</label>
       <div id="map-pick"></div>
@@ -2047,33 +2088,84 @@
 
 <!-- WALK CALENDAR MODAL -->
 <div class="modal-overlay" id="walk-modal">
-  <div class="modal-box">
+  <div class="modal-box" style="max-width:540px">
     <div class="modal-title">🦮 Kalendarz spacerów</div>
-    <div id="walk-pet-name" style="font-size:13px;color:var(--bark-light);font-weight:700;margin-bottom:16px"></div>
-    <div id="walk-list" style="margin-bottom:20px"></div>
-    <div style="background:var(--cream);border-radius:14px;padding:16px;margin-bottom:4px">
-      <div style="font-size:13px;font-weight:800;margin-bottom:12px;color:var(--bark-light);text-transform:uppercase;letter-spacing:.5px">Zaplanuj spacer</div>
-      <div class="form-group" style="margin-bottom:10px">
-        <input class="form-input" id="walk-title-input" placeholder="np. Park Łazienkowski, poranny spacer...">
-      </div>
-      <div style="display:flex;gap:8px;margin-bottom:10px">
-        <div class="form-group" style="flex:1;margin-bottom:0">
-          <label class="form-label">Data i godzina</label>
-          <input class="form-input" id="walk-datetime-input" type="datetime-local">
+    <div id="walk-pet-name" style="font-size:13px;color:var(--bark-light);font-weight:700;margin-bottom:12px"></div>
+
+    <!-- Zakładki: Jednorazowe / Tygodniowe -->
+    <div class="walk-modal-tabs">
+      <button class="walk-modal-tab active" id="wtab-once" onclick="switchWalkTab('once')">📅 Jednorazowe</button>
+      <button class="walk-modal-tab" id="wtab-weekly" onclick="switchWalkTab('weekly')">🔁 Harmonogram tygodniowy</button>
+    </div>
+
+    <!-- Lista jednorazowych -->
+    <div id="walk-tab-once">
+      <div id="walk-list" style="margin-bottom:16px"></div>
+      <div style="background:var(--cream);border-radius:14px;padding:16px">
+        <div style="font-size:12px;font-weight:800;margin-bottom:10px;color:var(--bark-light);text-transform:uppercase;letter-spacing:.5px">Dodaj jednorazowy spacer / wyjście specjalne</div>
+        <div class="form-group" style="margin-bottom:10px">
+          <input class="form-input" id="walk-title-input" placeholder="np. Wybieg dla psów, Błonia – piknik...">
         </div>
-        <div class="form-group" style="flex:1;margin-bottom:0">
-          <label class="form-label">Miejsce spotkania</label>
-          <input class="form-input" id="walk-place-input" placeholder="np. Fontanna, wejście od ul. Agrykoli">
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <div class="form-group" style="flex:1;margin-bottom:0">
+            <label class="form-label">Data i godzina</label>
+            <input class="form-input" id="walk-datetime-input" type="datetime-local">
+          </div>
+          <div class="form-group" style="flex:1;margin-bottom:0">
+            <label class="form-label">Miejsce spotkania</label>
+            <input class="form-input" id="walk-place-input" placeholder="np. Wejście od ul. Agrykoli">
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Maks. uczestników</label>
+          <input class="form-input" id="walk-max-input" type="number" min="2" max="50" value="5" style="max-width:100px">
         </div>
       </div>
-      <div class="form-group" style="margin-bottom:0">
-        <label class="form-label">Maks. uczestników</label>
-        <input class="form-input" id="walk-max-input" type="number" min="2" max="20" value="5" style="max-width:100px">
+      <div class="modal-actions" style="margin-top:16px;margin-bottom:0">
+        <button class="btn-cancel" onclick="closeModal('walk-modal')">Zamknij</button>
+        <button class="btn-save" style="background:var(--grass)" onclick="addWalk()">Zaplanuj 📅</button>
       </div>
     </div>
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal('walk-modal')">Zamknij</button>
-      <button class="btn-save" style="background:var(--grass)" onclick="addWalk()">Zaplanuj 🦮</button>
+
+    <!-- Harmonogram tygodniowy -->
+    <div id="walk-tab-weekly" style="display:none">
+      <div id="walk-weekly-list" style="margin-bottom:16px"></div>
+      <div style="background:var(--cream);border-radius:14px;padding:16px">
+        <div style="font-size:12px;font-weight:800;margin-bottom:10px;color:var(--bark-light);text-transform:uppercase;letter-spacing:.5px">Dodaj stały spacer tygodniowy</div>
+        <div class="form-group" style="margin-bottom:10px">
+          <input class="form-input" id="weekly-title-input" placeholder="np. Poranny spacer, Wieczorny wybieg...">
+        </div>
+        <div class="form-group" style="margin-bottom:10px">
+          <label class="form-label">Dni tygodnia</label>
+          <div class="walk-days-row" id="weekly-days-row">
+            <button class="walk-day-btn" data-day="1" onclick="toggleWalkDay(this)">Pn</button>
+            <button class="walk-day-btn" data-day="2" onclick="toggleWalkDay(this)">Wt</button>
+            <button class="walk-day-btn" data-day="3" onclick="toggleWalkDay(this)">Śr</button>
+            <button class="walk-day-btn" data-day="4" onclick="toggleWalkDay(this)">Cz</button>
+            <button class="walk-day-btn" data-day="5" onclick="toggleWalkDay(this)">Pt</button>
+            <button class="walk-day-btn" data-day="6" onclick="toggleWalkDay(this)">Sb</button>
+            <button class="walk-day-btn" data-day="0" onclick="toggleWalkDay(this)">Nd</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <div class="form-group" style="flex:1;margin-bottom:0">
+            <label class="form-label">Godzina</label>
+            <input class="form-input" id="weekly-time-input" type="time" value="07:30">
+          </div>
+          <div class="form-group" style="flex:1;margin-bottom:0">
+            <label class="form-label">Miejsce (opcjonalne)</label>
+            <input class="form-input" id="weekly-place-input" placeholder="np. Park, las...">
+          </div>
+          <div class="form-group" style="flex:1;margin-bottom:0">
+            <label class="form-label">Czas (min)</label>
+            <input class="form-input" id="weekly-duration-input" type="number" min="10" max="240" value="30">
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions" style="margin-top:16px;margin-bottom:0">
+        <button class="btn-cancel" onclick="closeModal('walk-modal')">Zamknij</button>
+        <button class="btn-save" style="background:var(--grass)" onclick="addWeeklyWalk()">Dodaj harmonogram 🔁</button>
+      </div>
     </div>
   </div>
 </div>
@@ -2362,6 +2454,8 @@ window.openAddPetModal = (petId = null) => {
     document.getElementById('pet-age').value = p.age || '';
     document.getElementById('pet-location').value = p.location || '';
     document.getElementById('pet-bio').value = p.bio || '';
+    document.getElementById('pet-birthdate').value = p.birthdate || '';
+    document.getElementById('pet-adoptdate').value = p.adoptdate || '';
     if (p.avatarUrl) {
       document.getElementById('avatar-preview').src = p.avatarUrl;
       document.getElementById('avatar-preview').style.display = 'block';
@@ -2370,7 +2464,7 @@ window.openAddPetModal = (petId = null) => {
       setTimeout(() => setPickMapMarkerV1(p.lat, p.lng), 300);
     }
   } else {
-    ['pet-name','pet-breed','pet-age','pet-location','pet-bio'].forEach(id => document.getElementById(id).value = '');
+    ['pet-name','pet-breed','pet-age','pet-location','pet-bio','pet-birthdate','pet-adoptdate'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('pet-species').value = '';
   }
   openModal('add-pet-modal');
@@ -2402,6 +2496,8 @@ window.savePet = async () => {
     age: document.getElementById('pet-age').value || '',
     location: document.getElementById('pet-location').value.trim(),
     bio: document.getElementById('pet-bio').value.trim(),
+    birthdate: document.getElementById('pet-birthdate').value || '',
+    adoptdate: document.getElementById('pet-adoptdate').value || '',
     ownerId: currentUser.uid,
     ownerName: currentUser.displayName || 'Właściciel',
     createdAt: Date.now()
@@ -2602,7 +2698,7 @@ function renderPostCard(p) {
             <span class="r-emoji">${em}</span>${count > 0 ? `<span class="r-count">${count}</span>` : ''}
           </button>`;
         }).join('')}
-        ${canManagePost && p.reactions ? `<button class="reaction-btn" onclick="showReactWho('${p.id}')" style="margin-left:auto;font-size:12px;padding:5px 8px">👥 kto?</button>` : ''}
+        ${canManagePost ? `<button class="reaction-btn" onclick="showReactWho('${p.id}')" title="Kto zareagował" style="margin-left:auto;padding:5px 8px;opacity:0.6">👁️</button>` : ''}
       </div>
       <div class="post-actions">
         <button class="action-btn" onclick="toggleComments('${p.id}')">
@@ -2998,9 +3094,12 @@ window.showReactWho = async (postId) => {
   const snap = await get(ref(db, `posts/${postId}/reactions`));
   reactWhoData = snap.exists() ? snap.val() : {};
 
-  // Build tabs
   const keys = Object.keys(reactWhoData).filter(k => Object.keys(reactWhoData[k]).length > 0);
   if (!keys.length) { showToast('Brak reakcji na tym poście'); return; }
+
+  // Pobierz nazwy z userStatus (jeden zbiorczy snap)
+  const statusSnap = await get(ref(db, 'userStatus'));
+  reactWhoUserNames = statusSnap.exists() ? statusSnap.val() : {};
 
   const tabsEl = document.getElementById('react-who-tabs');
   const totalCount = keys.reduce((acc, k) => acc + Object.keys(reactWhoData[k]).length, 0);
@@ -3014,31 +3113,33 @@ window.showReactWho = async (postId) => {
   document.getElementById('react-who-popup').classList.add('open');
 };
 
-window.renderReactWhoList = async (filterKey) => {
-  // Highlight active tab
+let reactWhoUserNames = {};
+
+window.renderReactWhoList = (filterKey) => {
   document.querySelectorAll('.react-who-tab').forEach(t => {
     t.classList.toggle('active', t.dataset.key === filterKey);
   });
 
   const listEl = document.getElementById('react-who-list');
-  listEl.innerHTML = '<div class="loading-spinner" style="padding:16px;font-size:20px">🐾</div>';
-
   const entries = [];
   for (const [key, users] of Object.entries(reactWhoData)) {
     if (filterKey !== 'all' && key !== filterKey) continue;
     for (const uid of Object.keys(users)) {
-      entries.push({ uid, emoji: EMOJI_LABELS[key] || key });
+      const status = reactWhoUserNames[uid];
+      const name = status?.displayName || (uid === currentUser?.uid ? (currentUser.displayName || 'Ty') : 'Użytkownik');
+      const photo = status?.photoURL || null;
+      entries.push({ uid, emoji: EMOJI_LABELS[key] || key, name, photo });
     }
   }
 
-  // Try to get display names from likesMeta (reuse existing structure) — fallback to uid
-  listEl.innerHTML = entries.length ? entries.map(e =>
-    `<div class="likes-user-item">
-      <div class="likes-user-avatar">👤</div>
-      <div class="likes-user-name">${e.uid.startsWith('demo') ? 'Użytkownik demo' : e.uid.substring(0,8) + '…'}</div>
+  listEl.innerHTML = entries.length ? entries.map(e => {
+    const photoHTML = e.photo ? `<img src="${e.photo}" referrerpolicy="no-referrer" style="width:100%;height:100%;object-fit:cover;border-radius:50%">` : '👤';
+    return `<div class="likes-user-item">
+      <div class="likes-user-avatar">${photoHTML}</div>
+      <div class="likes-user-name">${escapeHtml(e.name)}</div>
       <div style="margin-left:auto;font-size:18px">${e.emoji}</div>
-    </div>`
-  ).join('') : '<p style="color:#aaa;font-size:13px;font-weight:600">Brak</p>';
+    </div>`;
+  }).join('') : '<p style="color:#aaa;font-size:13px;font-weight:600">Brak</p>';
 };
 
 window.closeReactWho = () => {
@@ -3137,22 +3238,23 @@ function getDemoPostsForFeed() {
 //  NADPISANIE renderFeed — mieszanie demo + real
 // ═══════════════════════════════════
 function renderFeed(posts) {
-  let merged = [...posts];
+  let merged = [...posts]; // real posty już przefiltrowane przez applyFeedFilters
 
   if (appSettings.demoFeed) {
     const demoPosts = getDemoPostsForFeed();
-    // Nie dubluj ID które już są w real posts
     const realIds = new Set(posts.map(p => p.id));
-    const toAdd = demoPosts.filter(p => !realIds.has(p.id));
-    merged = [...merged, ...toAdd];
-    // Filtruj demo po gatunku/odległości też
-    if (feedSpeciesFilter) merged = merged.filter(p => p.petSpecies === feedSpeciesFilter);
+    let toAdd = demoPosts.filter(p => !realIds.has(p.id));
+    // Filtruj demo po gatunku jeśli aktywny
+    if (feedSpeciesFilter) toAdd = toAdd.filter(p => p.petSpecies === feedSpeciesFilter);
+    // Filtruj demo po odległości jeśli aktywna
     if (feedRadiusKm > 0 && myLocation) {
-      merged = merged.filter(p => {
-        if (!p.petLat || !p.petLng) return appSettings.demoFeed; // demo bez lokalizacji przepuszczamy
+      toAdd = toAdd.filter(p => {
+        if (!p.petLat || !p.petLng) return false;
         return haversine(myLocation.lat, myLocation.lng, p.petLat, p.petLng) <= feedRadiusKm;
       });
     }
+    // Nie pokazuj demo na zakładce "obserwowani"
+    if (feedTab !== 'following') merged = [...merged, ...toAdd];
     // Sortuj po dacie
     merged.sort((a, b) => b.createdAt - a.createdAt);
   }
@@ -3282,26 +3384,48 @@ window.deleteVaccine = async (petId, vaccineId) => {
 //  ETAP 5: 🦮 KALENDARZ SPACERÓW
 // ═══════════════════════════════════
 let walkModalPetId = null;
+const DAY_NAMES = { 0:'Nd', 1:'Pn', 2:'Wt', 3:'Śr', 4:'Cz', 5:'Pt', 6:'Sb' };
+const DAY_FULL  = { 0:'Niedziela', 1:'Poniedziałek', 2:'Wtorek', 3:'Środa', 4:'Czwartek', 5:'Piątek', 6:'Sobota' };
 
 window.openWalkModal = async (petId, petName) => {
   walkModalPetId = petId;
   document.getElementById('walk-pet-name').textContent = `🐾 ${petName}`;
+  // Reset form — jednorazowe
   document.getElementById('walk-title-input').value = '';
   document.getElementById('walk-place-input').value = '';
   document.getElementById('walk-max-input').value = '5';
-  // Default datetime: jutro 10:00
   const tomorrow = new Date(Date.now() + 86400000);
   tomorrow.setHours(10, 0, 0, 0);
   document.getElementById('walk-datetime-input').value = tomorrow.toISOString().slice(0, 16);
+  // Reset form — tygodniowe
+  document.getElementById('weekly-title-input').value = '';
+  document.getElementById('weekly-place-input').value = '';
+  document.getElementById('weekly-time-input').value = '07:30';
+  document.getElementById('weekly-duration-input').value = '30';
+  document.querySelectorAll('.walk-day-btn').forEach(b => b.classList.remove('active'));
+  // Pokaż zakładkę jednorazową
+  switchWalkTab('once');
   await renderWalkList(petId);
+  await renderWeeklyWalkList(petId);
   openModal('walk-modal');
 };
 
+window.switchWalkTab = (tab) => {
+  document.getElementById('wtab-once').classList.toggle('active', tab === 'once');
+  document.getElementById('wtab-weekly').classList.toggle('active', tab === 'weekly');
+  document.getElementById('walk-tab-once').style.display = tab === 'once' ? 'block' : 'none';
+  document.getElementById('walk-tab-weekly').style.display = tab === 'weekly' ? 'block' : 'none';
+};
+
+window.toggleWalkDay = (btn) => {
+  btn.classList.toggle('active');
+};
+
 async function renderWalkList(petId) {
-  const snap = await get(ref(db, `walks/${petId}`));
+  const snap = await get(ref(db, `walks/${petId}/oneTime`));
   const listEl = document.getElementById('walk-list');
   if (!snap.exists()) {
-    listEl.innerHTML = `<div class="empty-state" style="padding:16px 0"><div class="emoji" style="font-size:32px">🦮</div><p style="font-size:13px">Brak zaplanowanych spacerów</p></div>`;
+    listEl.innerHTML = `<div class="empty-state" style="padding:12px 0"><div class="emoji" style="font-size:28px">📅</div><p style="font-size:13px">Brak zaplanowanych spacerów</p></div>`;
     return;
   }
   const walks = [];
@@ -3313,7 +3437,7 @@ async function renderWalkList(petId) {
     const isPast = w.datetime < now;
     const joiners = w.joiners ? Object.keys(w.joiners).length : 0;
     const iJoined = w.joiners && w.joiners[currentUser.uid];
-    const isOwner = w.ownerId === currentUser.uid;
+    const isWalkOwner = w.ownerId === currentUser.uid;
     const dt = w.datetime ? new Date(w.datetime).toLocaleString('pl-PL', { weekday:'short', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : '—';
     return `<div class="walk-item">
       <div class="walk-icon">${isPast ? '✅' : '🦮'}</div>
@@ -3321,10 +3445,41 @@ async function renderWalkList(petId) {
         <div class="walk-title">${escapeHtml(w.title)}</div>
         <div class="walk-meta">${dt}${w.place ? ` · 📍 ${escapeHtml(w.place)}` : ''} · 👥 ${joiners}/${w.maxJoiners || 5}</div>
       </div>
-      ${!isPast && !isOwner ? `<button class="walk-join-btn ${iJoined ? 'joined' : ''}" onclick="joinWalk('${petId}','${w.id}',${!!iJoined})">
+      ${!isPast && !isWalkOwner ? `<button class="walk-join-btn ${iJoined ? 'joined' : ''}" onclick="joinWalk('${petId}','${w.id}',${!!iJoined})">
         ${iJoined ? '✅ Dołączyłeś' : '➕ Dołącz'}
       </button>` : ''}
-      ${isOwner && !isPast ? `<button class="vaccine-btn-delete" onclick="deleteWalk('${petId}','${w.id}')">✕</button>` : ''}
+      ${isWalkOwner && !isPast ? `<button class="vaccine-btn-delete" onclick="deleteWalk('${petId}','${w.id}')">✕</button>` : ''}
+    </div>`;
+  }).join('');
+}
+
+async function renderWeeklyWalkList(petId) {
+  const snap = await get(ref(db, `walks/${petId}/weekly`));
+  const listEl = document.getElementById('walk-weekly-list');
+  if (!snap.exists()) {
+    listEl.innerHTML = `<div class="empty-state" style="padding:12px 0"><div class="emoji" style="font-size:28px">🔁</div><p style="font-size:13px">Brak harmonogramu tygodniowego</p></div>`;
+    return;
+  }
+  const entries = [];
+  snap.forEach(c => entries.push({ id: c.key, ...c.val() }));
+  entries.sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+
+  listEl.innerHTML = entries.map(w => {
+    const isWalkOwner = w.ownerId === currentUser.uid;
+    const days = (w.days || []).sort((a,b)=>a-b).map(d =>
+      `<span class="walk-day-pill">${DAY_NAMES[d]}</span>`).join('');
+    return `<div class="walk-weekly-item">
+      <div class="walk-icon">🔁</div>
+      <div class="walk-info">
+        <div class="walk-title">${escapeHtml(w.title)}</div>
+        <div class="walk-meta" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:4px">
+          <span>⏰ ${w.time || '?'}</span>
+          ${w.duration ? `<span>· ${w.duration} min</span>` : ''}
+          ${w.place ? `<span>· 📍 ${escapeHtml(w.place)}</span>` : ''}
+        </div>
+        <div class="walk-weekly-days" style="margin-top:6px">${days}</div>
+      </div>
+      ${isWalkOwner ? `<button class="vaccine-btn-delete" onclick="deleteWeeklyWalk('${petId}','${w.id}')">✕</button>` : ''}
     </div>`;
   }).join('');
 }
@@ -3335,7 +3490,7 @@ window.addWalk = async () => {
   if (!title || !datetime) { showToast('Podaj tytuł i datę!'); return; }
   const maxJoiners = parseInt(document.getElementById('walk-max-input').value) || 5;
   const place = document.getElementById('walk-place-input').value.trim();
-  await push(ref(db, `walks/${walkModalPetId}`), {
+  await push(ref(db, `walks/${walkModalPetId}/oneTime`), {
     title, datetime, place, maxJoiners,
     ownerId: currentUser.uid,
     ownerName: currentUser.displayName || 'Właściciel',
@@ -3344,11 +3499,31 @@ window.addWalk = async () => {
   document.getElementById('walk-title-input').value = '';
   document.getElementById('walk-place-input').value = '';
   await renderWalkList(walkModalPetId);
-  showToast('Spacer zaplanowany! 🦮');
+  showToast('Spacer zaplanowany! 📅');
+};
+
+window.addWeeklyWalk = async () => {
+  const title = document.getElementById('weekly-title-input').value.trim();
+  const time = document.getElementById('weekly-time-input').value;
+  const days = [...document.querySelectorAll('.walk-day-btn.active')].map(b => parseInt(b.dataset.day));
+  if (!title) { showToast('Podaj nazwę spaceru!'); return; }
+  if (!days.length) { showToast('Wybierz co najmniej jeden dzień!'); return; }
+  const place = document.getElementById('weekly-place-input').value.trim();
+  const duration = parseInt(document.getElementById('weekly-duration-input').value) || 30;
+  await push(ref(db, `walks/${walkModalPetId}/weekly`), {
+    title, time, days, place, duration,
+    ownerId: currentUser.uid,
+    ownerName: currentUser.displayName || 'Właściciel',
+    createdAt: Date.now()
+  });
+  document.getElementById('weekly-title-input').value = '';
+  document.querySelectorAll('.walk-day-btn').forEach(b => b.classList.remove('active'));
+  await renderWeeklyWalkList(walkModalPetId);
+  showToast('Harmonogram dodany! 🔁');
 };
 
 window.joinWalk = async (petId, walkId, alreadyJoined) => {
-  const joinRef = ref(db, `walks/${petId}/${walkId}/joiners/${currentUser.uid}`);
+  const joinRef = ref(db, `walks/${petId}/oneTime/${walkId}/joiners/${currentUser.uid}`);
   if (alreadyJoined) {
     await remove(joinRef);
     showToast('Wycofano dołączenie');
@@ -3360,9 +3535,15 @@ window.joinWalk = async (petId, walkId, alreadyJoined) => {
 };
 
 window.deleteWalk = async (petId, walkId) => {
-  await remove(ref(db, `walks/${petId}/${walkId}`));
+  await remove(ref(db, `walks/${petId}/oneTime/${walkId}`));
   await renderWalkList(petId);
   showToast('Spacer usunięty');
+};
+
+window.deleteWeeklyWalk = async (petId, walkId) => {
+  await remove(ref(db, `walks/${petId}/weekly/${walkId}`));
+  await renderWeeklyWalkList(petId);
+  showToast('Usunięto z harmonogramu');
 };
 
 // ── Likes popup ──
@@ -3460,6 +3641,8 @@ window.showPetProfile = async (petId) => {
             <span class="profile-tag species">${emoji} ${p.species}</span>
             ${p.breed ? `<span class="profile-tag">${p.breed}</span>` : ''}
             ${p.age ? `<span class="profile-tag">🎂 ${p.age} lat</span>` : ''}
+            ${p.birthdate ? `<span class="profile-tag">🎂 ur. ${p.birthdate}</span>` : ''}
+            ${p.adoptdate ? `<span class="profile-tag" style="background:#FFF0E8;color:var(--paw)">🏠 adopcja ${p.adoptdate}</span>` : ''}
             ${p.location ? `<span class="profile-tag location">📍 ${p.location}</span>` : ''}
             <span class="profile-tag followers" id="followers-count-${petId}">👥 ${followersCount} obserwujących</span>
             <span class="profile-tag" style="cursor:pointer" onclick="openCoOwnersModal('${petId}')">🤝 ${1 + coOwnersCount} opiekun${coOwnersCount >= 1 ? 'ów' : ''}</span>
