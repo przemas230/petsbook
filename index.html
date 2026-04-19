@@ -1756,10 +1756,14 @@
             <option value="Inne">Inne</option>
           </select>
           <input class="filter-select" type="text" id="filter-location" placeholder="📍 Miasto / region">
-          <input class="filter-select" type="text" id="filter-breed" placeholder="🔤 Rasa">
+          <div style="position:relative;flex:1">
+            <input class="filter-select" style="width:100%;box-sizing:border-box" type="text" id="filter-breed" placeholder="🔤 Rasa"
+              oninput="onExploreBreedInput(this.value)" onfocus="onExploreBreedInput(this.value)" onkeydown="onExploreBreedKeydown(event)" autocomplete="off">
+            <div class="breed-dropdown" id="breed-dropdown-explore"></div>
+          </div>
           <button class="btn-search-filter" onclick="runExploreSearch()">Szukaj</button>
         </div>
-      </div>
+        <div id="explore-location-hint" style="display:none;padding:6px 0 0;font-size:12px;font-weight:700;color:var(--paw);cursor:pointer" onclick="useMyLocationExplore()">📍 Użyj mojej lokalizacji aby sortować po odległości</div>
       <!-- MAP -->
       <div class="map-radius-bar">
         <label>🗺️ Mapa okolicy</label>
@@ -1801,6 +1805,10 @@
         <div class="section-title">💬 Wiadomości</div>
         <div id="chat-conversations-list">
           <div class="empty-state" style="padding:20px 0"><div class="emoji" style="font-size:32px">💬</div><p style="font-size:13px">Brak rozmów</p></div>
+        </div>
+        <div id="chat-requests-section" style="display:none;margin-top:12px;border-top:2px solid var(--cream);padding-top:10px">
+          <div class="section-title" style="font-size:13px">📬 Prośby o kontakt</div>
+          <div id="chat-requests-list"></div>
         </div>
         <button class="btn-add-pet" style="margin-top:12px" onclick="openNewChatModal()">✉️ Nowa wiadomość</button>
       </div>
@@ -1997,10 +2005,10 @@
 <div class="modal-overlay" id="new-chat-modal">
   <div class="modal-box">
     <div class="modal-title">✉️ Nowa wiadomość</div>
-    <p style="font-size:14px;font-weight:600;margin-bottom:16px;color:var(--bark-light)">Możesz napisać do opiekunów zwierząt, z którymi jesteś połączony (współopiekunowie).</p>
+    <p style="font-size:14px;font-weight:600;margin-bottom:16px;color:var(--bark-light)">Współopiekunowie i osoby, z którymi wzajemnie się obserwujecie.</p>
     <div id="new-chat-users-list"></div>
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal('new-chat-modal')">Anuluj</button>
+      <button class="btn-cancel" onclick="closeModal('new-chat-modal')">Anulaj</button>
     </div>
   </div>
 </div>
@@ -3093,12 +3101,78 @@ document.addEventListener('click', (e) => {
   if (wrap && !wrap.contains(e.target)) {
     document.getElementById('breed-dropdown')?.classList.remove('open');
   }
+  // Also close explore dropdown
+  const exploreInput = document.getElementById('filter-breed');
+  const exploreDrop = document.getElementById('breed-dropdown-explore');
+  if (exploreDrop && exploreInput && !exploreInput.contains(e.target) && !exploreDrop.contains(e.target)) {
+    exploreDrop.classList.remove('open');
+  }
 });
 
 // Also update suggestions when species changes
 document.getElementById('pet-species')?.addEventListener('change', () => {
   const val = document.getElementById('pet-breed').value;
   onBreedInput(val);
+});
+
+// ── Explore breed autocomplete ──
+let exploreBreedFocusIndex = -1;
+window.onExploreBreedInput = (val) => {
+  const species = document.getElementById('filter-species').value;
+  const dropdown = document.getElementById('breed-dropdown-explore');
+  if (!dropdown) return;
+  const q = val.trim().toLowerCase();
+  if (q.length < 2) { dropdown.classList.remove('open'); return; }
+
+  let pool = [];
+  if (species === 'Pies') pool = DOG_BREEDS;
+  else if (species === 'Kot') pool = CAT_BREEDS;
+  else if (OTHER_BREEDS[species]) pool = OTHER_BREEDS[species];
+  else pool = [...DOG_BREEDS, ...CAT_BREEDS];
+
+  const matches = pool.filter(b => b.toLowerCase().includes(q)).slice(0, 10);
+  if (!matches.length) { dropdown.classList.remove('open'); return; }
+
+  const highlight = (str) => {
+    const idx = str.toLowerCase().indexOf(q);
+    if (idx < 0) return str;
+    return str.slice(0,idx) + `<strong>${str.slice(idx, idx+q.length)}</strong>` + str.slice(idx+q.length);
+  };
+  exploreBreedFocusIndex = -1;
+  dropdown.innerHTML = matches.map(b =>
+    `<div class="breed-option" data-val="${b}" onmousedown="selectExploreBreed('${b}')">${highlight(b)}</div>`
+  ).join('');
+  dropdown.classList.add('open');
+};
+window.selectExploreBreed = (val) => {
+  document.getElementById('filter-breed').value = val;
+  document.getElementById('breed-dropdown-explore').classList.remove('open');
+  runExploreSearch();
+};
+window.onExploreBreedKeydown = (e) => {
+  const dropdown = document.getElementById('breed-dropdown-explore');
+  const opts = dropdown?.querySelectorAll('.breed-option');
+  if (!dropdown?.classList.contains('open')) return;
+  if (e.key === 'ArrowDown') { e.preventDefault(); exploreBreedFocusIndex = Math.min(exploreBreedFocusIndex + 1, opts.length - 1); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); exploreBreedFocusIndex = Math.max(exploreBreedFocusIndex - 1, -1); }
+  else if (e.key === 'Enter') { e.preventDefault(); if (exploreBreedFocusIndex >= 0) selectExploreBreed(opts[exploreBreedFocusIndex].dataset.val); else runExploreSearch(); return; }
+  else if (e.key === 'Escape') { dropdown.classList.remove('open'); return; }
+  opts?.forEach((o, i) => o.classList.toggle('focused', i === exploreBreedFocusIndex));
+};
+
+window.useMyLocationExplore = () => {
+  navigator.geolocation?.getCurrentPosition(pos => {
+    myLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    const hint = document.getElementById('explore-location-hint');
+    if (hint) hint.style.display = 'none';
+    runExploreSearch();
+  }, () => showToast('Brak dostępu do lokalizacji'));
+};
+
+// ── Update explore autocomplete when species filter changes ──
+document.getElementById('filter-species')?.addEventListener('change', () => {
+  const val = document.getElementById('filter-breed')?.value || '';
+  if (val.length >= 2) onExploreBreedInput(val);
 });
 
 // ═══════════════════════════════════
@@ -3656,10 +3730,8 @@ window.showPetProfile = async (petId) => {
           <div class="profile-pet-name">${p.name}</div>
           <div class="profile-tags">
             <span class="profile-tag species">${emoji} ${p.species}</span>
-            ${p.breed ? `<span class="profile-tag">${p.breed}</span>` : ''}
-            ${p.age ? `<span class="profile-tag">🎂 ${p.age} lat</span>` : ''}
-            ${p.birthdate ? `<span class="profile-tag">🎂 ur. ${p.birthdate}</span>` : ''}
-            ${p.adoptdate ? `<span class="profile-tag" style="background:#FFF0E8;color:var(--paw)">🏠 adopcja ${p.adoptdate}</span>` : ''}
+            ${p.breed ? `<span class="profile-tag">${p.breed} <a href="https://www.google.com/search?q=${encodeURIComponent(p.breed + ' rasa ' + p.species)}" target="_blank" rel="noopener" style="text-decoration:none;font-size:12px;margin-left:2px" title="Szukaj rasy w Google">🔍</a></span>` : ''}
+            ${petAgeTags(p)}
             ${p.location ? `<span class="profile-tag location">📍 ${p.location}</span>` : ''}
             <span class="profile-tag followers" id="followers-count-${petId}">👥 ${followersCount} obserwujących</span>
             <span class="profile-tag" style="cursor:pointer" onclick="openCoOwnersModal('${petId}')">🤝 ${1 + coOwnersCount} opiekun${coOwnersCount >= 1 ? 'ów' : ''}</span>
@@ -3756,6 +3828,10 @@ window.runExploreSearch = async () => {
   const el = document.getElementById('explore-results');
   el.innerHTML = '<div class="loading-spinner" style="grid-column:1/-1">🐾</div>';
 
+  // Show location hint if no location available
+  const locHint = document.getElementById('explore-location-hint');
+  if (locHint) locHint.style.display = myLocation ? 'none' : 'block';
+
   const snap = await get(ref(db, 'pets'));
   let results = [];
   if (snap.exists()) {
@@ -3768,22 +3844,43 @@ window.runExploreSearch = async () => {
     });
   }
 
+  // Mix in demo profiles
+  if (appSettings.demoFeed) {
+    const realIds = new Set(results.map(p => p.id));
+    let demoToAdd = DEMO_PETS.filter(p => !realIds.has(p.id));
+    if (species) demoToAdd = demoToAdd.filter(p => p.species === species);
+    if (breed) demoToAdd = demoToAdd.filter(p => (p.breed || '').toLowerCase().includes(breed));
+    demoToAdd.forEach(p => results.push({ ...p, _isDemo: true }));
+  }
+
+  // Sort by distance if location available
+  if (myLocation) {
+    results = results.map(p => ({
+      ...p,
+      _dist: (p.lat && p.lng) ? haversine(myLocation.lat, myLocation.lng, p.lat, p.lng) : 99999
+    })).sort((a, b) => a._dist - b._dist);
+  }
+
   if (!results.length) {
     el.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="emoji">🔍</div><p>Brak wyników</p></div>`;
     return;
   }
+
   el.innerHTML = results.map(p => {
     const emoji = speciesEmoji(p.species);
     const cardAvatarHTML = p.avatarUrl
-      ? `<img src="${p.avatarUrl}">`
-      : `<span style="font-size:64px;display:flex;align-items:center;justify-content:height:200px;justify-content:center;align-items:center;height:200px">${emoji}</span>`;
+      ? `<img src="${p.avatarUrl}" referrerpolicy="no-referrer" loading="lazy">`
+      : `<span style="font-size:64px;display:flex;align-items:center;justify-content:center;height:200px">${emoji}</span>`;
+    const distLabel = p._dist && p._dist < 9000 ? `<div class="pet-card-location">📍 ${p._dist < 1 ? '<1' : Math.round(p._dist)} km</div>` : (p.location ? `<div class="pet-card-location">📍 ${p.location}</div>` : '');
+    const demoTag = p._isDemo ? `<span class="demo-post-badge" style="font-size:10px;padding:1px 5px">demo</span>` : '';
+    const clickFn = p._isDemo ? `showDemoPetProfile('${p.id}')` : `showPetProfile('${p.id}')`;
     return `
-      <div class="pet-card" onclick="showPetProfile('${p.id}')">
+      <div class="pet-card" onclick="${clickFn}">
         <div class="pet-card-img">${cardAvatarHTML}</div>
         <div class="pet-card-info">
-          <div class="pet-card-name">${p.name}</div>
+          <div class="pet-card-name">${p.name}${demoTag}</div>
           <div class="pet-card-breed">${p.breed || ''} ${p.breed ? '·' : ''} ${p.species}</div>
-          ${p.location ? `<div class="pet-card-location">📍 ${p.location}</div>` : ''}
+          ${distLabel}
         </div>
       </div>`;
   }).join('');
@@ -3869,6 +3966,72 @@ function timeAgo(ts) {
   const h = Math.floor(m / 60);
   if (h < 24) return `${h} godz. temu`;
   return `${Math.floor(h/24)} dni temu`;
+}
+
+function calcPetAge(birthdate) {
+  if (!birthdate) return null;
+  const birth = new Date(birthdate);
+  if (isNaN(birth)) return null;
+  const now = new Date();
+  let years = now.getFullYear() - birth.getFullYear();
+  let months = now.getMonth() - birth.getMonth();
+  if (months < 0) { years--; months += 12; }
+  if (now.getDate() < birth.getDate()) months--;
+  if (months < 0) { years--; months += 12; }
+  return { years, months };
+}
+
+function calcHumanYears(age, species) {
+  if (!age) return null;
+  const { years, months } = age;
+  const totalMonths = years * 12 + months;
+  const totalYears = totalMonths / 12;
+  let human;
+  if (species === 'Pies') {
+    if (totalYears <= 2) human = totalYears * 12.5;
+    else human = 2 * 12.5 + (totalYears - 2) * 4.5;
+  } else if (species === 'Kot') {
+    if (totalYears <= 2) human = totalYears * 12.5;
+    else human = 2 * 12.5 + (totalYears - 2) * 4;
+  } else {
+    human = totalYears * 6;
+  }
+  return Math.round(human);
+}
+
+function calcBirthdayCountdown(birthdate) {
+  if (!birthdate) return null;
+  const birth = new Date(birthdate);
+  if (isNaN(birth)) return null;
+  const now = new Date();
+  let next = new Date(now.getFullYear(), birth.getMonth(), birth.getDate());
+  if (next < now) next.setFullYear(now.getFullYear() + 1);
+  const diff = Math.round((next - now) / (1000 * 60 * 60 * 24));
+  return diff;
+}
+
+function petAgeTags(p) {
+  let tags = '';
+  if (p.birthdate) {
+    const age = calcPetAge(p.birthdate);
+    if (age) {
+      const ageStr = age.years > 0
+        ? `${age.years} lat${age.years === 1 ? 'o' : age.years < 5 ? 'a' : ''} ${age.months > 0 ? `i ${age.months} mies.` : ''}`.trim()
+        : `${age.months} mies.`;
+      tags += `<span class="profile-tag">🎂 ${ageStr}</span>`;
+      const humanYears = calcHumanYears(age, p.species);
+      if (humanYears) tags += `<span class="profile-tag" title="Wiek w przeliczeniu na lata ludzkie">🧑 ≈ ${humanYears} lat ludzkich</span>`;
+      const countdown = calcBirthdayCountdown(p.birthdate);
+      if (countdown !== null && countdown <= 30) {
+        tags += `<span class="profile-tag" style="background:#FFF0E8;color:var(--paw)">🎂 urodziny za ${countdown === 0 ? 'dziś! 🎉' : countdown + ' dni'}</span>`;
+      }
+    }
+  } else if (p.age) {
+    tags += `<span class="profile-tag">🎂 ${p.age} lat</span>`;
+  }
+  if (p.birthdate) tags += `<span class="profile-tag" style="opacity:0.7;font-size:11px">ur. ${p.birthdate}</span>`;
+  if (p.adoptdate) tags += `<span class="profile-tag" style="background:#FFF0E8;color:var(--paw)">🏠 adopcja ${p.adoptdate}</span>`;
+  return tags;
 }
 
 function escapeHtml(s) {
@@ -4131,19 +4294,21 @@ async function initChatPage() {
 
   if (!convos.length) {
     convEl.innerHTML = `<div class="empty-state" style="padding:20px 0"><div class="emoji" style="font-size:32px">💬</div><p style="font-size:13px">Brak rozmów</p></div>`;
-    return;
-  }
-
-  convEl.innerHTML = convos.map(c => {
-    const photoHTML = c.otherPhoto ? `<img src="${c.otherPhoto}" referrerpolicy="no-referrer">` : '👤';
-    return `<div class="chat-conv-item" onclick="openChatV1('${c.chatId}','${c.otherId}','${escapeHtml(c.otherName)}','${c.otherPhoto || ''}')" id="conv-item-${c.chatId}">
+  } else {
+    convEl.innerHTML = convos.map(c => {
+      const photoHTML = c.otherPhoto ? `<img src="${c.otherPhoto}" referrerpolicy="no-referrer">` : '👤';
+      return `<div class="chat-conv-item" onclick="openChatV1('${c.chatId}','${c.otherId}','${escapeHtml(c.otherName)}','${c.otherPhoto || ''}')" id="conv-item-${c.chatId}">
       <div class="chat-conv-avatar">${photoHTML}</div>
       <div style="flex:1;overflow:hidden">
         <div class="chat-conv-name">${c.otherName}</div>
         ${c.lastMsg ? `<div class="chat-conv-last">${escapeHtml(c.lastMsg.text || '📷')}</div>` : ''}
       </div>
     </div>`;
-  }).join('');
+    }).join('');
+  }
+
+  // Load pending chat requests
+  await loadChatRequests();
 }
 
 window.openChatV1 = (chatId, otherId, otherName, otherPhoto) => {
@@ -4195,33 +4360,65 @@ window.sendChatMessageV1 = async () => {
 };
 
 window.openNewChatModal = async () => {
-  const snap = await get(ref(db, 'pets'));
   const usersMap = {};
-  if (snap.exists()) {
-    snap.forEach(c => {
+
+  // 1. Współopiekunowie (dotychczasowe zachowanie)
+  const petsSnap = await get(ref(db, 'pets'));
+  if (petsSnap.exists()) {
+    petsSnap.forEach(c => {
       const p = c.val();
       if (!isCoOwner(p)) return;
       if (p.ownerId !== currentUser.uid) {
-        usersMap[p.ownerId] = { displayName: p.ownerName || 'Właściciel', photoURL: null };
+        usersMap[p.ownerId] = { displayName: firstNameOnly(p.ownerName) || 'Właściciel', photoURL: null, type: 'coowner' };
       }
       if (p.coOwners) {
         Object.entries(p.coOwners).forEach(([uid, co]) => {
-          if (uid !== currentUser.uid) usersMap[uid] = { displayName: co.displayName, photoURL: co.photoURL };
+          if (uid !== currentUser.uid) usersMap[uid] = { displayName: firstNameOnly(co.displayName) || 'Opiekun', photoURL: co.photoURL, type: 'coowner' };
         });
       }
     });
   }
 
+  // 2. Wzajemni obserwujący — ja obserwuję ich zwierzę I oni obserwują moje zwierzę
+  const myFollowsSnap = await get(ref(db, `follows/${currentUser.uid}`));
+  const myFollowedPetIds = myFollowsSnap.exists() ? Object.keys(myFollowsSnap.val()) : [];
+
+  // Właściciele zwierząt które obserwuję
+  const theirOwners = {};
+  for (const petId of myFollowedPetIds) {
+    const petSnap = await get(ref(db, `pets/${petId}`));
+    if (petSnap.exists()) {
+      const pet = petSnap.val();
+      if (pet.ownerId && pet.ownerId !== currentUser.uid) {
+        theirOwners[pet.ownerId] = { displayName: firstNameOnly(pet.ownerName) || 'Właściciel', photoURL: null };
+      }
+    }
+  }
+
+  // Sprawdź czy oni też obserwują któreś z moich zwierząt
+  const myPetIds = Object.keys(myPets);
+  for (const [theirUid, theirInfo] of Object.entries(theirOwners)) {
+    if (usersMap[theirUid]) continue; // już jest jako współopiekun
+    for (const myPetId of myPetIds) {
+      const theyFollowSnap = await get(ref(db, `petFollowers/${myPetId}/${theirUid}`));
+      if (theyFollowSnap.exists()) {
+        usersMap[theirUid] = { ...theirInfo, type: 'mutual' };
+        break;
+      }
+    }
+  }
+
   const users = Object.entries(usersMap);
   const listEl = document.getElementById('new-chat-users-list');
   if (!users.length) {
-    listEl.innerHTML = `<div class="empty-state" style="padding:20px 0"><div class="emoji">😔</div><p style="font-size:13px">Nie jesteś jeszcze opiekunem żadnego wspólnego zwierzęcia.</p></div>`;
+    listEl.innerHTML = `<div class="empty-state" style="padding:20px 0"><div class="emoji">😔</div><p style="font-size:13px">Brak połączonych użytkowników. Obserwujcie się wzajemnie aby móc pisać!</p></div>`;
   } else {
     listEl.innerHTML = users.map(([uid, u]) => {
       const photo = u.photoURL ? `<img src="${u.photoURL}" referrerpolicy="no-referrer">` : '👤';
+      const badge = u.type === 'mutual' ? `<span style="font-size:10px;color:var(--grass);font-weight:700">⭐ wzajemni</span>` : `<span style="font-size:10px;color:var(--paw);font-weight:700">🤝 opiekun</span>`;
       return `<div class="coowner-item" style="cursor:pointer" onclick="startChatWithUserV1('${uid}','${escapeHtml(u.displayName)}','${u.photoURL || ''}')">
         <div class="coowner-avatar">${photo}</div>
-        <div class="coowner-name">${u.displayName}</div>
+        <div style="flex:1"><div class="coowner-name">${u.displayName}</div>${badge}</div>
         <span style="font-size:13px;color:var(--paw)">→ Napisz</span>
       </div>`;
     }).join('');
@@ -4234,7 +4431,7 @@ window.startChatWithUserV1 = async (otherId, otherName, otherPhoto) => {
   const chatId = getChatId(currentUser.uid, otherId);
 
   const updates = {};
-  updates[`chats/${chatId}/name_${currentUser.uid}`] = currentUser.displayName || 'Użytkownik';
+  updates[`chats/${chatId}/name_${currentUser.uid}`] = firstNameOnly(currentUser.displayName) || 'Użytkownik';
   updates[`chats/${chatId}/photo_${currentUser.uid}`] = currentUser.photoURL || null;
   updates[`chats/${chatId}/name_${otherId}`] = otherName;
   updates[`chats/${chatId}/photo_${otherId}`] = otherPhoto || null;
@@ -4243,6 +4440,73 @@ window.startChatWithUserV1 = async (otherId, otherName, otherPhoto) => {
   showPage('chat');
   await initChatPage();
   openChatV1(chatId, otherId, otherName, otherPhoto);
+};
+
+// ── Chat requests (prośby o kontakt od nieznajomych) ──
+window.sendChatRequest = async (toUid, toName) => {
+  const chatId = getChatId(currentUser.uid, toUid);
+  const myName = firstNameOnly(currentUser.displayName) || 'Użytkownik';
+  await set(ref(db, `chats/${chatId}/requests/${currentUser.uid}`), {
+    fromUid: currentUser.uid,
+    fromName: myName,
+    fromPhoto: currentUser.photoURL || null,
+    toUid,
+    createdAt: Date.now()
+  });
+  // Metadata
+  const updates = {};
+  updates[`chats/${chatId}/name_${currentUser.uid}`] = myName;
+  updates[`chats/${chatId}/photo_${currentUser.uid}`] = currentUser.photoURL || null;
+  updates[`chats/${chatId}/name_${toUid}`] = toName;
+  await update(ref(db), updates);
+
+  await sendNotification(toUid, {
+    type: 'chat_request',
+    text: `${myName} chce nawiązać kontakt`,
+    fromPhoto: currentUser.photoURL || null
+  });
+  showToast('Prośba o kontakt wysłana! 📬');
+};
+
+window.loadChatRequests = async () => {
+  const snap = await get(ref(db, 'chats'));
+  const requests = [];
+  if (snap.exists()) {
+    snap.forEach(c => {
+      const chat = c.val();
+      if (!chat.requests) return;
+      Object.entries(chat.requests).forEach(([fromUid, req]) => {
+        if (req.toUid === currentUser.uid) {
+          requests.push({ chatId: c.key, ...req });
+        }
+      });
+    });
+  }
+  const section = document.getElementById('chat-requests-section');
+  const listEl = document.getElementById('chat-requests-list');
+  if (!requests.length) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+  listEl.innerHTML = requests.map(r => {
+    const photo = r.fromPhoto ? `<img src="${r.fromPhoto}" referrerpolicy="no-referrer" style="width:36px;height:36px;border-radius:50%;object-fit:cover">` : '<span style="font-size:22px">👤</span>';
+    return `<div class="coowner-item" style="align-items:center;gap:8px">
+      <div style="width:36px;height:36px;border-radius:50%;overflow:hidden;flex-shrink:0">${photo}</div>
+      <div style="flex:1;font-size:13px;font-weight:700">${escapeHtml(r.fromName)}</div>
+      <button onclick="acceptChatRequest('${r.chatId}','${r.fromUid}','${escapeHtml(r.fromName)}','${r.fromPhoto || ''}')" style="font-size:11px;padding:3px 8px;background:var(--grass);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700">Akceptuj</button>
+      <button onclick="declineChatRequest('${r.chatId}','${r.fromUid}')" style="font-size:11px;padding:3px 8px;background:#ddd;color:#666;border:none;border-radius:8px;cursor:pointer;font-weight:700">Odrzuć</button>
+    </div>`;
+  }).join('');
+};
+
+window.acceptChatRequest = async (chatId, fromUid, fromName, fromPhoto) => {
+  await remove(ref(db, `chats/${chatId}/requests/${fromUid}`));
+  await loadChatRequests();
+  await initChatPage();
+  openChatV1(chatId, fromUid, fromName, fromPhoto);
+};
+
+window.declineChatRequest = async (chatId, fromUid) => {
+  await remove(ref(db, `chats/${chatId}/requests/${fromUid}`));
+  await loadChatRequests();
 };
 
 // ═══════════════════════════════════
