@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PetsBook 🐾</title>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fraunces:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
   :root {
     --cream: #FDF6EC;
@@ -828,6 +830,142 @@
   .bottom-tab.active { color: var(--paw); }
   .bottom-tab-icon { font-size: 22px; }
 
+  /* ── DELETE CONFIRM ── */
+  .btn-danger {
+    background: #e53935;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 11px 20px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 14px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-danger:hover { background: #b71c1c; }
+
+  /* ── CO-OWNERS ── */
+  .coowners-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+  .coowner-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px; background: var(--cream); border-radius: 10px;
+  }
+  .coowner-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    border: 2px solid var(--paw-light); overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; background: white; flex-shrink: 0;
+  }
+  .coowner-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .coowner-name { font-weight: 700; font-size: 13px; flex: 1; }
+  .coowner-badge {
+    font-size: 11px; font-weight: 800; padding: 2px 8px;
+    border-radius: 20px; background: #FFF0E8; color: var(--paw);
+  }
+  .invite-code-box {
+    background: var(--cream); border-radius: 12px; padding: 14px 16px;
+    font-family: monospace; font-size: 18px; font-weight: 800;
+    letter-spacing: 4px; text-align: center; cursor: pointer;
+    border: 2px dashed var(--paw-light); transition: all 0.2s;
+    color: var(--bark);
+  }
+  .invite-code-box:hover { background: #FFF0E8; border-color: var(--paw); }
+
+  /* ── MAP ── */
+  #map-pick { height: 280px; border-radius: 12px; overflow: hidden; border: 2px solid var(--paw-light); margin-top: 8px; }
+  #map-explore { height: 400px; border-radius: var(--radius); overflow: hidden; box-shadow: var(--card-shadow); margin-bottom: 24px; }
+  .map-location-info { font-size: 13px; color: var(--bark-light); font-weight: 600; margin-top: 6px; text-align: center; }
+  .leaflet-popup-content { font-family: 'Nunito', sans-serif; font-weight: 700; font-size: 13px; }
+  .map-pet-popup { display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
+  .map-pet-popup img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid var(--paw); }
+  .map-radius-bar {
+    background: white; border-radius: var(--radius); box-shadow: var(--card-shadow);
+    padding: 16px 20px; margin-bottom: 16px;
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  }
+  .map-radius-bar label { font-weight: 800; font-size: 14px; }
+  .map-radius-bar input[type=range] { flex: 1; min-width: 140px; accent-color: var(--paw); }
+  #radius-val { font-weight: 800; color: var(--paw); min-width: 44px; }
+
+  /* ── CHAT ── */
+  #page-chat { display: none; }
+  .chat-layout {
+    max-width: 900px; margin: 0 auto; padding: 24px 20px;
+    display: grid; grid-template-columns: 280px 1fr; gap: 20px; height: calc(100vh - 120px);
+  }
+  @media (max-width: 700px) { .chat-layout { grid-template-columns: 1fr; height: auto; } }
+  .chat-sidebar {
+    background: white; border-radius: var(--radius); box-shadow: var(--card-shadow);
+    overflow-y: auto; padding: 16px;
+  }
+  .chat-conv-item {
+    display: flex; align-items: center; gap: 10px; padding: 10px;
+    border-radius: var(--radius-sm); cursor: pointer; transition: background 0.15s;
+  }
+  .chat-conv-item:hover, .chat-conv-item.active { background: var(--cream); }
+  .chat-conv-avatar {
+    width: 44px; height: 44px; border-radius: 50%; background: var(--cream);
+    border: 2px solid var(--paw-light); display: flex; align-items: center;
+    justify-content: center; font-size: 18px; flex-shrink: 0; overflow: hidden;
+  }
+  .chat-conv-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .chat-conv-name { font-weight: 800; font-size: 14px; }
+  .chat-conv-last { font-size: 12px; color: var(--bark-light); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
+  .chat-unread {
+    background: var(--paw); color: white; border-radius: 50%;
+    width: 18px; height: 18px; font-size: 11px; font-weight: 800;
+    display: flex; align-items: center; justify-content: center; margin-left: auto;
+  }
+  .chat-main {
+    background: white; border-radius: var(--radius); box-shadow: var(--card-shadow);
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .chat-header {
+    padding: 16px 20px; border-bottom: 2px solid var(--cream);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .chat-header-name { font-weight: 800; font-size: 16px; }
+  .chat-messages {
+    flex: 1; overflow-y: auto; padding: 16px;
+    display: flex; flex-direction: column; gap: 10px;
+    min-height: 300px; max-height: 420px;
+  }
+  .chat-msg {
+    max-width: 70%; padding: 10px 14px; border-radius: 16px;
+    font-size: 14px; font-weight: 600; line-height: 1.4;
+  }
+  .chat-msg.mine {
+    background: var(--paw); color: white;
+    align-self: flex-end; border-bottom-right-radius: 4px;
+  }
+  .chat-msg.theirs {
+    background: var(--cream); color: var(--bark);
+    align-self: flex-start; border-bottom-left-radius: 4px;
+  }
+  .chat-msg-time { font-size: 10px; opacity: 0.7; margin-top: 3px; }
+  .chat-input-row {
+    padding: 12px 16px; border-top: 2px solid var(--cream);
+    display: flex; gap: 10px; align-items: center;
+  }
+  .chat-input {
+    flex: 1; background: var(--cream); border: 2px solid transparent;
+    border-radius: 22px; padding: 10px 16px;
+    font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 600; color: var(--bark);
+  }
+  .chat-input:focus { outline: none; border-color: var(--paw-light); }
+  .btn-chat-send {
+    background: var(--paw); color: white; border: none; border-radius: 22px;
+    padding: 10px 18px; font-size: 14px; font-weight: 800;
+    font-family: 'Nunito', sans-serif; cursor: pointer;
+  }
+  .btn-chat-send:hover { background: var(--bark); }
+  .chat-empty {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    height: 100%; color: var(--bark-light); font-weight: 700; gap: 12px; font-size: 15px;
+  }
+  .chat-empty .emoji { font-size: 48px; }
+
   /* demo */
   .demo-btn {
     display: flex; align-items: center; justify-content: center; gap: 10px;
@@ -890,6 +1028,7 @@
         <button class="nav-tab active" id="tab-feed" onclick="showPage('feed')">🏠 Tablica</button>
         <button class="nav-tab" id="tab-explore" onclick="showPage('explore')">🔍 Odkryj</button>
         <button class="nav-tab" id="tab-mypets" onclick="showPage('mypets')">🐾 Moje zwierzęta</button>
+        <button class="nav-tab" id="tab-chat" onclick="showPage('chat')">💬 Czat</button>
       </div>
       <div class="nav-user">
         <div id="nav-avatar-wrap"></div>
@@ -966,6 +1105,14 @@
           <button class="btn-search-filter" onclick="runExploreSearch()">Szukaj</button>
         </div>
       </div>
+      <!-- MAP -->
+      <div class="map-radius-bar">
+        <label>🗺️ Mapa okolicy</label>
+        <input type="range" min="0" max="100" value="0" step="5" oninput="updateExploreRadius(this.value)" id="radius-slider">
+        <span id="radius-val">wszędzie</span>
+        <span style="font-size:13px;font-weight:600;color:var(--bark-light)">Pokaż w promieniu</span>
+      </div>
+      <div id="explore-map-container"><div id="map-explore"></div></div>
       <div id="explore-results" class="pets-grid"></div>
     </div>
   </div>
@@ -973,9 +1120,12 @@
   <!-- MY PETS PAGE -->
   <div id="page-mypets" style="display:none">
     <div style="max-width:800px;margin:0 auto;padding:24px 20px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px">
         <h2 style="font-family:'Fraunces',serif;font-size:28px;font-weight:700">Moje zwierzęta</h2>
-        <button class="btn-save" onclick="openAddPetModal()">➕ Dodaj zwierzę</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn-save" style="background:var(--grass)" onclick="openJoinPetModal()">🔑 Dołącz kodem</button>
+          <button class="btn-save" onclick="openAddPetModal()">➕ Dodaj zwierzę</button>
+        </div>
       </div>
       <div id="mypets-list" class="pets-grid"></div>
     </div>
@@ -989,7 +1139,24 @@
     </div>
   </div>
 
+  <!-- CHAT PAGE -->
+  <div id="page-chat" style="display:none">
+    <div class="chat-layout">
+      <div class="chat-sidebar">
+        <div class="section-title">💬 Wiadomości</div>
+        <div id="chat-conversations-list">
+          <div class="empty-state" style="padding:20px 0"><div class="emoji" style="font-size:32px">💬</div><p style="font-size:13px">Brak rozmów</p></div>
+        </div>
+        <button class="btn-add-pet" style="margin-top:12px" onclick="openNewChatModal()">✉️ Nowa wiadomość</button>
+      </div>
+      <div class="chat-main" id="chat-main-panel">
+        <div class="chat-empty"><div class="emoji">💬</div><div>Wybierz rozmowę lub zacznij nową</div></div>
+      </div>
+    </div>
+  </div>
+
   <!-- MOBILE BOTTOM NAV -->
+
   <nav class="bottom-nav">
     <button class="bottom-tab active" id="btab-feed" onclick="showPage('feed')">
       <span class="bottom-tab-icon">🏠</span>Tablica
@@ -999,6 +1166,9 @@
     </button>
     <button class="bottom-tab" id="btab-mypets" onclick="showPage('mypets')">
       <span class="bottom-tab-icon">🐾</span>Moje
+    </button>
+    <button class="bottom-tab" id="btab-chat" onclick="showPage('chat')">
+      <span class="bottom-tab-icon">💬</span>Czat
     </button>
   </nav>
 </div>
@@ -1038,8 +1208,12 @@
       <input class="form-input" id="pet-age" type="number" placeholder="np. 3" min="0" max="30">
     </div>
     <div class="form-group">
-      <label class="form-label">Miasto / Lokalizacja</label>
-      <input class="form-input" id="pet-location" placeholder="np. Warszawa, Kraków...">
+      <label class="form-label">Strefa spacerów (mapa)</label>
+      <div id="map-pick"></div>
+      <input type="hidden" id="pet-lat">
+      <input type="hidden" id="pet-lng">
+      <div class="map-location-info" id="map-pick-info">📍 Kliknij na mapie aby wybrać lokalizację</div>
+      <input class="form-input" id="pet-location" placeholder="np. Warszawa, Mokotów..." style="margin-top:8px">
     </div>
     <div class="form-group">
       <label class="form-label">Bio / opis</label>
@@ -1052,6 +1226,65 @@
   </div>
 </div>
 
+<!-- DELETE PET MODAL -->
+<div class="modal-overlay" id="delete-pet-modal">
+  <div class="modal-box">
+    <div class="modal-title">🗑️ Usuń zwierzę</div>
+    <p style="font-size:15px;font-weight:600;line-height:1.6;margin-bottom:8px">Czy na pewno chcesz usunąć profil <strong id="delete-pet-name-label"></strong>?</p>
+    <p style="font-size:13px;color:#e53935;font-weight:700">⚠️ Tej operacji nie można cofnąć. Wszystkie posty zostaną zachowane.</p>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('delete-pet-modal')">Anuluj</button>
+      <button class="btn-danger" onclick="confirmDeletePet()">Usuń na zawsze</button>
+    </div>
+  </div>
+</div>
+
+<!-- CO-OWNERS MODAL -->
+<div class="modal-overlay" id="coowners-modal">
+  <div class="modal-box">
+    <div class="modal-title">👥 Opiekunowie</div>
+    <div id="coowners-list-content"></div>
+    <div style="margin-top:20px">
+      <div class="form-label">Zaproś nowego opiekuna</div>
+      <p style="font-size:13px;font-weight:600;color:var(--bark-light);margin-bottom:10px">Podaj ten kod innemu użytkownikowi PetsBook. Po wpisaniu go w sekcji "Dołącz do zwierzęcia" na stronie Moje zwierzęta, uzyska dostęp do edycji.</p>
+      <div class="invite-code-box" id="invite-code-display" onclick="copyInviteCode()" title="Kliknij aby skopiować"></div>
+      <div class="map-location-info">🔁 Kliknij kod aby skopiować • Generuj nowy poniżej</div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn-save" style="flex:1" onclick="generateNewInviteCode()">🔄 Nowy kod</button>
+        <button class="btn-cancel" onclick="closeModal('coowners-modal')">Zamknij</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- JOIN PET MODAL (wpisz kod zaproszenia) -->
+<div class="modal-overlay" id="join-pet-modal">
+  <div class="modal-box">
+    <div class="modal-title">🔑 Dołącz do zwierzęcia</div>
+    <p style="font-size:14px;font-weight:600;line-height:1.6;margin-bottom:16px">Wpisz kod zaproszenia otrzymany od właściciela zwierzęcia, aby zostać opiekunem.</p>
+    <div class="form-group">
+      <label class="form-label">Kod zaproszenia</label>
+      <input class="form-input" id="join-code-input" placeholder="np. AB12CD" style="letter-spacing:4px;font-size:18px;text-align:center;text-transform:uppercase">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('join-pet-modal')">Anuluj</button>
+      <button class="btn-save" onclick="joinPetByCode()">Dołącz 🐾</button>
+    </div>
+  </div>
+</div>
+
+<!-- NEW CHAT MODAL -->
+<div class="modal-overlay" id="new-chat-modal">
+  <div class="modal-box">
+    <div class="modal-title">✉️ Nowa wiadomość</div>
+    <p style="font-size:14px;font-weight:600;margin-bottom:16px;color:var(--bark-light)">Możesz napisać do opiekunów zwierząt, z którymi jesteś połączony (współopiekunowie).</p>
+    <div id="new-chat-users-list"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('new-chat-modal')">Anuluj</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
@@ -1060,7 +1293,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut as fbSignOut }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getDatabase, ref, push, set, get, update, onValue, query, orderByChild, limitToLast }
+import { getDatabase, ref, push, set, get, update, remove, onValue, query, orderByChild, equalTo, limitToLast }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 // Cloudinary used for image uploads (no Firebase Storage needed)
 
@@ -1164,8 +1397,10 @@ function loadMyPets() {
     if (snap.exists()) {
       snap.forEach(child => {
         const p = child.val();
-        if (p.ownerId === currentUser.uid) {
-          myPets[child.key] = p;
+        const isMine = p.ownerId === currentUser.uid;
+        const isCo = p.coOwners && p.coOwners[currentUser.uid];
+        if (!isMine && !isCo) return;
+        myPets[child.key] = p;
           const emoji = speciesEmoji(p.species);
           const avatarHTML = p.avatarUrl
             ? `<img src="${p.avatarUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">`
@@ -1195,7 +1430,6 @@ function loadMyPets() {
                 ${p.location ? `<div class="pet-card-location">📍 ${p.location}</div>` : ''}
               </div>
             </div>`;
-        }
       });
     }
 
@@ -1210,6 +1444,9 @@ window.openAddPetModal = (petId = null) => {
   document.getElementById('add-pet-modal-title').textContent = petId ? '✏️ Edytuj zwierzę' : '🐾 Dodaj zwierzę';
   document.getElementById('avatar-preview').style.display = 'none';
   document.getElementById('avatar-upload-text').style.display = 'block';
+  document.getElementById('pet-lat').value = '';
+  document.getElementById('pet-lng').value = '';
+  document.getElementById('map-pick-info').textContent = '📍 Kliknij na mapie aby wybrać lokalizację';
 
   if (petId && myPets[petId]) {
     const p = myPets[petId];
@@ -1222,6 +1459,9 @@ window.openAddPetModal = (petId = null) => {
     if (p.avatarUrl) {
       document.getElementById('avatar-preview').src = p.avatarUrl;
       document.getElementById('avatar-preview').style.display = 'block';
+    }
+    if (p.lat && p.lng) {
+      setTimeout(() => setPickMapMarkerV1(p.lat, p.lng), 300);
     }
   } else {
     ['pet-name','pet-breed','pet-age','pet-location','pet-bio'].forEach(id => document.getElementById(id).value = '');
@@ -1260,6 +1500,11 @@ window.savePet = async () => {
     ownerName: currentUser.displayName || 'Właściciel',
     createdAt: Date.now()
   };
+
+  // Save map coordinates if picked
+  const lat = document.getElementById('pet-lat').value;
+  const lng = document.getElementById('pet-lng').value;
+  if (lat && lng) { petData.lat = parseFloat(lat); petData.lng = parseFloat(lng); }
 
   // Upload avatar if selected
   if (petAvatarFile) {
@@ -1457,17 +1702,22 @@ window.showPetProfile = async (petId) => {
   const p = snap.val();
   const emoji = speciesEmoji(p.species);
   const isOwner = p.ownerId === currentUser.uid;
+  const isCo = p.coOwners && p.coOwners[currentUser.uid];
+  const canEdit = isOwner || isCo;
   const avatarHTML = p.avatarUrl
     ? `<img src="${p.avatarUrl}">`
     : `<span style="font-size:44px">${emoji}</span>`;
+
+  // Co-owners count
+  const coOwnersCount = p.coOwners ? Object.keys(p.coOwners).length : 0;
 
   document.getElementById('profile-content').innerHTML = `
     <div class="profile-hero">
       <div class="profile-cover"></div>
       <div class="profile-info">
-        <div class="profile-big-avatar" ${isOwner ? `onclick="document.getElementById('edit-avatar-input').click()"` : ''}>
+        <div class="profile-big-avatar" ${canEdit ? `onclick="document.getElementById('edit-avatar-input').click()"` : ''}>
           ${avatarHTML}
-          ${isOwner ? '<div class="edit-overlay">📷</div>' : ''}
+          ${canEdit ? '<div class="edit-overlay">📷</div>' : ''}
         </div>
         <div class="profile-text">
           <div class="profile-pet-name">${p.name}</div>
@@ -1476,13 +1726,18 @@ window.showPetProfile = async (petId) => {
             ${p.breed ? `<span class="profile-tag">${p.breed}</span>` : ''}
             ${p.age ? `<span class="profile-tag">🎂 ${p.age} lat</span>` : ''}
             ${p.location ? `<span class="profile-tag location">📍 ${p.location}</span>` : ''}
+            <span class="profile-tag" style="cursor:pointer" onclick="openCoOwnersModal('${petId}')">👥 ${1 + coOwnersCount} opiekun${coOwnersCount >= 1 ? 'ów' : ''}</span>
           </div>
         </div>
-        ${isOwner ? `<button class="btn-save" onclick="openAddPetModal('${petId}')" style="align-self:flex-start;margin-top:54px">✏️ Edytuj</button>` : ''}
+        <div style="display:flex;gap:8px;align-self:flex-start;margin-top:54px;flex-wrap:wrap">
+          ${canEdit ? `<button class="btn-save" onclick="openAddPetModal('${petId}')">✏️ Edytuj</button>` : ''}
+          ${canEdit ? `<button class="btn-save" style="background:var(--grass)" onclick="openCoOwnersModal('${petId}')">👥 Opiekunowie</button>` : ''}
+          ${isOwner ? `<button class="btn-danger" onclick="openDeletePetModal('${petId}')">🗑️ Usuń</button>` : ''}
+        </div>
       </div>
       ${p.bio ? `<div class="profile-bio">${escapeHtml(p.bio)}</div>` : ''}
     </div>
-    ${isOwner ? `<input type="file" accept="image/*" id="edit-avatar-input" style="display:none" onchange="updatePetAvatar(this,'${petId}')">` : ''}
+    ${canEdit ? `<input type="file" accept="image/*" id="edit-avatar-input" style="display:none" onchange="updatePetAvatar(this,'${petId}')">` : ''}
     <h3 style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;margin-bottom:16px">Posty</h3>`;
 
   currentProfilePetId = petId;
@@ -1587,20 +1842,26 @@ window.initExplore = async () => {
   document.getElementById('filter-location').value = '';
   document.getElementById('filter-breed').value = '';
   await runExploreSearch();
+  if (!isDemoMode) {
+    setTimeout(() => {
+      initExploreMap();
+    }, 100);
+  }
 };
 
 // ═══════════════════════════════════
 //  PAGE NAVIGATION
 // ═══════════════════════════════════
 window.showPage = (page) => {
-  ['feed','explore','mypets','profile'].forEach(p => {
+  ['feed','explore','mypets','profile','chat'].forEach(p => {
     document.getElementById(`page-${p}`).style.display = p === page ? 'block' : 'none';
   });
-  ['feed','explore','mypets'].forEach(t => {
+  ['feed','explore','mypets','chat'].forEach(t => {
     document.getElementById(`tab-${t}`)?.classList.toggle('active', t === page);
     document.getElementById(`btab-${t}`)?.classList.toggle('active', t === page);
   });
   if (page === 'explore') initExplore();
+  if (page === 'chat' && !isDemoMode) initChatPage();
   if (page === 'mypets') {} // already reactive
 };
 
@@ -1643,8 +1904,399 @@ function escapeHtml(s) {
 }
 
 // ═══════════════════════════════════
+//  🗑️  USUWANIE ZWIERZĘCIA
+// ═══════════════════════════════════
+let deletingPetId = null;
+
+window.openDeletePetModal = (petId) => {
+  deletingPetId = petId;
+  const p = myPets[petId];
+  document.getElementById('delete-pet-name-label').textContent = p ? `"${p.name}"` : 'to zwierzę';
+  openModal('delete-pet-modal');
+};
+
+window.confirmDeletePet = async () => {
+  if (!deletingPetId) return;
+  showToast('Usuwam...');
+  try {
+    await remove(ref(db, `pets/${deletingPetId}`));
+    closeModal('delete-pet-modal');
+    showToast('Zwierzę usunięte 🗑️');
+    showPage('mypets');
+    deletingPetId = null;
+  } catch(e) { showToast('Błąd usuwania: ' + e.message); }
+};
+
+// ═══════════════════════════════════
+//  👥  SYSTEM WIELU OPIEKUNÓW
+// ═══════════════════════════════════
+// Generowanie 6-znakowego kodu
+function generateCode() {
+  return Math.random().toString(36).substring(2, 8).toUpperCase();
+}
+
+// Sprawdź czy użytkownik jest opiekunem danego zwierzęcia
+function isCoOwner(petData) {
+  if (!petData || !currentUser) return false;
+  if (petData.ownerId === currentUser.uid) return true;
+  if (petData.coOwners && petData.coOwners[currentUser.uid]) return true;
+  return false;
+}
+
+window.openCoOwnersModal = async (petId) => {
+  const snap = await get(ref(db, `pets/${petId}`));
+  if (!snap.exists()) return;
+  const p = snap.val();
+  const isMainOwner = p.ownerId === currentUser.uid;
+
+  // Build co-owners HTML
+  let html = '<div class="coowners-list">';
+  // Main owner
+  html += `<div class="coowner-item"><div class="coowner-avatar">👑</div><div class="coowner-name">${p.ownerName || 'Właściciel'}</div><span class="coowner-badge">Właściciel</span></div>`;
+  // Co-owners
+  if (p.coOwners) {
+    Object.entries(p.coOwners).forEach(([uid, co]) => {
+      const photoHTML = co.photoURL ? `<img src="${co.photoURL}" referrerpolicy="no-referrer">` : '👤';
+      html += `<div class="coowner-item">
+        <div class="coowner-avatar">${photoHTML}</div>
+        <div class="coowner-name">${co.displayName || 'Opiekun'}</div>
+        <span class="coowner-badge">Opiekun</span>
+        ${isMainOwner ? `<button class="btn-danger" style="padding:4px 10px;font-size:12px" onclick="removeCoOwnerV1('${petId}','${uid}')">✕</button>` : ''}
+      </div>`;
+    });
+  }
+  html += '</div>';
+  document.getElementById('coowners-list-content').innerHTML = html;
+
+  // Invite code
+  if (!p.inviteCode) {
+    const code = generateCode();
+    await update(ref(db, `pets/${petId}`), { inviteCode: code });
+    document.getElementById('invite-code-display').textContent = code;
+  } else {
+    document.getElementById('invite-code-display').textContent = p.inviteCode;
+  }
+  document.getElementById('invite-code-display').setAttribute('data-petid', petId);
+  openModal('coowners-modal');
+};
+
+window.copyInviteCode = () => {
+  const code = document.getElementById('invite-code-display').textContent;
+  navigator.clipboard.writeText(code).then(() => showToast('Kod skopiowany! 📋'));
+};
+
+window.generateNewInviteCode = async () => {
+  const petId = document.getElementById('invite-code-display').getAttribute('data-petid');
+  const code = generateCode();
+  await update(ref(db, `pets/${petId}`), { inviteCode: code });
+  document.getElementById('invite-code-display').textContent = code;
+  showToast('Nowy kod wygenerowany!');
+};
+
+window.removeCoOwnerV1 = async (petId, uid) => {
+  await remove(ref(db, `pets/${petId}/coOwners/${uid}`));
+  showToast('Opiekun usunięty');
+  openCoOwnersModal(petId);
+};
+
+window.openJoinPetModal = () => {
+  document.getElementById('join-code-input').value = '';
+  openModal('join-pet-modal');
+};
+
+window.joinPetByCode = async () => {
+  const code = document.getElementById('join-code-input').value.trim().toUpperCase();
+  if (!code) { showToast('Wpisz kod!'); return; }
+
+  const snap = await get(ref(db, 'pets'));
+  let foundId = null;
+  snap.forEach(c => {
+    if (c.val().inviteCode === code) foundId = c.key;
+  });
+
+  if (!foundId) { showToast('Nie znaleziono kodu. Sprawdź i spróbuj ponownie.'); return; }
+  const petSnap = await get(ref(db, `pets/${foundId}`));
+  const p = petSnap.val();
+  if (p.ownerId === currentUser.uid) { showToast('Jesteś już właścicielem tego zwierzęcia!'); return; }
+  if (p.coOwners && p.coOwners[currentUser.uid]) { showToast('Jesteś już opiekunem tego zwierzęcia!'); return; }
+
+  await update(ref(db, `pets/${foundId}/coOwners/${currentUser.uid}`), {
+    displayName: currentUser.displayName || 'Użytkownik',
+    photoURL: currentUser.photoURL || null,
+    addedAt: Date.now()
+  });
+  closeModal('join-pet-modal');
+  showToast(`Dołączyłeś do ${p.name}! 🐾`);
+};
+
+// ═══════════════════════════════════
+//  🗺️  LEAFLET MAP — PICKER & EXPLORE
+// ═══════════════════════════════════
+let pickMap = null;
+let pickMarker = null;
+let exploreMap = null;
+
+window.initPickMap = () => {
+  if (pickMap) return;
+  // Default: Warsaw
+  pickMap = L.map('map-pick').setView([52.23, 21.01], 11);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap'
+  }).addTo(pickMap);
+
+  pickMap.on('click', (e) => {
+    const { lat, lng } = e.latlng;
+    document.getElementById('pet-lat').value = lat.toFixed(5);
+    document.getElementById('pet-lng').value = lng.toFixed(5);
+    document.getElementById('map-pick-info').textContent = `📍 Wybrano: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    if (pickMarker) pickMarker.setLatLng([lat, lng]);
+    else pickMarker = L.marker([lat, lng]).addTo(pickMap);
+  });
+};
+
+// Call initPickMap when modal opens
+const _origOpenModal = window.openModal;
+window.openModal = (id) => {
+  _origOpenModal(id);
+  if (id === 'add-pet-modal') {
+    setTimeout(() => {
+      initPickMap();
+      if (pickMap) pickMap.invalidateSize();
+    }, 200);
+  }
+};
+
+// Set map marker when editing existing pet
+window.setPickMapMarkerV1 = (lat, lng) => {
+  if (!pickMap) return;
+  if (pickMarker) pickMarker.setLatLng([lat, lng]);
+  else pickMarker = L.marker([lat, lng]).addTo(pickMap);
+  pickMap.setView([lat, lng], 13);
+  document.getElementById('pet-lat').value = lat;
+  document.getElementById('pet-lng').value = lng;
+  document.getElementById('map-pick-info').textContent = `📍 Zaznaczona lokalizacja`;
+};
+
+// Explore map with radius filter
+function initExploreMap() {
+  // Remove old map container if exists, re-create
+  const container = document.getElementById('explore-map-container');
+  if (!container) return;
+
+  if (exploreMap) {
+    exploreMap.remove();
+    exploreMap = null;
+  }
+  container.innerHTML = '<div id="map-explore"></div>';
+
+  exploreMap = L.map('map-explore').setView([52.23, 21.01], 7);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap'
+  }).addTo(exploreMap);
+
+  refreshExploreMapPins();
+}
+
+async function refreshExploreMapPins(radiusKm = 0) {
+  if (!exploreMap) return;
+  // Clear existing markers
+  exploreMap.eachLayer(layer => {
+    if (layer instanceof L.Marker || layer instanceof L.Circle) exploreMap.removeLayer(layer);
+  });
+
+  const snap = await get(ref(db, 'pets'));
+  if (!snap.exists()) return;
+
+  let centerLat = null, centerLng = null;
+  let count = 0;
+  snap.forEach(c => {
+    const p = c.val();
+    if (!p.lat || !p.lng) return;
+    count++;
+    const emoji = speciesEmoji(p.species);
+    const popupContent = `
+      <div class="map-pet-popup" onclick="showPetProfile('${c.key}')">
+        ${p.avatarUrl ? `<img src="${p.avatarUrl}">` : `<div style="font-size:32px">${emoji}</div>`}
+        <strong>${p.name}</strong>
+        <span style="color:#888;font-size:11px">${p.species}${p.location ? ' · ' + p.location : ''}</span>
+      </div>`;
+    const marker = L.marker([p.lat, p.lng]).addTo(exploreMap);
+    marker.bindPopup(popupContent);
+    if (!centerLat) { centerLat = p.lat; centerLng = p.lng; }
+  });
+
+  if (count > 0) exploreMap.setView([centerLat, centerLng], 9);
+
+  // Radius filter
+  if (radiusKm > 0 && navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(pos => {
+      const { latitude, longitude } = pos.coords;
+      L.circle([latitude, longitude], { radius: radiusKm * 1000, color: 'var(--paw)', fillOpacity: 0.07 }).addTo(exploreMap);
+      exploreMap.setView([latitude, longitude], 10);
+    });
+  }
+}
+
+window.updateExploreRadius = (val) => {
+  document.getElementById('radius-val').textContent = val > 0 ? `${val} km` : 'wszędzie';
+  refreshExploreMapPins(Number(val));
+};
+
+// ═══════════════════════════════════
+//  💬  CZAT
+// ═══════════════════════════════════
+let activeChatId = null;
+let chatListener = null;
+
+function getChatId(uid1, uid2) {
+  return [uid1, uid2].sort().join('_');
+}
+
+async function initChatPage() {
+  // Load conversations for current user
+  const snap = await get(ref(db, `chats`));
+  const convEl = document.getElementById('chat-conversations-list');
+  const convos = [];
+
+  if (snap.exists()) {
+    snap.forEach(c => {
+      const chat = c.val();
+      const parts = c.key.split('_');
+      if (!parts.includes(currentUser.uid)) return;
+      const otherId = parts.find(p => p !== currentUser.uid);
+      const lastMsg = chat.messages ? Object.values(chat.messages).sort((a, b) => b.createdAt - a.createdAt)[0] : null;
+      convos.push({ chatId: c.key, otherId, otherName: chat[`name_${otherId}`] || 'Użytkownik', otherPhoto: chat[`photo_${otherId}`] || null, lastMsg });
+    });
+  }
+
+  convos.sort((a, b) => (b.lastMsg?.createdAt || 0) - (a.lastMsg?.createdAt || 0));
+
+  if (!convos.length) {
+    convEl.innerHTML = `<div class="empty-state" style="padding:20px 0"><div class="emoji" style="font-size:32px">💬</div><p style="font-size:13px">Brak rozmów</p></div>`;
+    return;
+  }
+
+  convEl.innerHTML = convos.map(c => {
+    const photoHTML = c.otherPhoto ? `<img src="${c.otherPhoto}" referrerpolicy="no-referrer">` : '👤';
+    return `<div class="chat-conv-item" onclick="openChatV1('${c.chatId}','${c.otherId}','${escapeHtml(c.otherName)}','${c.otherPhoto || ''}')" id="conv-item-${c.chatId}">
+      <div class="chat-conv-avatar">${photoHTML}</div>
+      <div style="flex:1;overflow:hidden">
+        <div class="chat-conv-name">${c.otherName}</div>
+        ${c.lastMsg ? `<div class="chat-conv-last">${escapeHtml(c.lastMsg.text || '📷')}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.openChatV1 = (chatId, otherId, otherName, otherPhoto) => {
+  activeChatId = chatId;
+  document.querySelectorAll('.chat-conv-item').forEach(el => el.classList.remove('active'));
+  document.getElementById(`conv-item-${chatId}`)?.classList.add('active');
+
+  const photoHTML = otherPhoto ? `<img src="${otherPhoto}" referrerpolicy="no-referrer" style="width:36px;height:36px;border-radius:50%;border:2px solid var(--paw-light)">` : '<div style="font-size:22px">👤</div>';
+  document.getElementById('chat-main-panel').innerHTML = `
+    <div class="chat-header">
+      ${photoHTML}
+      <div class="chat-header-name">${escapeHtml(otherName)}</div>
+    </div>
+    <div class="chat-messages" id="chat-messages-area"></div>
+    <div class="chat-input-row">
+      <input class="chat-input" id="chat-input-field" placeholder="Napisz wiadomość..." onkeydown="if(event.key==='Enter')sendChatMessageV1()">
+      <button class="btn-chat-send" onclick="sendChatMessageV1()">Wyślij</button>
+    </div>`;
+
+  // Listen for messages
+  if (chatListener) chatListener();
+  const msgsRef = ref(db, `chats/${chatId}/messages`);
+  chatListener = onValue(msgsRef, snap => {
+    const area = document.getElementById('chat-messages-area');
+    if (!area) return;
+    const msgs = [];
+    if (snap.exists()) snap.forEach(c => msgs.push({ id: c.key, ...c.val() }));
+    area.innerHTML = msgs.map(m => {
+      const mine = m.senderId === currentUser.uid;
+      return `<div class="chat-msg ${mine ? 'mine' : 'theirs'}">
+        ${escapeHtml(m.text)}
+        <div class="chat-msg-time">${timeAgo(m.createdAt)}</div>
+      </div>`;
+    }).join('');
+    area.scrollTop = area.scrollHeight;
+  });
+};
+
+window.sendChatMessageV1 = async () => {
+  const input = document.getElementById('chat-input-field');
+  const text = input.value.trim();
+  if (!text || !activeChatId) return;
+  input.value = '';
+  await push(ref(db, `chats/${activeChatId}/messages`), {
+    text,
+    senderId: currentUser.uid,
+    senderName: currentUser.displayName || 'Użytkownik',
+    createdAt: Date.now()
+  });
+};
+
+window.openNewChatModal = async () => {
+  // Find all co-owners of pets where current user is owner or co-owner
+  const snap = await get(ref(db, 'pets'));
+  const usersMap = {};
+  if (snap.exists()) {
+    snap.forEach(c => {
+      const p = c.val();
+      if (!isCoOwner(p)) return;
+      // Add main owner if not me
+      if (p.ownerId !== currentUser.uid) {
+        usersMap[p.ownerId] = { displayName: p.ownerName || 'Właściciel', photoURL: null };
+      }
+      // Add co-owners
+      if (p.coOwners) {
+        Object.entries(p.coOwners).forEach(([uid, co]) => {
+          if (uid !== currentUser.uid) usersMap[uid] = { displayName: co.displayName, photoURL: co.photoURL };
+        });
+      }
+    });
+  }
+
+  const users = Object.entries(usersMap);
+  const listEl = document.getElementById('new-chat-users-list');
+  if (!users.length) {
+    listEl.innerHTML = `<div class="empty-state" style="padding:20px 0"><div class="emoji">😔</div><p style="font-size:13px">Nie jesteś jeszcze opiekunem żadnego wspólnego zwierzęcia. Dodaj zwierzę lub dołącz do cudzego kodu zaproszenia.</p></div>`;
+  } else {
+    listEl.innerHTML = users.map(([uid, u]) => {
+      const photo = u.photoURL ? `<img src="${u.photoURL}" referrerpolicy="no-referrer">` : '👤';
+      return `<div class="coowner-item" style="cursor:pointer" onclick="startChatWithUserV1('${uid}','${escapeHtml(u.displayName)}','${u.photoURL || ''}')">
+        <div class="coowner-avatar">${photo}</div>
+        <div class="coowner-name">${u.displayName}</div>
+        <span style="font-size:13px;color:var(--paw)">→ Napisz</span>
+      </div>`;
+    }).join('');
+  }
+  openModal('new-chat-modal');
+};
+
+window.startChatWithUserV1 = async (otherId, otherName, otherPhoto) => {
+  closeModal('new-chat-modal');
+  const chatId = getChatId(currentUser.uid, otherId);
+
+  // Save metadata
+  const updates = {};
+  updates[`chats/${chatId}/name_${currentUser.uid}`] = currentUser.displayName || 'Użytkownik';
+  updates[`chats/${chatId}/photo_${currentUser.uid}`] = currentUser.photoURL || null;
+  updates[`chats/${chatId}/name_${otherId}`] = otherName;
+  updates[`chats/${chatId}/photo_${otherId}`] = otherPhoto || null;
+  await update(ref(db), updates);
+
+  showPage('chat');
+  // Refresh conv list then open
+  await initChatPage();
+  openChatV1(chatId, otherId, otherName, otherPhoto);
+};
+
+// ═══════════════════════════════════
 //  TRYB DEMO
 // ═══════════════════════════════════
+
 const DEMO_PETS = [
   { id: 'demo-1', name: 'Burek', species: 'Pies', breed: 'Labrador', age: '3', location: 'Warszawa', bio: 'Uwielbiam biegać po parku i gonić piłkę! Najszczęśliwszy pies na świecie 🎾', ownerId: 'demo-owner-1', ownerName: 'Marek K.', avatarUrl: 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=200&h=200&fit=crop' },
   { id: 'demo-2', name: 'Mruczek', species: 'Kot', breed: 'Maine Coon', age: '5', location: 'Kraków', bio: 'Jestem największym kotem w okolicy. Lubię drzemki w słońcu i tuńczyk z puszki 😺', ownerId: 'demo-owner-2', ownerName: 'Anna W.', avatarUrl: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=200&h=200&fit=crop' },
@@ -1798,6 +2450,10 @@ window.showPage = (page) => {
   _origShowPage(page);
   if (isDemoMode && page === 'explore') renderDemoExplore();
   if (isDemoMode && page === 'mypets') renderDemoMyPets();
+  if (isDemoMode && page === 'chat') {
+    document.getElementById('chat-conversations-list').innerHTML = `<div class="empty-state" style="padding:20px 0"><div class="emoji" style="font-size:32px">🔒</div><p style="font-size:13px">Zaloguj się aby używać czatu</p></div>`;
+    document.getElementById('chat-main-panel').innerHTML = `<div class="chat-empty"><div class="emoji">🔒</div><div>Zaloguj się aby pisać wiadomości</div></div>`;
+  }
 };
 
 function renderDemoExplore() {
