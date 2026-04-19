@@ -1,0 +1,1840 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PetsBook 🐾</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fraunces:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #FDF6EC;
+    --warm-white: #FFFBF5;
+    --bark: #3D2B1F;
+    --bark-light: #6B4C3B;
+    --paw: #E8734A;
+    --paw-light: #F5A07A;
+    --grass: #4A9B6F;
+    --sky: #6BAED6;
+    --gold: #F0B429;
+    --soft-shadow: 0 4px 24px rgba(61,43,31,0.10);
+    --card-shadow: 0 2px 16px rgba(61,43,31,0.08);
+    --radius: 18px;
+    --radius-sm: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--cream);
+    color: var(--bark);
+    min-height: 100vh;
+  }
+
+  /* ── AUTH SCREEN ── */
+  #auth-screen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #FDF6EC 0%, #F5E6D0 50%, #EDD5B8 100%);
+    position: relative;
+    overflow: hidden;
+  }
+  #auth-screen::before {
+    content: '🐾';
+    font-size: 320px;
+    position: absolute;
+    right: -60px;
+    bottom: -60px;
+    opacity: 0.06;
+    line-height: 1;
+    transform: rotate(-15deg);
+  }
+  .auth-box {
+    background: white;
+    border-radius: 28px;
+    padding: 52px 44px;
+    box-shadow: 0 20px 80px rgba(61,43,31,0.15);
+    text-align: center;
+    max-width: 420px;
+    width: 90%;
+    position: relative;
+    z-index: 1;
+  }
+  .auth-logo {
+    font-family: 'Fraunces', serif;
+    font-size: 42px;
+    font-weight: 700;
+    color: var(--bark);
+    letter-spacing: -1px;
+    margin-bottom: 6px;
+  }
+  .auth-logo span { color: var(--paw); }
+  .auth-tagline {
+    color: var(--bark-light);
+    font-size: 15px;
+    margin-bottom: 40px;
+    font-weight: 600;
+  }
+  .google-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: var(--bark);
+    color: white;
+    border: none;
+    border-radius: 14px;
+    padding: 16px 28px;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: 'Nunito', sans-serif;
+    cursor: pointer;
+    width: 100%;
+    transition: all 0.2s;
+  }
+  .google-btn:hover { background: var(--bark-light); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(61,43,31,0.2); }
+  .google-icon { width: 20px; height: 20px; }
+
+  /* ── TOP NAV ── */
+  #app { display: none; }
+  .topnav {
+    background: white;
+    border-bottom: 2px solid rgba(61,43,31,0.07);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 16px rgba(61,43,31,0.07);
+  }
+  .topnav-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    height: 62px;
+    gap: 12px;
+  }
+  .nav-logo {
+    font-family: 'Fraunces', serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--bark);
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .nav-logo span { color: var(--paw); }
+  .nav-search {
+    flex: 1;
+    max-width: 320px;
+    position: relative;
+  }
+  .nav-search input {
+    width: 100%;
+    background: var(--cream);
+    border: 2px solid transparent;
+    border-radius: 30px;
+    padding: 9px 16px 9px 40px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--bark);
+    transition: border-color 0.2s;
+  }
+  .nav-search input:focus { outline: none; border-color: var(--paw-light); }
+  .nav-search::before {
+    content: '🔍';
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
+    pointer-events: none;
+  }
+  .nav-tabs {
+    display: flex;
+    gap: 4px;
+    flex: 1;
+    justify-content: center;
+  }
+  .nav-tab {
+    padding: 8px 16px;
+    border-radius: 10px;
+    border: none;
+    background: none;
+    font-family: 'Nunito', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--bark-light);
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .nav-tab:hover { background: var(--cream); color: var(--bark); }
+  .nav-tab.active { background: var(--paw); color: white; }
+  .nav-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .nav-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--paw-light);
+    cursor: pointer;
+  }
+  .nav-avatar-placeholder {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--paw);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  .btn-signout {
+    background: none;
+    border: 2px solid rgba(61,43,31,0.15);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: 'Nunito', sans-serif;
+    color: var(--bark-light);
+    cursor: pointer;
+  }
+  .btn-signout:hover { border-color: var(--paw); color: var(--paw); }
+
+  /* ── LAYOUT ── */
+  .main-layout {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 24px 20px;
+    display: grid;
+    grid-template-columns: 280px 1fr 280px;
+    gap: 24px;
+  }
+  @media (max-width: 900px) {
+    .main-layout { grid-template-columns: 1fr; }
+    .sidebar-left, .sidebar-right { display: none; }
+  }
+
+  /* ── CARDS ── */
+  .card {
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: var(--card-shadow);
+    overflow: hidden;
+  }
+  .card-pad { padding: 20px; }
+  .section-title {
+    font-family: 'Fraunces', serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--bark);
+    margin-bottom: 16px;
+  }
+
+  /* ── MY PETS SIDEBAR ── */
+  .my-pet-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background 0.15s;
+    margin-bottom: 4px;
+  }
+  .my-pet-item:hover { background: var(--cream); }
+  .pet-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--paw-light);
+    flex-shrink: 0;
+    background: var(--cream);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+  }
+  .pet-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+  .pet-name { font-weight: 800; font-size: 14px; }
+  .pet-breed { font-size: 12px; color: var(--bark-light); font-weight: 600; }
+  .btn-add-pet {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--cream);
+    border: 2px dashed var(--paw-light);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    width: 100%;
+    font-family: 'Nunito', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--paw);
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 8px;
+  }
+  .btn-add-pet:hover { background: #FFF0E8; border-style: solid; }
+
+  /* ── CREATE POST ── */
+  .create-post {
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: var(--card-shadow);
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .create-post-top {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    margin-bottom: 12px;
+  }
+  .create-post textarea {
+    flex: 1;
+    border: 2px solid var(--cream);
+    border-radius: 14px;
+    padding: 12px 16px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--bark);
+    resize: none;
+    min-height: 70px;
+    transition: border-color 0.2s;
+    background: var(--cream);
+  }
+  .create-post textarea:focus { outline: none; border-color: var(--paw-light); background: white; }
+  .create-post-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .post-select {
+    background: var(--cream);
+    border: 2px solid transparent;
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--bark);
+    cursor: pointer;
+  }
+  .post-select:focus { outline: none; border-color: var(--paw-light); }
+  .btn-photo-upload {
+    background: var(--cream);
+    border: none;
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: 'Nunito', sans-serif;
+    color: var(--bark-light);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn-photo-upload:hover { background: #EDD5B8; }
+  .btn-post {
+    margin-left: auto;
+    background: var(--paw);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 9px 22px;
+    font-size: 14px;
+    font-weight: 800;
+    font-family: 'Nunito', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-post:hover { background: var(--bark); transform: translateY(-1px); }
+  #post-image-preview { max-width: 100%; border-radius: 12px; margin-top: 10px; display: none; }
+
+  /* ── FEED POSTS ── */
+  .post-card {
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: var(--card-shadow);
+    margin-bottom: 20px;
+    overflow: hidden;
+    animation: fadeUp 0.3s ease;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .post-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px 12px;
+  }
+  .post-pet-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--paw-light);
+    background: var(--cream);
+    flex-shrink: 0;
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  .post-pet-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+  .post-meta { flex: 1; }
+  .post-pet-name { font-weight: 800; font-size: 15px; cursor: pointer; }
+  .post-pet-name:hover { color: var(--paw); }
+  .post-owner { font-size: 12px; color: var(--bark-light); font-weight: 600; }
+  .post-time { font-size: 12px; color: #aaa; margin-left: auto; font-weight: 600; }
+  .post-text { padding: 0 20px 14px; font-size: 15px; line-height: 1.6; font-weight: 600; }
+  .post-img {
+    width: 100%;
+    max-height: 480px;
+    object-fit: cover;
+    display: block;
+  }
+  .post-actions {
+    display: flex;
+    padding: 10px 16px;
+    gap: 4px;
+    border-top: 2px solid var(--cream);
+  }
+  .action-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px;
+    border-radius: 10px;
+    border: none;
+    background: none;
+    font-family: 'Nunito', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--bark-light);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .action-btn:hover { background: var(--cream); color: var(--bark); }
+  .action-btn.liked { color: var(--paw); }
+  .action-btn .count { font-size: 13px; }
+
+  /* ── COMMENTS ── */
+  .comments-section { padding: 0 16px 16px; display: none; }
+  .comments-section.open { display: block; }
+  .comment-input-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    align-items: center;
+  }
+  .comment-input {
+    flex: 1;
+    background: var(--cream);
+    border: 2px solid transparent;
+    border-radius: 20px;
+    padding: 8px 14px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--bark);
+  }
+  .comment-input:focus { outline: none; border-color: var(--paw-light); }
+  .btn-send-comment {
+    background: var(--paw);
+    color: white;
+    border: none;
+    border-radius: 20px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: 'Nunito', sans-serif;
+    cursor: pointer;
+  }
+  .comment-item {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    align-items: flex-start;
+  }
+  .comment-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--cream);
+    flex-shrink: 0;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--paw-light);
+  }
+  .comment-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+  .comment-bubble {
+    background: var(--cream);
+    border-radius: 14px;
+    padding: 8px 12px;
+    flex: 1;
+  }
+  .comment-author { font-size: 12px; font-weight: 800; margin-bottom: 2px; }
+  .comment-text { font-size: 13px; font-weight: 600; line-height: 1.4; }
+
+  /* ── SEARCH / EXPLORE PAGE ── */
+  #page-explore { display: none; }
+  .filter-bar {
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: var(--card-shadow);
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+  .filter-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .filter-select {
+    background: var(--cream);
+    border: 2px solid transparent;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--bark);
+    cursor: pointer;
+    flex: 1;
+    min-width: 160px;
+  }
+  .filter-select:focus { outline: none; border-color: var(--paw-light); }
+  .btn-search-filter {
+    background: var(--paw);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 22px;
+    font-size: 14px;
+    font-weight: 800;
+    font-family: 'Nunito', sans-serif;
+    cursor: pointer;
+  }
+  .pets-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 20px;
+  }
+  .pet-card {
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: var(--card-shadow);
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    animation: fadeUp 0.3s ease;
+  }
+  .pet-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(61,43,31,0.14); }
+  .pet-card-img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    background: var(--cream);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 64px;
+  }
+  .pet-card-img img { width: 100%; height: 100%; object-fit: cover; }
+  .pet-card-info { padding: 14px 16px; }
+  .pet-card-name { font-weight: 900; font-size: 16px; margin-bottom: 4px; }
+  .pet-card-breed { font-size: 13px; color: var(--bark-light); font-weight: 600; margin-bottom: 6px; }
+  .pet-card-location { font-size: 12px; color: var(--grass); font-weight: 700; }
+
+  /* ── PET PROFILE PAGE ── */
+  #page-profile { display: none; }
+  .profile-hero {
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: var(--card-shadow);
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+  .profile-cover {
+    height: 200px;
+    background: linear-gradient(135deg, var(--paw-light), var(--gold));
+    position: relative;
+    overflow: hidden;
+  }
+  .profile-cover::after {
+    content: '🐾';
+    position: absolute;
+    right: 20px;
+    bottom: 10px;
+    font-size: 80px;
+    opacity: 0.2;
+  }
+  .profile-info {
+    padding: 20px 24px 24px;
+    display: flex;
+    gap: 20px;
+    align-items: flex-end;
+    position: relative;
+    margin-top: -50px;
+  }
+  .profile-big-avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    border: 5px solid white;
+    background: var(--cream);
+    font-size: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--soft-shadow);
+    flex-shrink: 0;
+    overflow: hidden;
+    position: relative;
+    cursor: pointer;
+  }
+  .profile-big-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .profile-big-avatar .edit-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    border-radius: 50%;
+  }
+  .profile-big-avatar:hover .edit-overlay { display: flex; }
+  .profile-text { flex: 1; padding-top: 54px; }
+  .profile-pet-name { font-family: 'Fraunces', serif; font-size: 28px; font-weight: 700; margin-bottom: 4px; }
+  .profile-tags { display: flex; gap: 8px; flex-wrap: wrap; }
+  .profile-tag {
+    background: var(--cream);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--bark-light);
+  }
+  .profile-tag.species { background: #FFF0E8; color: var(--paw); }
+  .profile-tag.location { background: #E8F5EE; color: var(--grass); }
+  .profile-bio {
+    padding: 0 24px 20px;
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--bark);
+    font-weight: 600;
+  }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(61,43,31,0.5);
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    backdrop-filter: blur(4px);
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: white;
+    border-radius: 24px;
+    padding: 32px;
+    max-width: 480px;
+    width: 100%;
+    box-shadow: 0 24px 80px rgba(61,43,31,0.2);
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .modal-title {
+    font-family: 'Fraunces', serif;
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 24px;
+    color: var(--bark);
+  }
+  .form-group { margin-bottom: 16px; }
+  .form-label { display: block; font-size: 13px; font-weight: 800; margin-bottom: 6px; color: var(--bark-light); text-transform: uppercase; letter-spacing: 0.5px; }
+  .form-input, .form-textarea, .form-select {
+    width: 100%;
+    background: var(--cream);
+    border: 2px solid transparent;
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--bark);
+    transition: border-color 0.2s;
+  }
+  .form-input:focus, .form-textarea:focus, .form-select:focus { outline: none; border-color: var(--paw-light); background: white; }
+  .form-textarea { min-height: 90px; resize: vertical; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 24px; justify-content: flex-end; }
+  .btn-cancel {
+    background: var(--cream);
+    border: none;
+    border-radius: 10px;
+    padding: 11px 20px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .btn-save {
+    background: var(--paw);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 11px 24px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 14px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+  .btn-save:hover { background: var(--bark); }
+  .avatar-upload-area {
+    border: 3px dashed var(--paw-light);
+    border-radius: 14px;
+    padding: 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--cream);
+  }
+  .avatar-upload-area:hover { background: #FFF0E8; border-color: var(--paw); }
+  .avatar-preview { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin: 0 auto 10px; display: none; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--bark);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 14px;
+    z-index: 9999;
+    transition: transform 0.3s;
+    white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ── SUGGESTIONS SIDEBAR ── */
+  .suggest-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background 0.15s;
+    margin-bottom: 4px;
+  }
+  .suggest-item:hover { background: var(--cream); }
+  .suggest-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--cream);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+    border: 2px solid var(--paw-light);
+    overflow: hidden;
+  }
+  .suggest-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .suggest-name { font-weight: 800; font-size: 13px; }
+  .suggest-breed { font-size: 11px; color: var(--bark-light); font-weight: 600; }
+
+  /* loading */
+  .loading-spinner {
+    text-align: center;
+    padding: 40px;
+    font-size: 32px;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--bark-light);
+  }
+  .empty-state .emoji { font-size: 48px; margin-bottom: 12px; }
+  .empty-state p { font-weight: 700; font-size: 15px; }
+
+  /* mobile bottom nav */
+  .bottom-nav {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-top: 2px solid var(--cream);
+    padding: 8px 0 env(safe-area-inset-bottom, 8px);
+    z-index: 100;
+  }
+  @media (max-width: 900px) {
+    .bottom-nav { display: flex; }
+    .nav-tabs { display: none; }
+    body { padding-bottom: 70px; }
+  }
+  .bottom-tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 6px;
+    border: none;
+    background: none;
+    font-family: 'Nunito', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--bark-light);
+    cursor: pointer;
+    transition: color 0.15s;
+  }
+  .bottom-tab.active { color: var(--paw); }
+  .bottom-tab-icon { font-size: 22px; }
+
+  /* demo */
+  .demo-btn {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    background: var(--cream); color: var(--bark-light);
+    border: 2px solid var(--paw-light); border-radius: 14px;
+    padding: 14px 28px; font-size: 15px; font-weight: 700;
+    font-family: 'Nunito', sans-serif; cursor: pointer; width: 100%;
+    transition: all 0.2s; margin-top: 4px;
+  }
+  .demo-btn:hover { background: #FFF0E8; border-color: var(--paw); color: var(--paw); }
+  .demo-banner {
+    background: linear-gradient(90deg, var(--gold), var(--paw-light));
+    color: var(--bark); text-align: center; padding: 8px 16px;
+    font-size: 13px; font-weight: 800; position: sticky; top: 62px; z-index: 99;
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+  }
+  .demo-banner button {
+    background: var(--bark); color: white; border: none; border-radius: 8px;
+    padding: 5px 14px; font-size: 12px; font-weight: 800;
+    font-family: 'Nunito', sans-serif; cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-logo">Pets<span>Book</span> 🐾</div>
+    <div class="auth-tagline">Sieć społecznościowa dla Twoich zwierząt</div>
+    <button class="google-btn" onclick="signInWithGoogle()">
+      <svg class="google-icon" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      Zaloguj się przez Google
+    </button>
+    <div style="display:flex;align-items:center;gap:12px;margin-top:16px">
+      <div style="flex:1;height:1px;background:#eee"></div>
+      <span style="font-size:12px;color:#ccc;font-weight:700">lub</span>
+      <div style="flex:1;height:1px;background:#eee"></div>
+    </div>
+    <button class="demo-btn" onclick="startDemo()">👀 Wypróbuj bez logowania</button>
+    <p style="margin-top:16px;font-size:12px;color:#bbb;font-weight:600;">Darmowe • Bez reklam • Tylko dla zwierząt 🐕🐈</p>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <!-- DEMO BANNER -->
+  <div class="demo-banner" id="demo-banner" style="display:none">
+    👀 Tryb demo — przeglądasz przykładowe konta zwierząt
+    <button onclick="exitDemo()">Zaloguj się</button>
+  </div>
+  <!-- TOP NAV -->
+  <nav class="topnav">
+    <div class="topnav-inner">
+      <div class="nav-logo" onclick="showPage('feed')">Pets<span>Book</span></div>
+      <div class="nav-search">
+        <input type="text" placeholder="Szukaj zwierząt..." id="global-search" oninput="handleSearch(this.value)">
+      </div>
+      <div class="nav-tabs">
+        <button class="nav-tab active" id="tab-feed" onclick="showPage('feed')">🏠 Tablica</button>
+        <button class="nav-tab" id="tab-explore" onclick="showPage('explore')">🔍 Odkryj</button>
+        <button class="nav-tab" id="tab-mypets" onclick="showPage('mypets')">🐾 Moje zwierzęta</button>
+      </div>
+      <div class="nav-user">
+        <div id="nav-avatar-wrap"></div>
+        <button class="btn-signout" onclick="signOut()">Wyloguj</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- FEED PAGE -->
+  <div id="page-feed">
+    <div class="main-layout">
+      <!-- LEFT SIDEBAR -->
+      <aside class="sidebar-left">
+        <div class="card card-pad">
+          <div class="section-title">Moje zwierzęta</div>
+          <div id="sidebar-my-pets"></div>
+          <button class="btn-add-pet" onclick="openAddPetModal()">➕ Dodaj zwierzę</button>
+        </div>
+      </aside>
+
+      <!-- FEED CENTER -->
+      <main>
+        <!-- Create Post -->
+        <div class="create-post">
+          <div class="create-post-top">
+            <div id="post-user-avatar" class="pet-avatar" style="font-size:22px">👤</div>
+            <textarea id="post-text" placeholder="Co słychać u Twoich zwierząt?"></textarea>
+          </div>
+          <img id="post-image-preview" alt="preview">
+          <div class="create-post-actions">
+            <select class="post-select" id="post-pet-select">
+              <option value="">Wybierz zwierzę...</option>
+            </select>
+            <label style="cursor:pointer">
+              <input type="file" accept="image/*" style="display:none" id="post-image-input" onchange="handlePostImage(this)">
+              <div class="btn-photo-upload">📷 Zdjęcie</div>
+            </label>
+            <button class="btn-post" onclick="submitPost()">Opublikuj 🐾</button>
+          </div>
+        </div>
+
+        <!-- Feed -->
+        <div id="feed-posts">
+          <div class="loading-spinner">🐾</div>
+        </div>
+      </main>
+
+      <!-- RIGHT SIDEBAR -->
+      <aside class="sidebar-right">
+        <div class="card card-pad">
+          <div class="section-title">Poznaj nowe zwierzęta</div>
+          <div id="sidebar-suggestions"></div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- EXPLORE PAGE -->
+  <div id="page-explore" style="display:none">
+    <div style="max-width:1100px;margin:0 auto;padding:24px 20px">
+      <div class="filter-bar">
+        <div class="filter-row">
+          <select class="filter-select" id="filter-species">
+            <option value="">🐾 Wszystkie gatunki</option>
+            <option value="Pies">🐕 Psy</option>
+            <option value="Kot">🐈 Koty</option>
+            <option value="Królik">🐇 Króliki</option>
+            <option value="Ptak">🦜 Ptaki</option>
+            <option value="Chomik">🐹 Chomiki</option>
+            <option value="Inne">🦎 Inne</option>
+          </select>
+          <input class="filter-select" type="text" id="filter-location" placeholder="📍 Miasto / region">
+          <input class="filter-select" type="text" id="filter-breed" placeholder="🔤 Rasa">
+          <button class="btn-search-filter" onclick="runExploreSearch()">Szukaj</button>
+        </div>
+      </div>
+      <div id="explore-results" class="pets-grid"></div>
+    </div>
+  </div>
+
+  <!-- MY PETS PAGE -->
+  <div id="page-mypets" style="display:none">
+    <div style="max-width:800px;margin:0 auto;padding:24px 20px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+        <h2 style="font-family:'Fraunces',serif;font-size:28px;font-weight:700">Moje zwierzęta</h2>
+        <button class="btn-save" onclick="openAddPetModal()">➕ Dodaj zwierzę</button>
+      </div>
+      <div id="mypets-list" class="pets-grid"></div>
+    </div>
+  </div>
+
+  <!-- PET PROFILE PAGE -->
+  <div id="page-profile" style="display:none">
+    <div style="max-width:800px;margin:0 auto;padding:24px 20px">
+      <div id="profile-content"></div>
+      <div id="profile-posts"></div>
+    </div>
+  </div>
+
+  <!-- MOBILE BOTTOM NAV -->
+  <nav class="bottom-nav">
+    <button class="bottom-tab active" id="btab-feed" onclick="showPage('feed')">
+      <span class="bottom-tab-icon">🏠</span>Tablica
+    </button>
+    <button class="bottom-tab" id="btab-explore" onclick="showPage('explore')">
+      <span class="bottom-tab-icon">🔍</span>Odkryj
+    </button>
+    <button class="bottom-tab" id="btab-mypets" onclick="showPage('mypets')">
+      <span class="bottom-tab-icon">🐾</span>Moje
+    </button>
+  </nav>
+</div>
+
+<!-- ADD/EDIT PET MODAL -->
+<div class="modal-overlay" id="add-pet-modal">
+  <div class="modal-box">
+    <div class="modal-title" id="add-pet-modal-title">🐾 Dodaj zwierzę</div>
+    <div class="form-group">
+      <label class="form-label">Zdjęcie profilowe</label>
+      <label style="cursor:pointer">
+        <input type="file" accept="image/*" style="display:none" id="pet-avatar-input" onchange="handleAvatarPreview(this)">
+        <div class="avatar-upload-area" id="avatar-upload-area">
+          <img id="avatar-preview" class="avatar-preview" alt="preview">
+          <div id="avatar-upload-text">📷 Kliknij aby dodać zdjęcie</div>
+        </div>
+      </label>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Imię zwierzęcia *</label>
+      <input class="form-input" id="pet-name" placeholder="np. Burek, Mruczek...">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Gatunek *</label>
+      <select class="form-select" id="pet-species">
+        <option value="">Wybierz...</option>
+        <option>Pies</option><option>Kot</option><option>Królik</option>
+        <option>Ptak</option><option>Chomik</option><option>Inne</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Rasa</label>
+      <input class="form-input" id="pet-breed" placeholder="np. Labrador, Dachshund...">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Wiek</label>
+      <input class="form-input" id="pet-age" type="number" placeholder="np. 3" min="0" max="30">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Miasto / Lokalizacja</label>
+      <input class="form-input" id="pet-location" placeholder="np. Warszawa, Kraków...">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Bio / opis</label>
+      <textarea class="form-textarea" id="pet-bio" placeholder="Kilka słów o swoim zwierzęciu..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('add-pet-modal')">Anuluj</button>
+      <button class="btn-save" onclick="savePet()">Zapisz 🐾</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- FIREBASE -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut as fbSignOut }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getDatabase, ref, push, set, get, update, onValue, query, orderByChild, limitToLast }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+// Cloudinary used for image uploads (no Firebase Storage needed)
+
+// ═══════════════════════════════════
+//  🔧  FIREBASE CONFIG — wstaw swoje dane poniżej
+// ═══════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyA0v4InL2jZ-ApajyqBFRTgD_G1P6QpkJI",
+  authDomain: "petsbook-f37d0.firebaseapp.com",
+  databaseURL: "https://petsbook-f37d0-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "petsbook-f37d0",
+  storageBucket: "petsbook-f37d0.firebasestorage.app",
+  messagingSenderId: "552063929911",
+  appId: "1:552063929911:web:daeee3eabd4592bcafb9b2",
+  measurementId: "G-2YESMQGB8R"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+const provider = new GoogleAuthProvider();
+
+// ── Cloudinary config ──
+const CLOUDINARY_CLOUD = 'dw1p2pqmn';
+const CLOUDINARY_PRESET = 'petsbook_unsigned';
+
+async function uploadToCloudinary(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', CLOUDINARY_PRESET);
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`, {
+    method: 'POST', body: formData
+  });
+  const data = await res.json();
+  if (!data.secure_url) throw new Error('Upload failed: ' + (data.error?.message || 'unknown'));
+  return data.secure_url;
+}
+
+// ── Global state ──
+let currentUser = null;
+let myPets = {};
+let editingPetId = null;
+let postImageFile = null;
+let petAvatarFile = null;
+let currentProfilePetId = null;
+
+// ── Auth ──
+window.signInWithGoogle = async () => {
+  try { await signInWithPopup(auth, provider); }
+  catch(e) { showToast('Błąd logowania: ' + e.message); }
+};
+window.signOut = async () => {
+  await fbSignOut(auth);
+  location.reload();
+};
+
+onAuthStateChanged(auth, user => {
+  if (user) {
+    currentUser = user;
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    initApp();
+  } else {
+    document.getElementById('auth-screen').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+  }
+});
+
+// ── Init ──
+async function initApp() {
+  // Nav avatar
+  const wrap = document.getElementById('nav-avatar-wrap');
+  if (currentUser.photoURL) {
+    wrap.innerHTML = `<img src="${currentUser.photoURL}" class="nav-avatar" referrerpolicy="no-referrer">`;
+  } else {
+    wrap.innerHTML = `<div class="nav-avatar-placeholder">👤</div>`;
+  }
+  // User post avatar
+  const pa = document.getElementById('post-user-avatar');
+  if (currentUser.photoURL) pa.innerHTML = `<img src="${currentUser.photoURL}" style="width:100%;height:100%;border-radius:50%;object-fit:cover" referrerpolicy="no-referrer">`;
+
+  loadMyPets();
+  loadFeed();
+  loadSuggestions();
+}
+
+// ═══════════════════════════════════
+//  PETS
+// ═══════════════════════════════════
+function loadMyPets() {
+  const r = ref(db, `pets`);
+  onValue(r, snap => {
+    myPets = {};
+    const petSelect = document.getElementById('post-pet-select');
+    petSelect.innerHTML = '<option value="">Wybierz zwierzę...</option>';
+    const sidebarEl = document.getElementById('sidebar-my-pets');
+    const mypetsList = document.getElementById('mypets-list');
+    let sidebarHTML = '';
+    let mypetsHTML = '';
+
+    if (snap.exists()) {
+      snap.forEach(child => {
+        const p = child.val();
+        if (p.ownerId === currentUser.uid) {
+          myPets[child.key] = p;
+          const emoji = speciesEmoji(p.species);
+          const avatarHTML = p.avatarUrl
+            ? `<img src="${p.avatarUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">`
+            : emoji;
+
+          petSelect.innerHTML += `<option value="${child.key}">${emoji} ${p.name}</option>`;
+
+          sidebarHTML += `
+            <div class="my-pet-item" onclick="showPetProfile('${child.key}')">
+              <div class="pet-avatar">${avatarHTML}</div>
+              <div>
+                <div class="pet-name">${p.name}</div>
+                <div class="pet-breed">${p.breed || p.species}</div>
+              </div>
+            </div>`;
+
+          const cardAvatarHTML = p.avatarUrl
+            ? `<img src="${p.avatarUrl}">`
+            : `<span style="font-size:64px;display:flex;align-items:center;justify-content:center;height:100%">${emoji}</span>`;
+
+          mypetsHTML += `
+            <div class="pet-card" onclick="showPetProfile('${child.key}')">
+              <div class="pet-card-img">${cardAvatarHTML}</div>
+              <div class="pet-card-info">
+                <div class="pet-card-name">${p.name}</div>
+                <div class="pet-card-breed">${p.breed || ''} ${p.breed ? '·' : ''} ${p.species}</div>
+                ${p.location ? `<div class="pet-card-location">📍 ${p.location}</div>` : ''}
+              </div>
+            </div>`;
+        }
+      });
+    }
+
+    sidebarEl.innerHTML = sidebarHTML || '<p style="font-size:13px;color:#aaa;font-weight:600;padding:8px">Brak zwierząt</p>';
+    mypetsList.innerHTML = mypetsHTML || `<div class="empty-state" style="grid-column:1/-1"><div class="emoji">🐾</div><p>Nie masz jeszcze żadnych zwierząt</p></div>`;
+  });
+}
+
+window.openAddPetModal = (petId = null) => {
+  editingPetId = petId;
+  petAvatarFile = null;
+  document.getElementById('add-pet-modal-title').textContent = petId ? '✏️ Edytuj zwierzę' : '🐾 Dodaj zwierzę';
+  document.getElementById('avatar-preview').style.display = 'none';
+  document.getElementById('avatar-upload-text').style.display = 'block';
+
+  if (petId && myPets[petId]) {
+    const p = myPets[petId];
+    document.getElementById('pet-name').value = p.name || '';
+    document.getElementById('pet-species').value = p.species || '';
+    document.getElementById('pet-breed').value = p.breed || '';
+    document.getElementById('pet-age').value = p.age || '';
+    document.getElementById('pet-location').value = p.location || '';
+    document.getElementById('pet-bio').value = p.bio || '';
+    if (p.avatarUrl) {
+      document.getElementById('avatar-preview').src = p.avatarUrl;
+      document.getElementById('avatar-preview').style.display = 'block';
+    }
+  } else {
+    ['pet-name','pet-breed','pet-age','pet-location','pet-bio'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('pet-species').value = '';
+  }
+  openModal('add-pet-modal');
+};
+
+window.handleAvatarPreview = (input) => {
+  const file = input.files[0];
+  if (!file) return;
+  petAvatarFile = file;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('avatar-preview').src = e.target.result;
+    document.getElementById('avatar-preview').style.display = 'block';
+    document.getElementById('avatar-upload-text').textContent = '✅ Zdjęcie wybrane';
+  };
+  reader.readAsDataURL(file);
+};
+
+window.savePet = async () => {
+  const name = document.getElementById('pet-name').value.trim();
+  const species = document.getElementById('pet-species').value;
+  if (!name) { showToast('Podaj imię zwierzęcia!'); return; }
+  if (!species) { showToast('Wybierz gatunek!'); return; }
+
+  showToast('Zapisuję...');
+  const petData = {
+    name, species,
+    breed: document.getElementById('pet-breed').value.trim(),
+    age: document.getElementById('pet-age').value || '',
+    location: document.getElementById('pet-location').value.trim(),
+    bio: document.getElementById('pet-bio').value.trim(),
+    ownerId: currentUser.uid,
+    ownerName: currentUser.displayName || 'Właściciel',
+    createdAt: Date.now()
+  };
+
+  // Upload avatar if selected
+  if (petAvatarFile) {
+    try {
+      petData.avatarUrl = await uploadToCloudinary(petAvatarFile);
+    } catch(e) { console.error('Avatar upload error:', e); showToast('Błąd uploadu zdjęcia'); }
+  } else if (editingPetId && myPets[editingPetId]?.avatarUrl) {
+    petData.avatarUrl = myPets[editingPetId].avatarUrl;
+  }
+
+  if (editingPetId) {
+    await update(ref(db, `pets/${editingPetId}`), petData);
+    showToast('Zaktualizowano profil! 🐾');
+  } else {
+    await push(ref(db, 'pets'), petData);
+    showToast('Dodano zwierzę! 🎉');
+  }
+  closeModal('add-pet-modal');
+};
+
+// ═══════════════════════════════════
+//  FEED / POSTS
+// ═══════════════════════════════════
+function loadFeed() {
+  const feedRef = query(ref(db, 'posts'), orderByChild('createdAt'), limitToLast(30));
+  onValue(feedRef, snap => {
+    const posts = [];
+    if (snap.exists()) snap.forEach(c => posts.unshift({ id: c.key, ...c.val() }));
+    renderFeed(posts);
+    loadSuggestions();
+  });
+}
+
+function renderFeed(posts) {
+  const el = document.getElementById('feed-posts');
+  if (!posts.length) {
+    el.innerHTML = `<div class="empty-state"><div class="emoji">🐾</div><p>Brak postów — dodaj swoje zwierzę i opublikuj coś!</p></div>`;
+    return;
+  }
+  el.innerHTML = posts.map(p => renderPostCard(p)).join('');
+}
+
+function renderPostCard(p) {
+  const emoji = speciesEmoji(p.petSpecies);
+  const avatarHTML = p.petAvatarUrl
+    ? `<img src="${p.petAvatarUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">`
+    : emoji;
+  const likes = p.likes ? Object.keys(p.likes).length : 0;
+  const comments = p.comments ? Object.keys(p.comments).length : 0;
+  const isLiked = p.likes && p.likes[currentUser.uid];
+  const timeStr = timeAgo(p.createdAt);
+
+  return `
+    <div class="post-card" id="post-${p.id}">
+      <div class="post-header">
+        <div class="post-pet-avatar" onclick="showPetProfile('${p.petId}')">${avatarHTML}</div>
+        <div class="post-meta">
+          <div class="post-pet-name" onclick="showPetProfile('${p.petId}')">${p.petName || 'Zwierzę'}</div>
+          <div class="post-owner">właściciel: ${p.ownerName || ''}</div>
+        </div>
+        <div class="post-time">${timeStr}</div>
+      </div>
+      ${p.text ? `<div class="post-text">${escapeHtml(p.text)}</div>` : ''}
+      ${p.imageUrl ? `<img src="${p.imageUrl}" class="post-img" loading="lazy">` : ''}
+      <div class="post-actions">
+        <button class="action-btn ${isLiked ? 'liked' : ''}" onclick="toggleLike('${p.id}')">
+          ${isLiked ? '❤️' : '🤍'} <span class="count">${likes}</span>
+        </button>
+        <button class="action-btn" onclick="toggleComments('${p.id}')">
+          💬 <span class="count">${comments}</span>
+        </button>
+        <button class="action-btn" onclick="sharePost('${p.id}')">🔗 Udostępnij</button>
+      </div>
+      <div class="comments-section" id="comments-${p.id}">
+        <div class="comment-input-row">
+          <div class="comment-avatar" style="font-size:13px">${currentUser.photoURL ? `<img src="${currentUser.photoURL}" referrerpolicy="no-referrer">` : '👤'}</div>
+          <input class="comment-input" placeholder="Napisz komentarz..." id="comment-input-${p.id}" onkeydown="if(event.key==='Enter')sendComment('${p.id}')">
+          <button class="btn-send-comment" onclick="sendComment('${p.id}')">Wyślij</button>
+        </div>
+        <div id="comments-list-${p.id}">
+          ${renderComments(p.comments)}
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderComments(comments) {
+  if (!comments) return '';
+  return Object.entries(comments).map(([k, c]) => `
+    <div class="comment-item">
+      <div class="comment-avatar">${c.userPhotoUrl ? `<img src="${c.userPhotoUrl}" referrerpolicy="no-referrer">` : '👤'}</div>
+      <div class="comment-bubble">
+        <div class="comment-author">${c.userName || 'Użytkownik'}</div>
+        <div class="comment-text">${escapeHtml(c.text)}</div>
+      </div>
+    </div>`).join('');
+}
+
+window.handlePostImage = (input) => {
+  const file = input.files[0];
+  if (!file) return;
+  postImageFile = file;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const prev = document.getElementById('post-image-preview');
+    prev.src = e.target.result;
+    prev.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+};
+
+window.submitPost = async () => {
+  const text = document.getElementById('post-text').value.trim();
+  const petId = document.getElementById('post-pet-select').value;
+  if (!petId) { showToast('Wybierz zwierzę!'); return; }
+  if (!text && !postImageFile) { showToast('Napisz coś lub dodaj zdjęcie!'); return; }
+
+  const pet = myPets[petId];
+  if (!pet) { showToast('Błąd: zwierzę nie znalezione'); return; }
+
+  showToast('Publikuję...');
+  const postData = {
+    text,
+    petId,
+    petName: pet.name,
+    petSpecies: pet.species,
+    petAvatarUrl: pet.avatarUrl || null,
+    ownerName: currentUser.displayName || 'Właściciel',
+    ownerId: currentUser.uid,
+    createdAt: Date.now()
+  };
+
+  if (postImageFile) {
+    try {
+      postData.imageUrl = await uploadToCloudinary(postImageFile);
+    } catch(e) { console.error('Image upload error:', e); showToast('Błąd uploadu zdjęcia'); }
+  }
+
+  await push(ref(db, 'posts'), postData);
+  document.getElementById('post-text').value = '';
+  document.getElementById('post-image-preview').style.display = 'none';
+  document.getElementById('post-image-preview').src = '';
+  document.getElementById('post-pet-select').value = '';
+  postImageFile = null;
+  document.getElementById('post-image-input').value = '';
+  showToast('Opublikowano! 🎉');
+};
+
+window.toggleLike = async (postId) => {
+  const likeRef = ref(db, `posts/${postId}/likes/${currentUser.uid}`);
+  const snap = await get(likeRef);
+  if (snap.exists()) await set(likeRef, null);
+  else await set(likeRef, true);
+};
+
+window.toggleComments = (postId) => {
+  const el = document.getElementById(`comments-${postId}`);
+  el.classList.toggle('open');
+  if (el.classList.contains('open')) {
+    document.getElementById(`comment-input-${postId}`)?.focus();
+  }
+};
+
+window.sendComment = async (postId) => {
+  const input = document.getElementById(`comment-input-${postId}`);
+  const text = input.value.trim();
+  if (!text) return;
+  await push(ref(db, `posts/${postId}/comments`), {
+    text,
+    userId: currentUser.uid,
+    userName: currentUser.displayName || 'Użytkownik',
+    userPhotoUrl: currentUser.photoURL || null,
+    createdAt: Date.now()
+  });
+  input.value = '';
+  showToast('Komentarz dodany! 💬');
+  // refresh post comments
+  const snap = await get(ref(db, `posts/${postId}/comments`));
+  const listEl = document.getElementById(`comments-list-${postId}`);
+  if (listEl) listEl.innerHTML = renderComments(snap.val());
+};
+
+window.sharePost = (postId) => {
+  const url = `${location.origin}${location.pathname}#post-${postId}`;
+  navigator.clipboard.writeText(url).then(() => showToast('Link skopiowany! 🔗'));
+};
+
+// ═══════════════════════════════════
+//  PET PROFILE
+// ═══════════════════════════════════
+window.showPetProfile = async (petId) => {
+  showPage('profile');
+  const snap = await get(ref(db, `pets/${petId}`));
+  if (!snap.exists()) { showToast('Nie znaleziono zwierzęcia'); return; }
+  const p = snap.val();
+  const emoji = speciesEmoji(p.species);
+  const isOwner = p.ownerId === currentUser.uid;
+  const avatarHTML = p.avatarUrl
+    ? `<img src="${p.avatarUrl}">`
+    : `<span style="font-size:44px">${emoji}</span>`;
+
+  document.getElementById('profile-content').innerHTML = `
+    <div class="profile-hero">
+      <div class="profile-cover"></div>
+      <div class="profile-info">
+        <div class="profile-big-avatar" ${isOwner ? `onclick="document.getElementById('edit-avatar-input').click()"` : ''}>
+          ${avatarHTML}
+          ${isOwner ? '<div class="edit-overlay">📷</div>' : ''}
+        </div>
+        <div class="profile-text">
+          <div class="profile-pet-name">${p.name}</div>
+          <div class="profile-tags">
+            <span class="profile-tag species">${emoji} ${p.species}</span>
+            ${p.breed ? `<span class="profile-tag">${p.breed}</span>` : ''}
+            ${p.age ? `<span class="profile-tag">🎂 ${p.age} lat</span>` : ''}
+            ${p.location ? `<span class="profile-tag location">📍 ${p.location}</span>` : ''}
+          </div>
+        </div>
+        ${isOwner ? `<button class="btn-save" onclick="openAddPetModal('${petId}')" style="align-self:flex-start;margin-top:54px">✏️ Edytuj</button>` : ''}
+      </div>
+      ${p.bio ? `<div class="profile-bio">${escapeHtml(p.bio)}</div>` : ''}
+    </div>
+    ${isOwner ? `<input type="file" accept="image/*" id="edit-avatar-input" style="display:none" onchange="updatePetAvatar(this,'${petId}')">` : ''}
+    <h3 style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;margin-bottom:16px">Posty</h3>`;
+
+  currentProfilePetId = petId;
+  loadProfilePosts(petId);
+};
+
+async function loadProfilePosts(petId) {
+  const el = document.getElementById('profile-posts');
+  el.innerHTML = '<div class="loading-spinner">🐾</div>';
+  const snap = await get(ref(db, 'posts'));
+  const posts = [];
+  if (snap.exists()) snap.forEach(c => { if (c.val().petId === petId) posts.unshift({ id: c.key, ...c.val() }); });
+  el.innerHTML = posts.length ? posts.map(p => renderPostCard(p)).join('') : `<div class="empty-state"><div class="emoji">📸</div><p>Brak postów</p></div>`;
+}
+
+window.updatePetAvatar = async (input, petId) => {
+  const file = input.files[0];
+  if (!file) return;
+  showToast('Aktualizuję zdjęcie...');
+  try {
+    const url = await uploadToCloudinary(file);
+    await update(ref(db, `pets/${petId}`), { avatarUrl: url });
+    showToast('Zdjęcie zaktualizowane! 📷');
+    showPetProfile(petId);
+  } catch(e) { showToast('Błąd: ' + e.message); }
+};
+
+// ═══════════════════════════════════
+//  EXPLORE / SEARCH
+// ═══════════════════════════════════
+async function loadSuggestions() {
+  const snap = await get(ref(db, 'pets'));
+  const el = document.getElementById('sidebar-suggestions');
+  if (!snap.exists() || !el) return;
+  const pets = [];
+  snap.forEach(c => { if (c.val().ownerId !== currentUser.uid) pets.push({ id: c.key, ...c.val() }); });
+  const shown = pets.sort(() => Math.random() - 0.5).slice(0, 5);
+  el.innerHTML = shown.map(p => {
+    const emoji = speciesEmoji(p.species);
+    const avatarHTML = p.avatarUrl ? `<img src="${p.avatarUrl}">` : emoji;
+    return `<div class="suggest-item" onclick="showPetProfile('${p.id}')">
+      <div class="suggest-avatar">${avatarHTML}</div>
+      <div>
+        <div class="suggest-name">${p.name}</div>
+        <div class="suggest-breed">${p.breed || p.species} ${p.location ? '· ' + p.location : ''}</div>
+      </div>
+    </div>`;
+  }).join('') || '<p style="font-size:13px;color:#aaa;font-weight:600">Brak sugestii</p>';
+}
+
+window.runExploreSearch = async () => {
+  const species = document.getElementById('filter-species').value;
+  const location = document.getElementById('filter-location').value.trim().toLowerCase();
+  const breed = document.getElementById('filter-breed').value.trim().toLowerCase();
+  const el = document.getElementById('explore-results');
+  el.innerHTML = '<div class="loading-spinner" style="grid-column:1/-1">🐾</div>';
+
+  const snap = await get(ref(db, 'pets'));
+  let results = [];
+  if (snap.exists()) {
+    snap.forEach(c => {
+      const p = { id: c.key, ...c.val() };
+      if (species && p.species !== species) return;
+      if (location && !(p.location || '').toLowerCase().includes(location)) return;
+      if (breed && !(p.breed || '').toLowerCase().includes(breed)) return;
+      results.push(p);
+    });
+  }
+
+  if (!results.length) {
+    el.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="emoji">🔍</div><p>Brak wyników</p></div>`;
+    return;
+  }
+  el.innerHTML = results.map(p => {
+    const emoji = speciesEmoji(p.species);
+    const cardAvatarHTML = p.avatarUrl
+      ? `<img src="${p.avatarUrl}">`
+      : `<span style="font-size:64px;display:flex;align-items:center;justify-content:height:200px;justify-content:center;align-items:center;height:200px">${emoji}</span>`;
+    return `
+      <div class="pet-card" onclick="showPetProfile('${p.id}')">
+        <div class="pet-card-img">${cardAvatarHTML}</div>
+        <div class="pet-card-info">
+          <div class="pet-card-name">${p.name}</div>
+          <div class="pet-card-breed">${p.breed || ''} ${p.breed ? '·' : ''} ${p.species}</div>
+          ${p.location ? `<div class="pet-card-location">📍 ${p.location}</div>` : ''}
+        </div>
+      </div>`;
+  }).join('');
+};
+
+window.handleSearch = (val) => {
+  if (val.length > 1) {
+    showPage('explore');
+    document.getElementById('filter-breed').value = val;
+    runExploreSearch();
+  }
+};
+
+// load explore initially
+window.initExplore = async () => {
+  document.getElementById('filter-species').value = '';
+  document.getElementById('filter-location').value = '';
+  document.getElementById('filter-breed').value = '';
+  await runExploreSearch();
+};
+
+// ═══════════════════════════════════
+//  PAGE NAVIGATION
+// ═══════════════════════════════════
+window.showPage = (page) => {
+  ['feed','explore','mypets','profile'].forEach(p => {
+    document.getElementById(`page-${p}`).style.display = p === page ? 'block' : 'none';
+  });
+  ['feed','explore','mypets'].forEach(t => {
+    document.getElementById(`tab-${t}`)?.classList.toggle('active', t === page);
+    document.getElementById(`btab-${t}`)?.classList.toggle('active', t === page);
+  });
+  if (page === 'explore') initExplore();
+  if (page === 'mypets') {} // already reactive
+};
+
+// ═══════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════
+window.openModal = (id) => document.getElementById(id).classList.add('open');
+window.closeModal = (id) => document.getElementById(id).classList.remove('open');
+
+// Close modal on overlay click
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
+});
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+window.showToast = showToast;
+
+function speciesEmoji(s) {
+  const map = { Pies:'🐕', Kot:'🐈', Królik:'🐇', Ptak:'🦜', Chomik:'🐹', Inne:'🐾' };
+  return map[s] || '🐾';
+}
+
+function timeAgo(ts) {
+  const diff = Date.now() - ts;
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return 'teraz';
+  if (m < 60) return `${m} min temu`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h} godz. temu`;
+  return `${Math.floor(h/24)} dni temu`;
+}
+
+function escapeHtml(s) {
+  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ═══════════════════════════════════
+//  TRYB DEMO
+// ═══════════════════════════════════
+const DEMO_PETS = [
+  { id: 'demo-1', name: 'Burek', species: 'Pies', breed: 'Labrador', age: '3', location: 'Warszawa', bio: 'Uwielbiam biegać po parku i gonić piłkę! Najszczęśliwszy pies na świecie 🎾', ownerId: 'demo-owner-1', ownerName: 'Marek K.', avatarUrl: 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=200&h=200&fit=crop' },
+  { id: 'demo-2', name: 'Mruczek', species: 'Kot', breed: 'Maine Coon', age: '5', location: 'Kraków', bio: 'Jestem największym kotem w okolicy. Lubię drzemki w słońcu i tuńczyk z puszki 😺', ownerId: 'demo-owner-2', ownerName: 'Anna W.', avatarUrl: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=200&h=200&fit=crop' },
+  { id: 'demo-3', name: 'Zuzia', species: 'Pies', breed: 'Golden Retriever', age: '2', location: 'Gdańsk', bio: 'Kocham wszystkich ludzi i psy! Nigdy nie jestem smutna 🌞', ownerId: 'demo-owner-3', ownerName: 'Piotr L.', avatarUrl: 'https://images.unsplash.com/photo-1552053831-71594a27632d?w=200&h=200&fit=crop' },
+  { id: 'demo-4', name: 'Filemon', species: 'Kot', breed: 'Brytyjski', age: '4', location: 'Wrocław', bio: 'Poważny kot z klasą. Nie przepadam za poniedziałkami. 🎩', ownerId: 'demo-owner-4', ownerName: 'Ewa S.', avatarUrl: 'https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=200&h=200&fit=crop' },
+  { id: 'demo-5', name: 'Reksio', species: 'Pies', breed: 'Beagle', age: '1', location: 'Poznań', bio: 'Szczeniak w pełnej krasie! Wszystko jest nowe i ekscytujące 🐕', ownerId: 'demo-owner-5', ownerName: 'Tomek B.', avatarUrl: 'https://images.unsplash.com/photo-1505628346881-b72b27e84530?w=200&h=200&fit=crop' },
+  { id: 'demo-6', name: 'Whiskers', species: 'Królik', breed: 'Angorski', age: '2', location: 'Łódź', bio: 'Miękki jak chmurka, szybki jak błyskawica. Marchewki to moje życie 🥕', ownerId: 'demo-owner-6', ownerName: 'Julia M.', avatarUrl: 'https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=200&h=200&fit=crop' },
+];
+
+const DEMO_POSTS = [
+  { id: 'dpost-1', petId: 'demo-1', petName: 'Burek', petSpecies: 'Pies', petAvatarUrl: DEMO_PETS[0].avatarUrl, ownerName: 'Marek K.', text: 'Dzisiejszy spacer w Łazienkach był niesamowity! Poznałem 3 nowe psy 🐕🐕🐕', imageUrl: 'https://images.unsplash.com/photo-1534361960057-19f4434a5cef?w=600&h=400&fit=crop', createdAt: Date.now() - 3600000 * 2, likes: { 'u1': true, 'u2': true, 'u3': true }, comments: { 'c1': { userName: 'Anna W.', text: 'Mruczek też chciałby pójść na spacer... ale wiadomo, kot 😂', createdAt: Date.now() - 3500000 } } },
+  { id: 'dpost-2', petId: 'demo-2', petName: 'Mruczek', petSpecies: 'Kot', petAvatarUrl: DEMO_PETS[1].avatarUrl, ownerName: 'Anna W.', text: 'Poniedziałkowy nastrój 😴 Pięć minut więcej snu proszę.', imageUrl: 'https://images.unsplash.com/photo-1574158622682-e40e69881006?w=600&h=400&fit=crop', createdAt: Date.now() - 3600000 * 5, likes: { 'u1': true, 'u4': true }, comments: {} },
+  { id: 'dpost-3', petId: 'demo-3', petName: 'Zuzia', petSpecies: 'Pies', petAvatarUrl: DEMO_PETS[2].avatarUrl, ownerName: 'Piotr L.', text: 'Pierwszy raz na plaży!! Woda jest mokra ale super!! 🌊🐾', imageUrl: 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=600&h=400&fit=crop', createdAt: Date.now() - 3600000 * 10, likes: { 'u1': true, 'u2': true, 'u3': true, 'u5': true }, comments: { 'c2': { userName: 'Marek K.', text: 'Burek też uwielbia plażę! Musimy się spotkać! 🐕', createdAt: Date.now() - 3500000 }, 'c3': { userName: 'Ewa S.', text: 'Jaka słodka! ❤️', createdAt: Date.now() - 3400000 } } },
+  { id: 'dpost-4', petId: 'demo-5', petName: 'Reksio', petSpecies: 'Pies', petAvatarUrl: DEMO_PETS[4].avatarUrl, ownerName: 'Tomek B.', text: 'Znalazłem skarpetę. Nie wiem czyja. Jest moja teraz. 🧦', imageUrl: '', createdAt: Date.now() - 3600000 * 20, likes: { 'u2': true, 'u3': true, 'u6': true }, comments: { 'c4': { userName: 'Julia M.', text: 'HAHA to najlepsza historia tygodnia 😂', createdAt: Date.now() - 3000000 } } },
+  { id: 'dpost-5', petId: 'demo-4', petName: 'Filemon', petSpecies: 'Kot', petAvatarUrl: DEMO_PETS[3].avatarUrl, ownerName: 'Ewa S.', text: 'Wtorek. Słońce świeci na moje futro. Życie jest znośne.', imageUrl: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=600&h=400&fit=crop', createdAt: Date.now() - 3600000 * 28, likes: { 'u1': true }, comments: {} },
+];
+
+let isDemoMode = false;
+
+window.startDemo = () => {
+  isDemoMode = true;
+  currentUser = { uid: 'demo-viewer', displayName: 'Gość demo', photoURL: null };
+  myPets = {};
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('demo-banner').style.display = 'flex';
+
+  // Nav avatar
+  document.getElementById('nav-avatar-wrap').innerHTML = `<div class="nav-avatar-placeholder">👤</div>`;
+  document.getElementById('post-user-avatar').textContent = '👤';
+
+  // Sidebar pets
+  const sidebarEl = document.getElementById('sidebar-my-pets');
+  sidebarEl.innerHTML = DEMO_PETS.slice(0,3).map(p => `
+    <div class="my-pet-item" onclick="showDemoPetProfile('${p.id}')">
+      <div class="pet-avatar"><img src="${p.avatarUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover"></div>
+      <div><div class="pet-name">${p.name}</div><div class="pet-breed">${p.breed}</div></div>
+    </div>`).join('');
+
+  // Feed
+  renderDemoFeed();
+
+  // Suggestions sidebar
+  const sugEl = document.getElementById('sidebar-suggestions');
+  sugEl.innerHTML = DEMO_PETS.slice(3).map(p => `
+    <div class="suggest-item" onclick="showDemoPetProfile('${p.id}')">
+      <div class="suggest-avatar"><img src="${p.avatarUrl}"></div>
+      <div><div class="suggest-name">${p.name}</div><div class="suggest-breed">${p.breed} · ${p.location}</div></div>
+    </div>`).join('');
+
+  // Post pet select
+  const sel = document.getElementById('post-pet-select');
+  sel.innerHTML = '<option value="">🔒 Zaloguj się aby publikować</option>';
+  sel.disabled = true;
+
+  showPage('feed');
+};
+
+function renderDemoFeed() {
+  const el = document.getElementById('feed-posts');
+  el.innerHTML = DEMO_POSTS.map(p => renderDemoPostCard(p)).join('');
+}
+
+function renderDemoPostCard(p) {
+  const emoji = speciesEmoji(p.petSpecies);
+  const avatarHTML = p.petAvatarUrl
+    ? `<img src="${p.petAvatarUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">`
+    : emoji;
+  const likes = p.likes ? Object.keys(p.likes).length : 0;
+  const comments = p.comments ? Object.keys(p.comments).length : 0;
+  const timeStr = timeAgo(p.createdAt);
+
+  return `
+    <div class="post-card" id="post-${p.id}">
+      <div class="post-header">
+        <div class="post-pet-avatar" onclick="showDemoPetProfile('${p.petId}')">${avatarHTML}</div>
+        <div class="post-meta">
+          <div class="post-pet-name" onclick="showDemoPetProfile('${p.petId}')">${p.petName}</div>
+          <div class="post-owner">właściciel: ${p.ownerName}</div>
+        </div>
+        <div class="post-time">${timeStr}</div>
+      </div>
+      ${p.text ? `<div class="post-text">${escapeHtml(p.text)}</div>` : ''}
+      ${p.imageUrl ? `<img src="${p.imageUrl}" class="post-img" loading="lazy">` : ''}
+      <div class="post-actions">
+        <button class="action-btn" onclick="demoActionBlock()">🤍 <span>${likes}</span></button>
+        <button class="action-btn" onclick="toggleDemoComments('${p.id}')">💬 <span>${comments}</span></button>
+        <button class="action-btn" onclick="demoActionBlock()">🔗 Udostępnij</button>
+      </div>
+      <div class="comments-section" id="comments-${p.id}">
+        ${renderComments(p.comments)}
+        <div style="text-align:center;padding:10px;font-size:13px;color:var(--bark-light);font-weight:700">
+          🔒 <span style="cursor:pointer;color:var(--paw)" onclick="exitDemo()">Zaloguj się</span> aby komentować
+        </div>
+      </div>
+    </div>`;
+}
+
+window.toggleDemoComments = (postId) => {
+  const el = document.getElementById(`comments-${postId}`);
+  el.classList.toggle('open');
+};
+
+window.demoActionBlock = () => {
+  showToast('🔒 Zaloguj się aby używać tej funkcji!');
+};
+
+window.showDemoPetProfile = (petId) => {
+  const p = DEMO_PETS.find(x => x.id === petId);
+  if (!p) return;
+  showPage('profile');
+  const emoji = speciesEmoji(p.species);
+  document.getElementById('profile-content').innerHTML = `
+    <div class="profile-hero">
+      <div class="profile-cover"></div>
+      <div class="profile-info">
+        <div class="profile-big-avatar">
+          <img src="${p.avatarUrl}">
+        </div>
+        <div class="profile-text">
+          <div class="profile-pet-name">${p.name}</div>
+          <div class="profile-tags">
+            <span class="profile-tag species">${emoji} ${p.species}</span>
+            ${p.breed ? `<span class="profile-tag">${p.breed}</span>` : ''}
+            ${p.age ? `<span class="profile-tag">🎂 ${p.age} lata</span>` : ''}
+            ${p.location ? `<span class="profile-tag location">📍 ${p.location}</span>` : ''}
+          </div>
+        </div>
+      </div>
+      ${p.bio ? `<div class="profile-bio">${escapeHtml(p.bio)}</div>` : ''}
+    </div>
+    <h3 style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;margin-bottom:16px">Posty</h3>`;
+
+  const petPosts = DEMO_POSTS.filter(x => x.petId === petId);
+  document.getElementById('profile-posts').innerHTML = petPosts.length
+    ? petPosts.map(x => renderDemoPostCard(x)).join('')
+    : `<div class="empty-state"><div class="emoji">📸</div><p>Brak postów</p></div>`;
+};
+
+window.exitDemo = () => {
+  isDemoMode = false;
+  currentUser = null;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('auth-screen').style.display = 'flex';
+  document.getElementById('demo-banner').style.display = 'none';
+};
+
+// Override showPage to handle demo explore
+const _origShowPage = window.showPage;
+window.showPage = (page) => {
+  _origShowPage(page);
+  if (isDemoMode && page === 'explore') renderDemoExplore();
+  if (isDemoMode && page === 'mypets') renderDemoMyPets();
+};
+
+function renderDemoExplore() {
+  const el = document.getElementById('explore-results');
+  el.innerHTML = DEMO_PETS.map(p => {
+    const emoji = speciesEmoji(p.species);
+    return `
+      <div class="pet-card" onclick="showDemoPetProfile('${p.id}')">
+        <div class="pet-card-img"><img src="${p.avatarUrl}"></div>
+        <div class="pet-card-info">
+          <div class="pet-card-name">${p.name}</div>
+          <div class="pet-card-breed">${p.breed} · ${p.species}</div>
+          <div class="pet-card-location">📍 ${p.location}</div>
+        </div>
+      </div>`;
+  }).join('');
+  // override search button in demo
+  document.getElementById('filter-species').disabled = false;
+  document.getElementById('filter-location').disabled = false;
+  document.getElementById('filter-breed').disabled = false;
+}
+
+function renderDemoMyPets() {
+  document.getElementById('mypets-list').innerHTML = `
+    <div class="empty-state" style="grid-column:1/-1">
+      <div class="emoji">🔒</div>
+      <p>Zaloguj się aby dodać swoje zwierzęta</p>
+      <button class="btn-save" onclick="exitDemo()" style="margin-top:16px">Zaloguj się przez Google</button>
+    </div>`;
+}
+
+// Override runExploreSearch in demo mode
+const _origExploreSearch = window.runExploreSearch;
+window.runExploreSearch = async () => {
+  if (isDemoMode) { renderDemoExplore(); return; }
+  await _origExploreSearch();
+};
+</script>
+</body>
+</html>
