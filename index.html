@@ -1069,6 +1069,118 @@
   .post-menu-item.danger { color: #e53935; }
   .post-menu-item.danger:hover { background: #fff5f5; }
 
+  /* ── REACTIONS ── */
+  .reactions-bar {
+    display: flex;
+    padding: 6px 16px 2px;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+  .reaction-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 10px;
+    border-radius: 20px;
+    border: 2px solid transparent;
+    background: var(--cream);
+    font-family: 'Nunito', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--bark-light);
+    cursor: pointer;
+    transition: all 0.15s;
+    line-height: 1;
+  }
+  .reaction-btn:hover { background: #FFF0E8; border-color: var(--paw-light); }
+  .reaction-btn.reacted { border-color: var(--paw); background: #FFF0E8; color: var(--bark); }
+  .reaction-btn .r-emoji { font-size: 16px; }
+  .reaction-btn .r-count { font-size: 12px; }
+  .reaction-total {
+    font-size: 12px;
+    color: var(--bark-light);
+    font-weight: 700;
+    padding: 4px 0 8px 18px;
+    cursor: pointer;
+  }
+  .reaction-total:hover { color: var(--paw); }
+
+  /* ── PHOTO GALLERY ── */
+  .profile-gallery {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    margin-bottom: 24px;
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .gallery-item {
+    aspect-ratio: 1;
+    overflow: hidden;
+    cursor: pointer;
+    background: var(--cream);
+    position: relative;
+  }
+  .gallery-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.2s;
+    display: block;
+  }
+  .gallery-item:hover img { transform: scale(1.05); }
+  .gallery-lightbox {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 2000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .gallery-lightbox.open { display: flex; }
+  .gallery-lightbox img {
+    max-width: 100%;
+    max-height: 90vh;
+    border-radius: 12px;
+    object-fit: contain;
+  }
+  .gallery-lightbox-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: rgba(255,255,255,0.15);
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .gallery-lightbox-close:hover { background: rgba(255,255,255,0.3); }
+
+  /* ── EDIT POST MODAL ── */
+  .edit-post-textarea {
+    width: 100%;
+    background: var(--cream);
+    border: 2px solid transparent;
+    border-radius: 14px;
+    padding: 12px 16px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--bark);
+    resize: none;
+    min-height: 100px;
+    transition: border-color 0.2s;
+  }
+  .edit-post-textarea:focus { outline: none; border-color: var(--paw-light); background: white; }
+
   /* ── LIKES POPUP ── */
   .likes-popup-overlay {
     position: fixed; inset: 0; background: rgba(61,43,31,0.4);
@@ -1705,6 +1817,27 @@
   </div>
 </div>
 
+<!-- EDIT POST MODAL -->
+<div class="modal-overlay" id="edit-post-modal">
+  <div class="modal-box">
+    <div class="modal-title">✏️ Edytuj post</div>
+    <div class="form-group">
+      <label class="form-label">Treść posta</label>
+      <textarea class="edit-post-textarea" id="edit-post-text" rows="4"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('edit-post-modal')">Anuluj</button>
+      <button class="btn-save" onclick="confirmEditPost()">Zapisz zmiany</button>
+    </div>
+  </div>
+</div>
+
+<!-- GALLERY LIGHTBOX -->
+<div class="gallery-lightbox" id="gallery-lightbox" onclick="closeGalleryLightbox()">
+  <button class="gallery-lightbox-close" onclick="closeGalleryLightbox()">✕</button>
+  <img id="gallery-lightbox-img" src="" alt="">
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
@@ -2224,17 +2357,24 @@ function renderPostCard(p) {
         <div class="post-menu-wrap" id="menu-wrap-${p.id}">
           <button class="post-menu-btn" onclick="togglePostMenu('${p.id}')">⋯</button>
           <div class="post-menu-dropdown" id="post-menu-${p.id}">
+            <button class="post-menu-item" onclick="openEditPostModal('${p.id}')">✏️ Edytuj post</button>
             <button class="post-menu-item danger" onclick="openDeletePostModal('${p.id}')">🗑️ Usuń post</button>
           </div>
         </div>` : ''}
       </div>
       ${p.text ? `<div class="post-text">${escapeHtml(p.text)}</div>` : ''}
       ${p.imageUrl ? `<img src="${p.imageUrl}" class="post-img" loading="lazy">` : ''}
+      <div class="reactions-bar">
+        ${['❤️','😂','😲','😢','🐾'].map(em => {
+          const key = {'❤️':'heart','😂':'laugh','😲':'wow','😢':'sad','🐾':'paw'}[em] || 'heart';
+          const count = p.reactions && p.reactions[key] ? Object.keys(p.reactions[key]).length : 0;
+          const reacted = p.reactions && p.reactions[key] && p.reactions[key][currentUser.uid];
+          return `<button class="reaction-btn${reacted ? ' reacted' : ''}" onclick="toggleReaction('${p.id}','${em}','${p.ownerId}')">
+            <span class="r-emoji">${em}</span>${count > 0 ? `<span class="r-count">${count}</span>` : ''}
+          </button>`;
+        }).join('')}
+      </div>
       <div class="post-actions">
-        <button class="action-btn ${isLiked ? 'liked' : ''}" onclick="toggleLike('${p.id}','${p.ownerId}')">
-          ${isLiked ? '❤️' : '🤍'} <span class="count">${likes}</span>
-        </button>
-        ${likes > 0 ? `<button class="action-btn" onclick="showLikesPopup('${p.id}')" style="flex:0;padding:8px 6px;font-size:12px;color:var(--bark-light)">kto?</button>` : ''}
         <button class="action-btn" onclick="toggleComments('${p.id}')">
           💬 <span class="count">${comments}</span>
         </button>
@@ -2432,6 +2572,69 @@ window.confirmDeletePost = async () => {
   } catch(e) { showToast('Błąd: ' + e.message); }
 };
 
+// ── Edit post ──
+let editingPostId = null;
+window.openEditPostModal = (postId) => {
+  editingPostId = postId;
+  document.getElementById(`post-menu-${postId}`)?.classList.remove('open');
+  // Get current text from DOM
+  const textEl = document.getElementById(`post-${postId}`)?.querySelector('.post-text');
+  const currentText = textEl ? textEl.textContent : '';
+  document.getElementById('edit-post-text').value = currentText;
+  openModal('edit-post-modal');
+};
+
+window.confirmEditPost = async () => {
+  if (!editingPostId) return;
+  const newText = document.getElementById('edit-post-text').value.trim();
+  if (!newText) { showToast('Treść posta nie może być pusta!'); return; }
+  showToast('Zapisuję...');
+  try {
+    await update(ref(db, `posts/${editingPostId}`), { text: newText, edited: true });
+    closeModal('edit-post-modal');
+    // Update DOM directly without full re-render
+    const textEl = document.getElementById(`post-${editingPostId}`)?.querySelector('.post-text');
+    if (textEl) textEl.innerHTML = escapeHtml(newText) + ' <span style="font-size:11px;color:#aaa">(edytowano)</span>';
+    showToast('Post zaktualizowany ✏️');
+    editingPostId = null;
+  } catch(e) { showToast('Błąd: ' + e.message); }
+};
+
+// ── Reactions ──
+const REACTION_EMOJIS = ['❤️','😂','😲','😢','🐾'];
+const REACTION_KEYS = { '❤️':'heart', '😂':'laugh', '😲':'wow', '😢':'sad', '🐾':'paw' };
+const REACTION_KEY_TO_EMOJI = Object.fromEntries(Object.entries(REACTION_KEYS).map(([e,k])=>[k,e]));
+
+window.toggleReaction = async (postId, emoji, postOwnerId) => {
+  const key = REACTION_KEYS[emoji] || 'heart';
+  const reactionRef = ref(db, `posts/${postId}/reactions/${key}/${currentUser.uid}`);
+  const snap = await get(reactionRef);
+  if (snap.exists()) {
+    await set(reactionRef, null);
+  } else {
+    await set(reactionRef, true);
+    if (postOwnerId && postOwnerId !== currentUser.uid) {
+      await sendNotification(postOwnerId, {
+        type: 'like',
+        text: `${currentUser.displayName || 'Ktoś'} zareagował(a) ${emoji}`,
+        postId
+      });
+    }
+  }
+};
+
+// ── Gallery lightbox ──
+window.openGalleryLightbox = (url) => {
+  document.getElementById('gallery-lightbox-img').src = url;
+  document.getElementById('gallery-lightbox').classList.add('open');
+};
+window.closeGalleryLightbox = () => {
+  document.getElementById('gallery-lightbox').classList.remove('open');
+};
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeGalleryLightbox();
+});
+
 // ── Likes popup ──
 window.showLikesPopup = async (postId) => {
   const snap = await get(ref(db, `posts/${postId}/likes`));
@@ -2557,7 +2760,25 @@ async function loadProfilePosts(petId) {
   const snap = await get(ref(db, 'posts'));
   const posts = [];
   if (snap.exists()) snap.forEach(c => { if (c.val().petId === petId) posts.unshift({ id: c.key, ...c.val() }); });
-  el.innerHTML = posts.length ? posts.map(p => renderPostCard(p)).join('') : `<div class="empty-state"><div class="emoji">📸</div><p>Brak postów</p></div>`;
+
+  // Photo gallery
+  const photoPosts = posts.filter(p => p.imageUrl);
+  let galleryHTML = '';
+  if (photoPosts.length > 0) {
+    galleryHTML = `
+      <h3 style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;margin-bottom:12px">📸 Galeria</h3>
+      <div class="profile-gallery">
+        ${photoPosts.slice(0, 9).map(p => `
+          <div class="gallery-item" onclick="openGalleryLightbox('${p.imageUrl}')">
+            <img src="${p.imageUrl}" loading="lazy" alt="">
+          </div>`).join('')}
+      </div>`;
+  }
+
+  el.innerHTML = galleryHTML +
+    (posts.length
+      ? `<h3 style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;margin-bottom:16px">Posty</h3>` + posts.map(p => renderPostCard(p)).join('')
+      : `<div class="empty-state"><div class="emoji">📸</div><p>Brak postów</p></div>`);
 }
 
 window.updatePetAvatar = async (input, petId) => {
