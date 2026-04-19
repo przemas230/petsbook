@@ -1181,6 +1181,57 @@
   }
   .edit-post-textarea:focus { outline: none; border-color: var(--paw-light); background: white; }
 
+  /* ── BREED AUTOCOMPLETE ── */
+  .breed-wrap { position: relative; }
+  .breed-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0; right: 0;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(61,43,31,0.15);
+    z-index: 300;
+    overflow: hidden;
+    max-height: 220px;
+    overflow-y: auto;
+    display: none;
+  }
+  .breed-dropdown.open { display: block; }
+  .breed-option {
+    padding: 10px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.1s;
+    color: var(--bark);
+  }
+  .breed-option:hover, .breed-option.focused { background: var(--cream); }
+  .breed-option strong { color: var(--paw); font-weight: 800; }
+
+  /* ── REACTIONS WHO-POPUP ── */
+  .react-who-overlay {
+    position: fixed; inset: 0; background: rgba(61,43,31,0.4);
+    z-index: 1000; display: none; align-items: center; justify-content: center;
+    padding: 20px; backdrop-filter: blur(3px);
+  }
+  .react-who-overlay.open { display: flex; }
+  .react-who-box {
+    background: white; border-radius: 20px; padding: 24px;
+    max-width: 360px; width: 100%; max-height: 70vh; overflow-y: auto;
+    box-shadow: 0 16px 60px rgba(61,43,31,0.18);
+  }
+  .react-who-tabs {
+    display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px;
+    border-bottom: 2px solid var(--cream); padding-bottom: 10px;
+  }
+  .react-who-tab {
+    padding: 5px 12px; border-radius: 16px; border: none;
+    background: var(--cream); font-family: 'Nunito', sans-serif;
+    font-size: 13px; font-weight: 700; cursor: pointer;
+    transition: all 0.15s; display: flex; align-items: center; gap: 4px;
+  }
+  .react-who-tab.active { background: var(--paw); color: white; }
+
   /* ── LIKES POPUP ── */
   .likes-popup-overlay {
     position: fixed; inset: 0; background: rgba(61,43,31,0.4);
@@ -1711,7 +1762,11 @@
     </div>
     <div class="form-group">
       <label class="form-label">Rasa</label>
-      <input class="form-input" id="pet-breed" placeholder="np. Labrador, Dachshund...">
+      <div class="breed-wrap">
+        <input class="form-input" id="pet-breed" placeholder="np. Labrador, Maine Coon..." autocomplete="off"
+          oninput="onBreedInput(this.value)" onfocus="onBreedInput(this.value)" onkeydown="onBreedKeydown(event)">
+        <div class="breed-dropdown" id="breed-dropdown"></div>
+      </div>
     </div>
     <div class="form-group">
       <label class="form-label">Wiek</label>
@@ -1838,6 +1893,16 @@
   <img id="gallery-lightbox-img" src="" alt="">
 </div>
 
+<!-- REACTIONS WHO POPUP -->
+<div class="react-who-overlay" id="react-who-popup" onclick="if(event.target===this)closeReactWho()">
+  <div class="react-who-box">
+    <div class="likes-popup-title" style="margin-bottom:0">🐾 Kto zareagował</div>
+    <div class="react-who-tabs" id="react-who-tabs"></div>
+    <div id="react-who-list"></div>
+    <button class="btn-cancel" style="width:100%;margin-top:16px;text-align:center" onclick="closeReactWho()">Zamknij</button>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
@@ -1846,7 +1911,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut as fbSignOut }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getDatabase, ref, push, set, get, update, remove, onValue, query, orderByChild, equalTo, limitToLast }
+import { getDatabase, ref, push, set, get, update, remove, onValue, query, orderByChild, equalTo, limitToLast, onDisconnect }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const firebaseConfig = {
@@ -1934,6 +1999,7 @@ async function initApp() {
   loadSuggestions();
   loadFollows();
   listenNotifications();
+  initOnlineStatus();
 
   // Try get geolocation for proximity filter
   if (navigator.geolocation) {
@@ -2373,6 +2439,7 @@ function renderPostCard(p) {
             <span class="r-emoji">${em}</span>${count > 0 ? `<span class="r-count">${count}</span>` : ''}
           </button>`;
         }).join('')}
+        ${canManagePost && p.reactions ? `<button class="reaction-btn" onclick="showReactWho('${p.id}')" style="margin-left:auto;font-size:12px;padding:5px 8px">👥 kto?</button>` : ''}
       </div>
       <div class="post-actions">
         <button class="action-btn" onclick="toggleComments('${p.id}')">
@@ -2632,8 +2699,217 @@ window.closeGalleryLightbox = () => {
   document.getElementById('gallery-lightbox').classList.remove('open');
 };
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') closeGalleryLightbox();
+  if (e.key === 'Escape') { closeGalleryLightbox(); closeReactWho(); }
 });
+
+// ═══════════════════════════════════
+//  BREED AUTOCOMPLETE
+// ═══════════════════════════════════
+const DOG_BREEDS = [
+  'Labrador Retriever','Golden Retriever','Owczarek Niemiecki','Owczarek Belgijski Malinois',
+  'Border Collie','Husky Syberyjski','Alaskan Malamute','Samoyed',
+  'Beagle','Basset Hound','Jamnik','Jamnik Miniaturowy',
+  'Bokser','Buldog Angielski','Buldog Francuski','Mops',
+  'Chihuahua','Yorkshire Terrier','Maltańczyk','Shih Tzu','Bichon Frise',
+  'Cavalier King Charles Spaniel','Cocker Spaniel Angielski','Springer Spaniel',
+  'Dalmatyńczyk','Pointer','Seter Irlandzki','Wyżeł Węgierski',
+  'Doberman','Rottweiler','Bokser Niemieckie','Bernański Pies Pasterski',
+  'Chow Chow','Akita Inu','Shiba Inu','Shibu Inu',
+  'Poodle Miniaturowy','Poodle Standardowy','Poodle Toy',
+  'Szpic Miniaturowy','Szpic Średni','Pomeranian',
+  'Jack Russell Terrier','West Highland White Terrier','Skye Terrier',
+  'Airedale Terrier','Fox Terrier','Bull Terrier',
+  'Greyhound','Whippet','Borzoj','Afgański Chart',
+  'Rhodesian Ridgeback','Weimaraner','Bracco Italiano',
+  'Nowofundland','Leonberger','Berneński Pies Pasterski',
+  'Cane Corso','Mastif Neapolitański','Mastif Tybetański',
+  'Schnauzer Miniaturowy','Schnauzer Średni','Schnauzer Olbrzym',
+  'Kundelek','Mieszaniec','Mix'
+];
+const CAT_BREEDS = [
+  'Maine Coon','Norweski Leśny','Ragdoll','Syberyjski',
+  'Brytyjski Krótkowłosy','Szkocki Fold','Scottish Straight',
+  'Syjamski','Tajski','Balinezyjski','Birman',
+  'Perski','Egzotyczny Krótkowłosy',
+  'Abisyński','Somalijski',
+  'Bengalski','Savannah','Ocicat',
+  'Sfinks','Devon Rex','Cornish Rex','Selkirk Rex',
+  'Rosyjski Niebieski','Kartuzjanin (Chartreux)',
+  'Burmański','Bombajski',
+  'Manx','Cymric',
+  'Angora Turecka','Van Turecki',
+  'Singapura','Burmilla','Tonkijski',
+  'American Shorthair','American Curl',
+  'Orientalny Krótkowłosy','Jawajski',
+  'Europejski','Mix','Dachowiec'
+];
+const OTHER_BREEDS = {
+  Królik: ['Angorski','Baran Holenderski','Rex','Minikról','Lop Angielski','Nowozelandzki','Kalifornijski','Baran Francuski'],
+  Chomik: ['Złocisty','Dżungarski','Campbell','Roborowski','Chiński'],
+  'Świnka morska': ['Gładkowłosa','Rozetka (Abisyńska)','Satin','Peruwijska','Teddy'],
+  Fretka: ['Fretka domowa','Fretka Albinos','Fretka Ciemnowłosa'],
+  Papuga: ['Papużka falista','Nimfa (Kakadu Nimfa)','Aleksandretta','Rozella','Lorysa'],
+  Koń: ['Klacz Arabska','Koń Półkrwi','Fryzyjski','Hucuł','Konik Polski','Quarter Horse','Andaluzyjski','Lipicański','Hanowerski'],
+};
+
+let breedFocusIndex = -1;
+
+window.onBreedInput = (val) => {
+  const species = document.getElementById('pet-species').value;
+  const dropdown = document.getElementById('breed-dropdown');
+  const query = val.trim().toLowerCase();
+
+  let pool = [];
+  if (species === 'Pies') pool = DOG_BREEDS;
+  else if (species === 'Kot') pool = CAT_BREEDS;
+  else if (OTHER_BREEDS[species]) pool = OTHER_BREEDS[species];
+  else pool = [...DOG_BREEDS, ...CAT_BREEDS];
+
+  const matches = query.length < 1
+    ? pool.slice(0, 8)
+    : pool.filter(b => b.toLowerCase().includes(query)).slice(0, 10);
+
+  if (!matches.length) { dropdown.classList.remove('open'); return; }
+
+  const highlight = (str) => {
+    if (!query) return str;
+    const idx = str.toLowerCase().indexOf(query);
+    if (idx < 0) return str;
+    return str.slice(0,idx) + `<strong>${str.slice(idx, idx+query.length)}</strong>` + str.slice(idx+query.length);
+  };
+
+  breedFocusIndex = -1;
+  dropdown.innerHTML = matches.map((b, i) =>
+    `<div class="breed-option" data-val="${b}" onmousedown="selectBreed('${b}')">${highlight(b)}</div>`
+  ).join('');
+  dropdown.classList.add('open');
+};
+
+window.selectBreed = (val) => {
+  document.getElementById('pet-breed').value = val;
+  document.getElementById('breed-dropdown').classList.remove('open');
+};
+
+window.onBreedKeydown = (e) => {
+  const dropdown = document.getElementById('breed-dropdown');
+  const opts = dropdown.querySelectorAll('.breed-option');
+  if (!dropdown.classList.contains('open')) return;
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    breedFocusIndex = Math.min(breedFocusIndex + 1, opts.length - 1);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    breedFocusIndex = Math.max(breedFocusIndex - 1, -1);
+  } else if (e.key === 'Enter' && breedFocusIndex >= 0) {
+    e.preventDefault();
+    selectBreed(opts[breedFocusIndex].dataset.val);
+    return;
+  } else if (e.key === 'Escape') {
+    dropdown.classList.remove('open'); return;
+  }
+  opts.forEach((o, i) => o.classList.toggle('focused', i === breedFocusIndex));
+  if (breedFocusIndex >= 0) opts[breedFocusIndex].scrollIntoView({ block: 'nearest' });
+};
+
+// Close breed dropdown on outside click
+document.addEventListener('click', (e) => {
+  const wrap = document.getElementById('pet-breed')?.closest('.breed-wrap');
+  if (wrap && !wrap.contains(e.target)) {
+    document.getElementById('breed-dropdown')?.classList.remove('open');
+  }
+});
+
+// Also update suggestions when species changes
+document.getElementById('pet-species')?.addEventListener('change', () => {
+  const val = document.getElementById('pet-breed').value;
+  onBreedInput(val);
+});
+
+// ═══════════════════════════════════
+//  REACTIONS: KTO ZAREAGOWAŁ
+// ═══════════════════════════════════
+const EMOJI_LABELS = { heart:'❤️', laugh:'😂', wow:'😲', sad:'😢', paw:'🐾' };
+let reactWhoData = {};
+
+window.showReactWho = async (postId) => {
+  const snap = await get(ref(db, `posts/${postId}/reactions`));
+  reactWhoData = snap.exists() ? snap.val() : {};
+
+  // Build tabs
+  const keys = Object.keys(reactWhoData).filter(k => Object.keys(reactWhoData[k]).length > 0);
+  if (!keys.length) { showToast('Brak reakcji na tym poście'); return; }
+
+  const tabsEl = document.getElementById('react-who-tabs');
+  const totalCount = keys.reduce((acc, k) => acc + Object.keys(reactWhoData[k]).length, 0);
+  tabsEl.innerHTML = `<button class="react-who-tab active" onclick="renderReactWhoList('all')" data-key="all">Wszystkie (${totalCount})</button>` +
+    keys.map(k => {
+      const cnt = Object.keys(reactWhoData[k]).length;
+      return `<button class="react-who-tab" onclick="renderReactWhoList('${k}')" data-key="${k}">${EMOJI_LABELS[k] || k} ${cnt}</button>`;
+    }).join('');
+
+  renderReactWhoList('all');
+  document.getElementById('react-who-popup').classList.add('open');
+};
+
+window.renderReactWhoList = async (filterKey) => {
+  // Highlight active tab
+  document.querySelectorAll('.react-who-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.key === filterKey);
+  });
+
+  const listEl = document.getElementById('react-who-list');
+  listEl.innerHTML = '<div class="loading-spinner" style="padding:16px;font-size:20px">🐾</div>';
+
+  const entries = [];
+  for (const [key, users] of Object.entries(reactWhoData)) {
+    if (filterKey !== 'all' && key !== filterKey) continue;
+    for (const uid of Object.keys(users)) {
+      entries.push({ uid, emoji: EMOJI_LABELS[key] || key });
+    }
+  }
+
+  // Try to get display names from likesMeta (reuse existing structure) — fallback to uid
+  listEl.innerHTML = entries.length ? entries.map(e =>
+    `<div class="likes-user-item">
+      <div class="likes-user-avatar">👤</div>
+      <div class="likes-user-name">${e.uid.startsWith('demo') ? 'Użytkownik demo' : e.uid.substring(0,8) + '…'}</div>
+      <div style="margin-left:auto;font-size:18px">${e.emoji}</div>
+    </div>`
+  ).join('') : '<p style="color:#aaa;font-size:13px;font-weight:600">Brak</p>';
+};
+
+window.closeReactWho = () => {
+  document.getElementById('react-who-popup').classList.remove('open');
+};
+
+// ═══════════════════════════════════
+//  ETAP 4: UDOSTĘPNIANIE PROFILU ZWIERZĘCIA
+// ═══════════════════════════════════
+window.sharePetProfile = (petId) => {
+  const url = `${location.origin}${location.pathname}#pet-${petId}`;
+  if (navigator.share) {
+    navigator.share({ title: 'PetsBook', text: 'Sprawdź profil tego zwierzęcia!', url })
+      .catch(() => {});
+  } else {
+    navigator.clipboard.writeText(url).then(() => showToast('Link do profilu skopiowany! 🔗'));
+  }
+};
+
+// ═══════════════════════════════════
+//  ETAP 4: STATUS ONLINE
+// ═══════════════════════════════════
+function initOnlineStatus() {
+  if (!currentUser || isDemoMode) return;
+  const statusRef = ref(db, `userStatus/${currentUser.uid}`);
+  const connectedRef = ref(db, '.info/connected');
+  onValue(connectedRef, (snap) => {
+    if (!snap.val()) return;
+    set(statusRef, { online: true, lastSeen: Date.now(), displayName: currentUser.displayName || 'Użytkownik', photoURL: currentUser.photoURL || null });
+    onDisconnect(statusRef).update({ online: false, lastSeen: Date.now() });
+  });
+}
+
+// ── Gallery lightbox (end marker) ──
 
 // ── Likes popup ──
 window.showLikesPopup = async (postId) => {
@@ -2743,6 +3019,7 @@ window.showPetProfile = async (petId) => {
           ${canEdit ? `<button class="btn-save" onclick="openAddPetModal('${petId}')">✏️ Edytuj</button>` : ''}
           ${canEdit ? `<button class="btn-save" style="background:var(--grass)" onclick="openCoOwnersModal('${petId}')">👥 Opiekunowie</button>` : ''}
           ${isOwner ? `<button class="btn-danger" onclick="openDeletePetModal('${petId}')">🗑️ Usuń</button>` : ''}
+          <button class="btn-save" style="background:var(--sky);color:white" onclick="sharePetProfile('${petId}')">🔗 Udostępnij</button>
         </div>
       </div>
       ${p.bio ? `<div class="profile-bio">${escapeHtml(p.bio)}</div>` : ''}
@@ -3317,20 +3594,87 @@ window.startChatWithUserV1 = async (otherId, otherName, otherPhoto) => {
 // ═══════════════════════════════════
 
 const DEMO_PETS = [
-  { id: 'demo-1', name: 'Burek', species: 'Pies', breed: 'Labrador', age: '3', location: 'Warszawa', bio: 'Uwielbiam biegać po parku i gonić piłkę! Najszczęśliwszy pies na świecie 🎾', ownerId: 'demo-owner-1', ownerName: 'Marek K.', avatarUrl: 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=200&h=200&fit=crop' },
-  { id: 'demo-2', name: 'Mruczek', species: 'Kot', breed: 'Maine Coon', age: '5', location: 'Kraków', bio: 'Jestem największym kotem w okolicy. Lubię drzemki w słońcu i tuńczyk z puszki 😺', ownerId: 'demo-owner-2', ownerName: 'Anna W.', avatarUrl: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=200&h=200&fit=crop' },
-  { id: 'demo-3', name: 'Zuzia', species: 'Pies', breed: 'Golden Retriever', age: '2', location: 'Gdańsk', bio: 'Kocham wszystkich ludzi i psy! Nigdy nie jestem smutna 🌞', ownerId: 'demo-owner-3', ownerName: 'Piotr L.', avatarUrl: 'https://images.unsplash.com/photo-1552053831-71594a27632d?w=200&h=200&fit=crop' },
-  { id: 'demo-4', name: 'Filemon', species: 'Kot', breed: 'Brytyjski', age: '4', location: 'Wrocław', bio: 'Poważny kot z klasą. Nie przepadam za poniedziałkami. 🎩', ownerId: 'demo-owner-4', ownerName: 'Ewa S.', avatarUrl: 'https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=200&h=200&fit=crop' },
-  { id: 'demo-5', name: 'Reksio', species: 'Pies', breed: 'Beagle', age: '1', location: 'Poznań', bio: 'Szczeniak w pełnej krasie! Wszystko jest nowe i ekscytujące 🐕', ownerId: 'demo-owner-5', ownerName: 'Tomek B.', avatarUrl: 'https://images.unsplash.com/photo-1505628346881-b72b27e84530?w=200&h=200&fit=crop' },
-  { id: 'demo-6', name: 'Whiskers', species: 'Królik', breed: 'Angorski', age: '2', location: 'Łódź', bio: 'Miękki jak chmurka, szybki jak błyskawica. Marchewki to moje życie 🥕', ownerId: 'demo-owner-6', ownerName: 'Julia M.', avatarUrl: 'https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=200&h=200&fit=crop' },
+  // ── PSY (10) ──
+  { id: 'demo-1',  name: 'Burek',    species: 'Pies', breed: 'Labrador Retriever',   age: '3', location: 'Warszawa',  lat: 52.2297, lng: 21.0122, bio: 'Uwielbiam biegać po parku i gonić piłkę! Najszczęśliwszy pies na świecie 🎾', ownerId: 'demo-owner-1',  ownerName: 'Marek K.',   avatarUrl: 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=200&h=200&fit=crop' },
+  { id: 'demo-2',  name: 'Zuzia',    species: 'Pies', breed: 'Golden Retriever',      age: '2', location: 'Gdańsk',    lat: 54.3520, lng: 18.6466, bio: 'Kocham wszystkich ludzi i psy! Na plaży jestem w swoim żywiole 🌊', ownerId: 'demo-owner-3',  ownerName: 'Piotr L.',   avatarUrl: 'https://images.unsplash.com/photo-1552053831-71594a27632d?w=200&h=200&fit=crop' },
+  { id: 'demo-3',  name: 'Reksio',   species: 'Pies', breed: 'Beagle',                age: '1', location: 'Poznań',    lat: 52.4064, lng: 16.9252, bio: 'Szczeniak w pełnej krasie! Wszystko jest nowe i ekscytujące 🐕', ownerId: 'demo-owner-5',  ownerName: 'Tomek B.',   avatarUrl: 'https://images.unsplash.com/photo-1505628346881-b72b27e84530?w=200&h=200&fit=crop' },
+  { id: 'demo-4',  name: 'Azor',     species: 'Pies', breed: 'Border Collie',         age: '4', location: 'Kraków',    lat: 50.0647, lng: 19.9450, bio: 'Frisbee, owce, piłka — nie ma znaczenia, byle się ruszać 🏃', ownerId: 'demo-owner-7',  ownerName: 'Kasia R.',   avatarUrl: 'https://images.unsplash.com/photo-1503256207526-0d5523f31f68?w=200&h=200&fit=crop' },
+  { id: 'demo-5',  name: 'Bella',    species: 'Pies', breed: 'Cavalier King Charles', age: '5', location: 'Wrocław',   lat: 51.1079, lng: 17.0385, bio: 'Dama z charakterem. Salonowy styl życia, królewskie rasy 👑', ownerId: 'demo-owner-8',  ownerName: 'Zofia M.',   avatarUrl: 'https://images.unsplash.com/photo-1583511655826-05700d52f4d9?w=200&h=200&fit=crop' },
+  { id: 'demo-6',  name: 'Max',      species: 'Pies', breed: 'Owczarek Niemiecki',    age: '6', location: 'Łódź',      lat: 51.7592, lng: 19.4560, bio: 'Pilnuję domu i serca swojej rodziny. Zawsze czujny 🛡️', ownerId: 'demo-owner-9',  ownerName: 'Bartek J.',  avatarUrl: 'https://images.unsplash.com/photo-1589941013453-ec89f33b5e95?w=200&h=200&fit=crop' },
+  { id: 'demo-7',  name: 'Luna',     species: 'Pies', breed: 'Husky Syberyjski',      age: '3', location: 'Szczecin',  lat: 53.4285, lng: 14.5528, bio: 'Śnieg to mój żywioł. Zimą szaleję, latem śpię 🌨️', ownerId: 'demo-owner-10', ownerName: 'Ola P.',     avatarUrl: 'https://images.unsplash.com/photo-1617895153857-82fe0c82b8c4?w=200&h=200&fit=crop' },
+  { id: 'demo-8',  name: 'Tofik',    species: 'Pies', breed: 'Jamnik',                age: '7', location: 'Lublin',    lat: 51.2465, lng: 22.5684, bio: 'Krótkie nogi, wielkie serce. Nory mnie fascynują 🕳️', ownerId: 'demo-owner-11', ownerName: 'Paweł N.',   avatarUrl: 'https://images.unsplash.com/photo-1608096299210-db7e38487075?w=200&h=200&fit=crop' },
+  { id: 'demo-9',  name: 'Rocky',    species: 'Pies', breed: 'Bokser',                age: '2', location: 'Katowice',  lat: 50.2649, lng: 19.0238, bio: 'Energetyczny, zabawny, trochę głupi — ale za to bardzo kochany 💪', ownerId: 'demo-owner-12', ownerName: 'Michał D.',  avatarUrl: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=200&h=200&fit=crop' },
+  { id: 'demo-10', name: 'Pusia',    species: 'Pies', breed: 'Shih Tzu',              age: '4', location: 'Gdynia',    lat: 54.5189, lng: 18.5305, bio: 'Fryzura zawsze idealna. Modna psinka z Trójmiasta 💅', ownerId: 'demo-owner-13', ownerName: 'Natalia W.', avatarUrl: 'https://images.unsplash.com/photo-1615751072497-5f5169febe17?w=200&h=200&fit=crop' },
+  // ── KOTY (10) ──
+  { id: 'demo-11', name: 'Mruczek',  species: 'Kot',  breed: 'Maine Coon',            age: '5', location: 'Kraków',    lat: 50.0617, lng: 19.9366, bio: 'Jestem największym kotem w okolicy. Lubię drzemki i tuńczyk 😺', ownerId: 'demo-owner-2',  ownerName: 'Anna W.',    avatarUrl: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=200&h=200&fit=crop' },
+  { id: 'demo-12', name: 'Filemon',  species: 'Kot',  breed: 'Brytyjski Krótkowłosy', age: '4', location: 'Wrocław',   lat: 51.1000, lng: 17.0333, bio: 'Poważny kot z klasą. Nie przepadam za poniedziałkami 🎩', ownerId: 'demo-owner-4',  ownerName: 'Ewa S.',     avatarUrl: 'https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=200&h=200&fit=crop' },
+  { id: 'demo-13', name: 'Cleo',     species: 'Kot',  breed: 'Syjamski',              age: '3', location: 'Warszawa',  lat: 52.2200, lng: 21.0300, bio: 'Królowa Egiptu. Wymagam wielbienia o każdej porze 🏛️', ownerId: 'demo-owner-14', ownerName: 'Sandra K.',  avatarUrl: 'https://images.unsplash.com/photo-1519052537078-e6302a4968d4?w=200&h=200&fit=crop' },
+  { id: 'demo-14', name: 'Zefir',    species: 'Kot',  breed: 'Perski',                age: '6', location: 'Gdańsk',    lat: 54.3600, lng: 18.6300, bio: 'Puszysty i dostojny. Każdy koc należy do mnie 🌬️', ownerId: 'demo-owner-15', ownerName: 'Robert F.',  avatarUrl: 'https://images.unsplash.com/photo-1574158622682-e40e69881006?w=200&h=200&fit=crop' },
+  { id: 'demo-15', name: 'Kicia',    species: 'Kot',  breed: 'Europejski',            age: '2', location: 'Poznań',    lat: 52.4100, lng: 16.9100, bio: 'Polna kotka z miejskim stylem życia. Myszy? Nie ma problemu 🐭', ownerId: 'demo-owner-16', ownerName: 'Agata M.',   avatarUrl: 'https://images.unsplash.com/photo-1548247416-ec66f4900b2e?w=200&h=200&fit=crop' },
+  { id: 'demo-16', name: 'Shadow',   species: 'Kot',  breed: 'Czarny mix',            age: '5', location: 'Łódź',      lat: 51.7700, lng: 19.4700, bio: 'Czarny kot przynosi szczęście — pytaj moich właścicieli 🖤', ownerId: 'demo-owner-17', ownerName: 'Kamil Z.',   avatarUrl: 'https://images.unsplash.com/photo-1518288774672-b94e808873ff?w=200&h=200&fit=crop' },
+  { id: 'demo-17', name: 'Marchewa', species: 'Kot',  breed: 'Rudy mix',              age: '3', location: 'Lublin',    lat: 51.2500, lng: 22.5600, bio: 'Imię losowe. Charakter legendarny. Żarcie zawsze na czas 🥕', ownerId: 'demo-owner-18', ownerName: 'Gosia T.',   avatarUrl: 'https://images.unsplash.com/photo-1533743983669-94fa5c4338ec?w=200&h=200&fit=crop' },
+  { id: 'demo-18', name: 'Śnieżka',  species: 'Kot',  breed: 'Angora Turecka',        age: '4', location: 'Szczecin',  lat: 53.4300, lng: 14.5600, bio: 'Biała jak śnieg, dumna jak paw. Poranna kawa bez mojego towarzystwa nie istnieje ☁️', ownerId: 'demo-owner-19', ownerName: 'Marta C.',   avatarUrl: 'https://images.unsplash.com/photo-1495360010541-f48722b74f44?w=200&h=200&fit=crop' },
+  { id: 'demo-19', name: 'Tygrys',   species: 'Kot',  breed: 'Tygrysek (mix pręgowany)', age: '7', location: 'Katowice', lat: 50.2600, lng: 19.0300, bio: 'Nikt nie śpi kiedy chcę jeść. Mam precyzję do minuty 🐯', ownerId: 'demo-owner-20', ownerName: 'Łukasz H.',  avatarUrl: 'https://images.unsplash.com/photo-1561948955-570b270e7c36?w=200&h=200&fit=crop' },
+  { id: 'demo-20', name: 'Gacek',    species: 'Kot',  breed: 'Ragdoll',               age: '2', location: 'Gdynia',    lat: 54.5200, lng: 18.5400, bio: 'Opadnę ci na rękach i zasnę w 5 sekund. Dlatego zwie mnie Gacek 💤', ownerId: 'demo-owner-21', ownerName: 'Inga R.',    avatarUrl: 'https://images.unsplash.com/photo-1478098711619-5ab0b478d6e6?w=200&h=200&fit=crop' },
+  // ── INNE (6) ──
+  { id: 'demo-21', name: 'Whiskers', species: 'Królik', breed: 'Angorski',            age: '2', location: 'Łódź',      lat: 51.7592, lng: 19.4560, bio: 'Miękki jak chmurka, szybki jak błyskawica. Marchewki to moje życie 🥕', ownerId: 'demo-owner-6',  ownerName: 'Julia M.',   avatarUrl: 'https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=200&h=200&fit=crop' },
+  { id: 'demo-22', name: 'Hamidżo',  species: 'Chomik', breed: 'Złocisty',           age: '1', location: 'Bydgoszcz', lat: 53.1235, lng: 18.0084, bio: 'Kółko w klatce kręcę z 23:00 do 3:00. Nikt mi nie mówi co robić 🏃', ownerId: 'demo-owner-22', ownerName: 'Wiktor S.',  avatarUrl: 'https://images.unsplash.com/photo-1425082661705-1834bfd09dca?w=200&h=200&fit=crop' },
+  { id: 'demo-23', name: 'Żółwik',   species: 'Żółw',  breed: 'Żółw stepowy',        age: '12', location: 'Kraków',   lat: 50.0600, lng: 19.9400, bio: 'Pośpiech jest złodziejem czasu. Wiem co mówię 🐢', ownerId: 'demo-owner-23', ownerName: 'Dorota K.',  avatarUrl: 'https://images.unsplash.com/photo-1437622368342-7a3d73a34c8f?w=200&h=200&fit=crop' },
+  { id: 'demo-24', name: 'Papryk',   species: 'Papuga', breed: 'Papużka falista',     age: '3', location: 'Wrocław',   lat: 51.1100, lng: 17.0400, bio: 'Mówię "hej" i "kocham cię" ale tylko wtedy kiedy chcę 🦜', ownerId: 'demo-owner-24', ownerName: 'Renata L.',  avatarUrl: 'https://images.unsplash.com/photo-1551085254-e96b210db58a?w=200&h=200&fit=crop' },
+  { id: 'demo-25', name: 'Arabella', species: 'Koń',   breed: 'Klacz Arabska',        age: '8', location: 'Stajnia k. Warszawy', lat: 52.1500, lng: 20.9000, bio: 'Grzywa na wietrze, galop po łąkach. Jestem wolnością 🐴', ownerId: 'demo-owner-25', ownerName: 'Klaudia B.', avatarUrl: 'https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?w=200&h=200&fit=crop' },
+  { id: 'demo-26', name: 'Fretka',   species: 'Fretka', breed: 'Fretka domowa',       age: '2', location: 'Gdańsk',    lat: 54.3550, lng: 18.6500, bio: 'Kradnę skarpety i chowam pod kanapą. To moja misja życiowa 🧦', ownerId: 'demo-owner-26', ownerName: 'Adrian M.',  avatarUrl: 'https://images.unsplash.com/photo-1591825729269-caeb344f6df2?w=200&h=200&fit=crop' },
 ];
 
+const _d = (h) => Date.now() - 3600000 * h;
 const DEMO_POSTS = [
-  { id: 'dpost-1', petId: 'demo-1', petName: 'Burek', petSpecies: 'Pies', petAvatarUrl: DEMO_PETS[0].avatarUrl, ownerName: 'Marek K.', text: 'Dzisiejszy spacer w Łazienkach był niesamowity! Poznałem 3 nowe psy 🐕🐕🐕', imageUrl: 'https://images.unsplash.com/photo-1534361960057-19f4434a5cef?w=600&h=400&fit=crop', createdAt: Date.now() - 3600000 * 2, likes: { 'u1': true, 'u2': true, 'u3': true }, comments: { 'c1': { userName: 'Anna W.', text: 'Mruczek też chciałby pójść na spacer... ale wiadomo, kot 😂', createdAt: Date.now() - 3500000 } } },
-  { id: 'dpost-2', petId: 'demo-2', petName: 'Mruczek', petSpecies: 'Kot', petAvatarUrl: DEMO_PETS[1].avatarUrl, ownerName: 'Anna W.', text: 'Poniedziałkowy nastrój 😴 Pięć minut więcej snu proszę.', imageUrl: 'https://images.unsplash.com/photo-1574158622682-e40e69881006?w=600&h=400&fit=crop', createdAt: Date.now() - 3600000 * 5, likes: { 'u1': true, 'u4': true }, comments: {} },
-  { id: 'dpost-3', petId: 'demo-3', petName: 'Zuzia', petSpecies: 'Pies', petAvatarUrl: DEMO_PETS[2].avatarUrl, ownerName: 'Piotr L.', text: 'Pierwszy raz na plaży!! Woda jest mokra ale super!! 🌊🐾', imageUrl: 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=600&h=400&fit=crop', createdAt: Date.now() - 3600000 * 10, likes: { 'u1': true, 'u2': true, 'u3': true, 'u5': true }, comments: { 'c2': { userName: 'Marek K.', text: 'Burek też uwielbia plażę! Musimy się spotkać! 🐕', createdAt: Date.now() - 3500000 }, 'c3': { userName: 'Ewa S.', text: 'Jaka słodka! ❤️', createdAt: Date.now() - 3400000 } } },
-  { id: 'dpost-4', petId: 'demo-5', petName: 'Reksio', petSpecies: 'Pies', petAvatarUrl: DEMO_PETS[4].avatarUrl, ownerName: 'Tomek B.', text: 'Znalazłem skarpetę. Nie wiem czyja. Jest moja teraz. 🧦', imageUrl: '', createdAt: Date.now() - 3600000 * 20, likes: { 'u2': true, 'u3': true, 'u6': true }, comments: { 'c4': { userName: 'Julia M.', text: 'HAHA to najlepsza historia tygodnia 😂', createdAt: Date.now() - 3000000 } } },
-  { id: 'dpost-5', petId: 'demo-4', petName: 'Filemon', petSpecies: 'Kot', petAvatarUrl: DEMO_PETS[3].avatarUrl, ownerName: 'Ewa S.', text: 'Wtorek. Słońce świeci na moje futro. Życie jest znośne.', imageUrl: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=600&h=400&fit=crop', createdAt: Date.now() - 3600000 * 28, likes: { 'u1': true }, comments: {} },
+  // Burek (demo-1)
+  { id: 'dp-1',  petId:'demo-1',  petName:'Burek',    petSpecies:'Pies', petAvatarUrl:DEMO_PETS[0].avatarUrl,  ownerName:'Marek K.',   ownerId:'demo-owner-1',  text:'Dzisiejszy spacer w Łazienkach był niesamowity! Poznałem 3 nowe psy 🐕🐕🐕', imageUrl:'https://images.unsplash.com/photo-1534361960057-19f4434a5cef?w=600&h=400&fit=crop', createdAt:_d(2),  reactions:{heart:{'u1':true,'u2':true,'u3':true}}, comments:{'c1':{userName:'Anna W.', text:'Mruczek też chciałby... ale wiadomo, kot 😂', createdAt:_d(1.5)}} },
+  { id: 'dp-2',  petId:'demo-1',  petName:'Burek',    petSpecies:'Pies', petAvatarUrl:DEMO_PETS[0].avatarUrl,  ownerName:'Marek K.',   ownerId:'demo-owner-1',  text:'Weekendowa łaźnia. Twarz mówi wszystko. 🛁', imageUrl:'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=600&h=400&fit=crop', createdAt:_d(48), reactions:{laugh:{'u2':true,'u4':true}}, comments:{} },
+  { id: 'dp-3',  petId:'demo-1',  petName:'Burek',    petSpecies:'Pies', petAvatarUrl:DEMO_PETS[0].avatarUrl,  ownerName:'Marek K.',   ownerId:'demo-owner-1',  text:'Znalazłem nowego przyjaciela w parku. Obaj byliśmy zmęczeni 😅', imageUrl:'https://images.unsplash.com/photo-1548199973-03cce0bbc87b?w=600&h=400&fit=crop', createdAt:_d(120), reactions:{heart:{'u1':true}}, comments:{} },
+  // Zuzia (demo-2)
+  { id: 'dp-4',  petId:'demo-2',  petName:'Zuzia',    petSpecies:'Pies', petAvatarUrl:DEMO_PETS[1].avatarUrl,  ownerName:'Piotr L.',   ownerId:'demo-owner-3',  text:'Pierwszy raz na plaży w Sopocie!! Woda mokra ale super!! 🌊🐾', imageUrl:'https://images.unsplash.com/photo-1601758174493-45d0a4d3e407?w=600&h=400&fit=crop', createdAt:_d(10), reactions:{heart:{'u1':true,'u2':true,'u3':true,'u5':true}}, comments:{'c2':{userName:'Marek K.',text:'Burek też uwielbia plażę! 🐕',createdAt:_d(9)},'c3':{userName:'Ewa S.',text:'Jaka słodka! ❤️',createdAt:_d(8)}} },
+  { id: 'dp-5',  petId:'demo-2',  petName:'Zuzia',    petSpecies:'Pies', petAvatarUrl:DEMO_PETS[1].avatarUrl,  ownerName:'Piotr L.',   ownerId:'demo-owner-3',  text:'Spacer o świcie. Gdańsk jest piękny kiedy jeszcze śpią 🌅', imageUrl:'https://images.unsplash.com/photo-1552053831-71594a27632d?w=600&h=400&fit=crop', createdAt:_d(60), reactions:{paw:{'u3':true}}, comments:{} },
+  { id: 'dp-6',  petId:'demo-2',  petName:'Zuzia',    petSpecies:'Pies', petAvatarUrl:DEMO_PETS[1].avatarUrl,  ownerName:'Piotr L.',   ownerId:'demo-owner-3',  text:'Agility po raz pierwszy — upadłam na trzeciej przeszkodzie ale wstałam! 💪', imageUrl:'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=600&h=400&fit=crop', createdAt:_d(200), reactions:{heart:{'u1':true,'u4':true},paw:{'u2':true}}, comments:{} },
+  // Reksio (demo-3)
+  { id: 'dp-7',  petId:'demo-3',  petName:'Reksio',   petSpecies:'Pies', petAvatarUrl:DEMO_PETS[2].avatarUrl,  ownerName:'Tomek B.',   ownerId:'demo-owner-5',  text:'Znalazłem skarpetę. Nie wiem czyja. Jest moja teraz. 🧦', imageUrl:'', createdAt:_d(20), reactions:{laugh:{'u2':true,'u3':true,'u6':true}}, comments:{'c4':{userName:'Julia M.',text:'HAHA najlepsza historia tygodnia 😂',createdAt:_d(18)}} },
+  { id: 'dp-8',  petId:'demo-3',  petName:'Reksio',   petSpecies:'Pies', petAvatarUrl:DEMO_PETS[2].avatarUrl,  ownerName:'Tomek B.',   ownerId:'demo-owner-5',  text:'Mój pierwszy trening węchu. Znalazłem smakołyk za 8 minut 🔍', imageUrl:'https://images.unsplash.com/photo-1505628346881-b72b27e84530?w=600&h=400&fit=crop', createdAt:_d(80), reactions:{heart:{'u1':true}}, comments:{} },
+  // Azor (demo-4)
+  { id: 'dp-9',  petId:'demo-4',  petName:'Azor',     petSpecies:'Pies', petAvatarUrl:DEMO_PETS[3].avatarUrl,  ownerName:'Kasia R.',   ownerId:'demo-owner-7',  text:'Frisbee na Błoniach — nowy rekord! 15 łapań bez upuszczenia 🥏', imageUrl:'https://images.unsplash.com/photo-1503256207526-0d5523f31f68?w=600&h=400&fit=crop', createdAt:_d(6),  reactions:{paw:{'u1':true,'u3':true},heart:{'u2':true}}, comments:{} },
+  { id: 'dp-10', petId:'demo-4',  petName:'Azor',     petSpecies:'Pies', petAvatarUrl:DEMO_PETS[3].avatarUrl,  ownerName:'Kasia R.',   ownerId:'demo-owner-7',  text:'Kurs posłuszeństwa ukończony z wyróżnieniem 🎓', imageUrl:'', createdAt:_d(150), reactions:{heart:{'u1':true,'u5':true}}, comments:{'c5':{userName:'Piotr L.',text:'Gratulacje Azorku!',createdAt:_d(148)}} },
+  // Mruczek (demo-11)
+  { id: 'dp-11', petId:'demo-11', petName:'Mruczek',  petSpecies:'Kot',  petAvatarUrl:DEMO_PETS[10].avatarUrl, ownerName:'Anna W.',    ownerId:'demo-owner-2',  text:'Poniedziałkowy nastrój 😴 Pięć minut więcej snu proszę.', imageUrl:'https://images.unsplash.com/photo-1574158622682-e40e69881006?w=600&h=400&fit=crop', createdAt:_d(5),  reactions:{laugh:{'u1':true,'u4':true}}, comments:{} },
+  { id: 'dp-12', petId:'demo-11', petName:'Mruczek',  petSpecies:'Kot',  petAvatarUrl:DEMO_PETS[10].avatarUrl, ownerName:'Anna W.',    ownerId:'demo-owner-2',  text:'Znalazłem słoneczny kwadrat na podłodze. To mój teraz. ☀️', imageUrl:'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=600&h=400&fit=crop', createdAt:_d(36), reactions:{paw:{'u2':true,'u3':true},heart:{'u1':true}}, comments:{} },
+  { id: 'dp-13', petId:'demo-11', petName:'Mruczek',  petSpecies:'Kot',  petAvatarUrl:DEMO_PETS[10].avatarUrl, ownerName:'Anna W.',    ownerId:'demo-owner-2',  text:'Jutro weterynarz. Dziś jem co chcę. 🍣', imageUrl:'', createdAt:_d(100), reactions:{laugh:{'u5':true}}, comments:{} },
+  // Filemon (demo-12)
+  { id: 'dp-14', petId:'demo-12', petName:'Filemon',  petSpecies:'Kot',  petAvatarUrl:DEMO_PETS[11].avatarUrl, ownerName:'Ewa S.',     ownerId:'demo-owner-4',  text:'Wtorek. Słońce świeci na moje futro. Życie jest znośne.', imageUrl:'https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=600&h=400&fit=crop', createdAt:_d(28), reactions:{heart:{'u1':true}}, comments:{} },
+  { id: 'dp-15', petId:'demo-12', petName:'Filemon',  petSpecies:'Kot',  petAvatarUrl:DEMO_PETS[11].avatarUrl, ownerName:'Ewa S.',     ownerId:'demo-owner-4',  text:'Biblioteka w salonie to mój szczyt Everestu 📚', imageUrl:'https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=600&h=400&fit=crop', createdAt:_d(72), reactions:{paw:{'u3':true},laugh:{'u2':true}}, comments:{} },
+  // Cleo (demo-13)
+  { id: 'dp-16', petId:'demo-13', petName:'Cleo',     petSpecies:'Kot',  petAvatarUrl:DEMO_PETS[12].avatarUrl, ownerName:'Sandra K.',  ownerId:'demo-owner-14', text:'Przynoszę ofiary: dwa liście i martwy motyl. Jesteście wdzięczni? 🏛️', imageUrl:'https://images.unsplash.com/photo-1519052537078-e6302a4968d4?w=600&h=400&fit=crop', createdAt:_d(14), reactions:{laugh:{'u1':true,'u3':true,'u6':true}}, comments:{'c6':{userName:'Ewa S.',text:'Cleo nie zmienia się 😂',createdAt:_d(13)}} },
+  { id: 'dp-17', petId:'demo-13', petName:'Cleo',     petSpecies:'Kot',  petAvatarUrl:DEMO_PETS[12].avatarUrl, ownerName:'Sandra K.',  ownerId:'demo-owner-14', text:'Sesja zdjęciowa dla mnie — bo sobie zasłużyłam 📸', imageUrl:'https://images.unsplash.com/photo-1519052537078-e6302a4968d4?w=600&h=400&fit=crop', createdAt:_d(90), reactions:{heart:{'u2':true,'u4':true}}, comments:{} },
+  // Luna (demo-7)
+  { id: 'dp-18', petId:'demo-7',  petName:'Luna',     petSpecies:'Pies', petAvatarUrl:DEMO_PETS[6].avatarUrl,  ownerName:'Ola P.',     ownerId:'demo-owner-10', text:'Śnieg!!! Nareszcie!!! Szczecin biały jak moje futro 🌨️❄️', imageUrl:'https://images.unsplash.com/photo-1617895153857-82fe0c82b8c4?w=600&h=400&fit=crop', createdAt:_d(3),  reactions:{paw:{'u1':true,'u2':true,'u3':true,'u4':true}}, comments:{'c7':{userName:'Bartek J.',text:'Max też by chciał śnieg 🐕',createdAt:_d(2.5)}} },
+  { id: 'dp-19', petId:'demo-7',  petName:'Luna',     petSpecies:'Pies', petAvatarUrl:DEMO_PETS[6].avatarUrl,  ownerName:'Ola P.',     ownerId:'demo-owner-10', text:'Latem to ja śpię. Nie pytajcie. 💤', imageUrl:'', createdAt:_d(200), reactions:{laugh:{'u5':true,'u6':true}}, comments:{} },
+  // Arabella (demo-25)
+  { id: 'dp-20', petId:'demo-25', petName:'Arabella', petSpecies:'Koń',  petAvatarUrl:DEMO_PETS[24].avatarUrl, ownerName:'Klaudia B.', ownerId:'demo-owner-25', text:'Poranny galop przez łąki. Nie ma nic piękniejszego 🐴🌅', imageUrl:'https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?w=600&h=400&fit=crop', createdAt:_d(8),  reactions:{heart:{'u1':true,'u2':true,'u7':true},paw:{'u3':true}}, comments:{'c8':{userName:'Ola P.',text:'Piękna! ❤️',createdAt:_d(7)}} },
+  { id: 'dp-21', petId:'demo-25', petName:'Arabella', petSpecies:'Koń',  petAvatarUrl:DEMO_PETS[24].avatarUrl, ownerName:'Klaudia B.', ownerId:'demo-owner-25', text:'Konkurs ujeżdżania — 3. miejsce! Trenujemy dalej 🏆', imageUrl:'https://images.unsplash.com/photo-1449379888370-9e0b76a5c8f2?w=600&h=400&fit=crop', createdAt:_d(300), reactions:{heart:{'u1':true,'u4':true}}, comments:{} },
+  // Whiskers (demo-21)
+  { id: 'dp-22', petId:'demo-21', petName:'Whiskers', petSpecies:'Królik', petAvatarUrl:DEMO_PETS[20].avatarUrl, ownerName:'Julia M.', ownerId:'demo-owner-6',  text:'Marchewka > wszystko. To nie jest opinia, to fakt. 🥕', imageUrl:'https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=600&h=400&fit=crop', createdAt:_d(18), reactions:{heart:{'u2':true,'u5':true},laugh:{'u3':true}}, comments:{} },
+  // Papryk (demo-24)
+  { id: 'dp-23', petId:'demo-24', petName:'Papryk',   petSpecies:'Papuga', petAvatarUrl:DEMO_PETS[23].avatarUrl, ownerName:'Renata L.', ownerId:'demo-owner-24', text:'Nauczyłem się nowego słowa: "obiad". Używam go 80 razy dziennie. 🦜', imageUrl:'https://images.unsplash.com/photo-1551085254-e96b210db58a?w=600&h=400&fit=crop', createdAt:_d(12), reactions:{laugh:{'u1':true,'u2':true,'u3':true,'u4':true,'u5':true}}, comments:{'c9':{userName:'Julia M.',text:'😂😂😂 Klasyk!',createdAt:_d(11)}} },
+  // Żółwik (demo-23)
+  { id: 'dp-24', petId:'demo-23', petName:'Żółwik',   petSpecies:'Żółw', petAvatarUrl:DEMO_PETS[22].avatarUrl, ownerName:'Dorota K.', ownerId:'demo-owner-23', text:'Dziś przeszedłem cały pokój. Zajęło mi to 40 minut. Jestem zmęczony. 🐢', imageUrl:'https://images.unsplash.com/photo-1437622368342-7a3d73a34c8f?w=600&h=400&fit=crop', createdAt:_d(30), reactions:{laugh:{'u1':true,'u6':true},heart:{'u3':true}}, comments:{} },
+  // Bella (demo-5)
+  { id: 'dp-25', petId:'demo-5',  petName:'Bella',    petSpecies:'Pies', petAvatarUrl:DEMO_PETS[4].avatarUrl,  ownerName:'Zofia M.',   ownerId:'demo-owner-8',  text:'Herbatka o 17:00, obowiązkowo. Pani Bella wymaga kultury 🫖', imageUrl:'https://images.unsplash.com/photo-1583511655826-05700d52f4d9?w=600&h=400&fit=crop', createdAt:_d(16), reactions:{heart:{'u2':true,'u4':true},paw:{'u1':true}}, comments:{} },
+  // Max owczarek (demo-6)
+  { id: 'dp-26', petId:'demo-6',  petName:'Max',      petSpecies:'Pies', petAvatarUrl:DEMO_PETS[5].avatarUrl,  ownerName:'Bartek J.',  ownerId:'demo-owner-9',  text:'Nocna warta. Wszystko spokojne. Melduję 🛡️', imageUrl:'https://images.unsplash.com/photo-1589941013453-ec89f33b5e95?w=600&h=400&fit=crop', createdAt:_d(22), reactions:{paw:{'u1':true,'u3':true,'u5':true}}, comments:{} },
+  // Shadow (demo-16)
+  { id: 'dp-27', petId:'demo-16', petName:'Shadow',   petSpecies:'Kot',  petAvatarUrl:DEMO_PETS[15].avatarUrl, ownerName:'Kamil Z.',   ownerId:'demo-owner-17', text:'Czarny kot, czarny humor 🖤', imageUrl:'https://images.unsplash.com/photo-1518288774672-b94e808873ff?w=600&h=400&fit=crop', createdAt:_d(40), reactions:{heart:{'u2':true},laugh:{'u4':true}}, comments:{} },
+  // Śnieżka (demo-18)
+  { id: 'dp-28', petId:'demo-18', petName:'Śnieżka',  petSpecies:'Kot',  petAvatarUrl:DEMO_PETS[17].avatarUrl, ownerName:'Marta C.',   ownerId:'demo-owner-19', text:'Biała jak śnieg, miękka jak chmura. Taka po prostu jestem ☁️', imageUrl:'https://images.unsplash.com/photo-1495360010541-f48722b74f44?w=600&h=400&fit=crop', createdAt:_d(55), reactions:{heart:{'u1':true,'u2':true,'u3':true}}, comments:{'c10':{userName:'Anna W.',text:'Przepiękna! ❤️',createdAt:_d(54)}} },
+  // Fretka (demo-26)
+  { id: 'dp-29', petId:'demo-26', petName:'Fretka',   petSpecies:'Fretka', petAvatarUrl:DEMO_PETS[25].avatarUrl, ownerName:'Adrian M.', ownerId:'demo-owner-26', text:'Dzisiejszy łup: jeden but, kapsel i długopis 🧦', imageUrl:'https://images.unsplash.com/photo-1591825729269-caeb344f6df2?w=600&h=400&fit=crop', createdAt:_d(9),  reactions:{laugh:{'u1':true,'u2':true,'u3':true,'u4':true}}, comments:{'c11':{userName:'Julia M.',text:'Fretki są najzabawniejsze 😂',createdAt:_d(8)}} },
+  // Tofik (demo-8)
+  { id: 'dp-30', petId:'demo-8',  petName:'Tofik',    petSpecies:'Pies', petAvatarUrl:DEMO_PETS[7].avatarUrl,  ownerName:'Paweł N.',   ownerId:'demo-owner-11', text:'Krótkie nogi, wielki duch. Dziś zdobyłem kanapę 🏔️', imageUrl:'https://images.unsplash.com/photo-1608096299210-db7e38487075?w=600&h=400&fit=crop', createdAt:_d(35), reactions:{laugh:{'u2':true},heart:{'u5':true}}, comments:{} },
 ];
 
 let isDemoMode = false;
@@ -3347,7 +3691,7 @@ window.startDemo = () => {
   document.getElementById('post-user-avatar').textContent = '👤';
 
   const sidebarEl = document.getElementById('sidebar-my-pets');
-  sidebarEl.innerHTML = DEMO_PETS.slice(0,3).map(p => `
+  sidebarEl.innerHTML = DEMO_PETS.slice(0,4).map(p => `
     <div class="my-pet-item" onclick="showDemoPetProfile('${p.id}')">
       <div class="pet-avatar"><img src="${p.avatarUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover"></div>
       <div><div class="pet-name">${p.name}</div><div class="pet-breed">${p.breed}</div></div>
@@ -3356,7 +3700,7 @@ window.startDemo = () => {
   renderDemoFeed();
 
   const sugEl = document.getElementById('sidebar-suggestions');
-  sugEl.innerHTML = DEMO_PETS.slice(3).map(p => `
+  sugEl.innerHTML = DEMO_PETS.slice(4, 10).map(p => `
     <div class="suggest-item" onclick="showDemoPetProfile('${p.id}')">
       <div class="suggest-avatar"><img src="${p.avatarUrl}"></div>
       <div><div class="suggest-name">${p.name}</div><div class="suggest-breed">${p.breed} · ${p.location}</div></div>
@@ -3379,9 +3723,15 @@ function renderDemoPostCard(p) {
   const avatarHTML = p.petAvatarUrl
     ? `<img src="${p.petAvatarUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">`
     : emoji;
-  const likes = p.likes ? Object.keys(p.likes).length : 0;
   const comments = p.comments ? Object.keys(p.comments).length : 0;
   const timeStr = timeAgo(p.createdAt);
+  const reactionsHTML = ['❤️','😂','😲','😢','🐾'].map(em => {
+    const key = {'❤️':'heart','😂':'laugh','😲':'wow','😢':'sad','🐾':'paw'}[em];
+    const count = p.reactions && p.reactions[key] ? Object.keys(p.reactions[key]).length : 0;
+    return `<button class="reaction-btn" onclick="demoActionBlock()">
+      <span class="r-emoji">${em}</span>${count > 0 ? `<span class="r-count">${count}</span>` : ''}
+    </button>`;
+  }).join('');
 
   return `
     <div class="post-card" id="post-${p.id}">
@@ -3395,8 +3745,8 @@ function renderDemoPostCard(p) {
       </div>
       ${p.text ? `<div class="post-text">${escapeHtml(p.text)}</div>` : ''}
       ${p.imageUrl ? `<img src="${p.imageUrl}" class="post-img" loading="lazy">` : ''}
+      <div class="reactions-bar">${reactionsHTML}</div>
       <div class="post-actions">
-        <button class="action-btn" onclick="demoActionBlock()">🤍 <span>${likes}</span></button>
         <button class="action-btn" onclick="toggleDemoComments('${p.id}')">💬 <span>${comments}</span></button>
         <button class="action-btn" onclick="demoActionBlock()">🔗 Udostępnij</button>
       </div>
@@ -3435,7 +3785,7 @@ window.showDemoPetProfile = (petId) => {
           <div class="profile-tags">
             <span class="profile-tag species">${emoji} ${p.species}</span>
             ${p.breed ? `<span class="profile-tag">${p.breed}</span>` : ''}
-            ${p.age ? `<span class="profile-tag">🎂 ${p.age} lata</span>` : ''}
+            ${p.age ? `<span class="profile-tag">🎂 ${p.age} lat</span>` : ''}
             ${p.location ? `<span class="profile-tag location">📍 ${p.location}</span>` : ''}
             <span class="profile-tag followers">👥 0 obserwujących</span>
           </div>
@@ -3445,13 +3795,25 @@ window.showDemoPetProfile = (petId) => {
         </div>
       </div>
       ${p.bio ? `<div class="profile-bio">${escapeHtml(p.bio)}</div>` : ''}
-    </div>
-    <h3 style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;margin-bottom:16px">Posty</h3>`;
+    </div>`;
 
   const petPosts = DEMO_POSTS.filter(x => x.petId === petId);
-  document.getElementById('profile-posts').innerHTML = petPosts.length
-    ? petPosts.map(x => renderDemoPostCard(x)).join('')
-    : `<div class="empty-state"><div class="emoji">📸</div><p>Brak postów</p></div>`;
+  const photoPosts = petPosts.filter(x => x.imageUrl);
+  let galleryHTML = '';
+  if (photoPosts.length > 0) {
+    galleryHTML = `
+      <h3 style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;margin-bottom:12px">📸 Galeria</h3>
+      <div class="profile-gallery">
+        ${photoPosts.slice(0,9).map(x => `
+          <div class="gallery-item" onclick="openGalleryLightbox('${x.imageUrl}')">
+            <img src="${x.imageUrl}" loading="lazy" alt="">
+          </div>`).join('')}
+      </div>`;
+  }
+  document.getElementById('profile-posts').innerHTML = galleryHTML +
+    (petPosts.length
+      ? `<h3 style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;margin-bottom:16px">Posty</h3>` + petPosts.map(x => renderDemoPostCard(x)).join('')
+      : `<div class="empty-state"><div class="emoji">📸</div><p>Brak postów</p></div>`);
 };
 
 window.exitDemo = () => {
