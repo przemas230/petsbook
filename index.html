@@ -2371,7 +2371,7 @@ async function sendNotification(toUid, payload) {
   await push(ref(db, `notifications/${toUid}`), {
     ...payload,
     fromUid: currentUser.uid,
-    fromName: currentUser.displayName || 'Użytkownik',
+    fromName: firstNameOnly(currentUser.displayName) || 'Użytkownik',
     fromPhoto: currentUser.photoURL || null,
     read: false,
     createdAt: Date.now()
@@ -2484,12 +2484,17 @@ window.handleAvatarPreview = (input) => {
 };
 
 window.savePet = async () => {
+  if (window._isSavingPet) return;
   const name = document.getElementById('pet-name').value.trim();
   const species = document.getElementById('pet-species').value;
   if (!name) { showToast('Podaj imię zwierzęcia!'); return; }
   if (!species) { showToast('Wybierz gatunek!'); return; }
 
   showToast('Zapisuję...');
+  window._isSavingPet = true;
+  const saveBtn = document.querySelector('#add-pet-modal .btn-save');
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Zapisuję...'; }
+
   const petData = {
     name, species,
     breed: document.getElementById('pet-breed').value.trim(),
@@ -2515,12 +2520,17 @@ window.savePet = async () => {
     petData.avatarUrl = myPets[editingPetId].avatarUrl;
   }
 
-  if (editingPetId) {
-    await update(ref(db, `pets/${editingPetId}`), petData);
-    showToast('Zaktualizowano profil! 🐾');
-  } else {
-    await push(ref(db, 'pets'), petData);
-    showToast('Dodano zwierzę! 🎉');
+  try {
+    if (editingPetId) {
+      await update(ref(db, `pets/${editingPetId}`), petData);
+      showToast('Zaktualizowano profil! 🐾');
+    } else {
+      await push(ref(db, 'pets'), petData);
+      showToast('Dodano zwierzę! 🎉');
+    }
+  } finally {
+    window._isSavingPet = false;
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Zapisz 🐾'; }
   }
   closeModal('add-pet-modal');
 };
@@ -2570,7 +2580,7 @@ window.toggleFollow = async (petId, ownerUid) => {
     if (ownerUid) {
       await sendNotification(ownerUid, {
         type: 'follow',
-        text: `${currentUser.displayName || 'Ktoś'} zaczął obserwować Twoje zwierzę`,
+        text: `${firstNameOnly(currentUser.displayName) || 'Ktoś'} zaczął obserwować Twoje zwierzę`,
         petId
       });
     }
@@ -2813,7 +2823,7 @@ window.toggleLike = async (postId, postOwnerId) => {
     if (postOwnerId && postOwnerId !== currentUser.uid) {
       await sendNotification(postOwnerId, {
         type: 'like',
-        text: `${currentUser.displayName || 'Ktoś'} polubił(a) post`,
+        text: `${firstNameOnly(currentUser.displayName) || 'Ktoś'} polubił(a) post`,
         postId
       });
     }
@@ -2846,7 +2856,7 @@ window.sendComment = async (postId, postOwnerId) => {
   if (postOwnerId && postOwnerId !== currentUser.uid) {
     await sendNotification(postOwnerId, {
       type: 'comment',
-      text: `${currentUser.displayName || 'Ktoś'} skomentował(a)`,
+      text: `${firstNameOnly(currentUser.displayName) || 'Ktoś'} skomentował(a)`,
       commentText: text,
       postId
     });
@@ -2944,7 +2954,7 @@ window.toggleReaction = async (postId, emoji, postOwnerId) => {
     if (postOwnerId && postOwnerId !== currentUser.uid) {
       await sendNotification(postOwnerId, {
         type: 'like',
-        text: `${currentUser.displayName || 'Ktoś'} zareagował(a) ${emoji}`,
+        text: `${firstNameOnly(currentUser.displayName) || 'Ktoś'} zareagował(a) ${emoji}`,
         postId
       });
     }
@@ -3128,7 +3138,7 @@ window.renderReactWhoList = (filterKey) => {
     if (filterKey !== 'all' && key !== filterKey) continue;
     for (const uid of Object.keys(users)) {
       const status = reactWhoUserNames[uid];
-      const name = status?.displayName || (uid === currentUser?.uid ? (currentUser.displayName || 'Ty') : 'Użytkownik');
+      const name = firstNameOnly(status?.displayName) || (uid === currentUser?.uid ? firstNameOnly(currentUser.displayName || '') || 'Ty' : 'Użytkownik');
       const photo = status?.photoURL || null;
       entries.push({ uid, emoji: EMOJI_LABELS[key] || key, name, photo });
     }
