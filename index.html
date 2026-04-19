@@ -1746,8 +1746,19 @@
             <option value="Inne">Inne</option>
           </select>
           <input class="filter-select" type="text" id="filter-location" placeholder="📍 Miasto / region">
-          <input class="filter-select" type="text" id="filter-breed" placeholder="🔤 Rasa">
+          <div style="position:relative;flex:1">
+            <input class="filter-select" style="width:100%;box-sizing:border-box" type="text"
+              id="filter-breed" placeholder="🔤 Rasa"
+              oninput="onExploreBreedInput(this.value)"
+              onfocus="onExploreBreedInput(this.value)"
+              onkeydown="onExploreBreedKeydown(event)"
+              autocomplete="off">
+            <div class="breed-dropdown" id="breed-dropdown-explore"></div>
+          </div>
           <button class="btn-search-filter" onclick="runExploreSearch()">Szukaj</button>
+        </div>
+        <div id="explore-location-hint" style="display:none;padding:6px 0 0;font-size:12px;font-weight:700;color:var(--paw);cursor:pointer" onclick="useMyLocationExplore()">
+          📍 Użyj mojej lokalizacji aby sortować po odległości
         </div>
       </div>
       <!-- MAP -->
@@ -2604,7 +2615,8 @@ window.toggleFollow = async (petId, ownerUid) => {
 //  FEED / POSTS
 // ═══════════════════════════════════
 function loadFeed() {
-  onValue(ref(db, 'posts'), snap => {
+  // Załaduj raz wszystkie posty przez get()
+  get(ref(db, 'posts')).then(snap => {
     allFeedPosts = [];
     if (snap.exists()) {
       snap.forEach(c => allFeedPosts.push({ id: c.key, ...c.val() }));
@@ -2612,6 +2624,19 @@ function loadFeed() {
     }
     applyFeedFilters();
     loadSuggestions();
+  });
+  // Nasłuchuj nowych postów (tylko ostatni) aby aktualizować feed na bieżąco
+  const newPostRef = query(ref(db, 'posts'), orderByChild('createdAt'), limitToLast(1));
+  onValue(newPostRef, snap => {
+    if (!snap.exists()) return;
+    snap.forEach(c => {
+      const post = { id: c.key, ...c.val() };
+      const exists = allFeedPosts.some(p => p.id === post.id);
+      if (!exists) {
+        allFeedPosts.unshift(post);
+        applyFeedFilters();
+      }
+    });
   });
 }
 
@@ -3088,6 +3113,62 @@ document.addEventListener('click', (e) => {
   if (wrap && !wrap.contains(e.target)) {
     document.getElementById('breed-dropdown')?.classList.remove('open');
   }
+  // Zamknij też dropdown Odkryj
+  const exploreInput = document.getElementById('filter-breed');
+  if (exploreInput && !exploreInput.contains(e.target)) {
+    document.getElementById('breed-dropdown-explore')?.classList.remove('open');
+  }
+});
+
+// ── Explore breed autocomplete ──
+let _exploreBreedIdx = -1;
+window.onExploreBreedInput = (val) => {
+  const species = document.getElementById('filter-species').value;
+  const dropdown = document.getElementById('breed-dropdown-explore');
+  if (!dropdown) return;
+  const q = val.trim().toLowerCase();
+  if (q.length < 2) { dropdown.classList.remove('open'); return; }
+  let pool = [];
+  if (species === 'Pies') pool = DOG_BREEDS;
+  else if (species === 'Kot') pool = CAT_BREEDS;
+  else if (OTHER_BREEDS && OTHER_BREEDS[species]) pool = OTHER_BREEDS[species];
+  else pool = [...(DOG_BREEDS||[]), ...(CAT_BREEDS||[])];
+  const matches = pool.filter(b => b.toLowerCase().includes(q)).slice(0, 10);
+  if (!matches.length) { dropdown.classList.remove('open'); return; }
+  _exploreBreedIdx = -1;
+  dropdown.innerHTML = matches.map(b => {
+    const i = b.toLowerCase().indexOf(q);
+    const hl = b.slice(0,i) + '<strong>' + b.slice(i, i+q.length) + '</strong>' + b.slice(i+q.length);
+    return '<div class="breed-option" data-val="' + b + '" onmousedown="selectExploreBreed(\'' + b + '\')">' + hl + '</div>';
+  }).join('');
+  dropdown.classList.add('open');
+};
+window.selectExploreBreed = (val) => {
+  document.getElementById('filter-breed').value = val;
+  document.getElementById('breed-dropdown-explore').classList.remove('open');
+  runExploreSearch();
+};
+window.onExploreBreedKeydown = (e) => {
+  const dd = document.getElementById('breed-dropdown-explore');
+  const opts = dd && dd.querySelectorAll('.breed-option');
+  if (!dd || !dd.classList.contains('open')) return;
+  if (e.key === 'ArrowDown') { e.preventDefault(); _exploreBreedIdx = Math.min(_exploreBreedIdx+1, opts.length-1); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); _exploreBreedIdx = Math.max(_exploreBreedIdx-1, -1); }
+  else if (e.key === 'Enter') { e.preventDefault(); if (_exploreBreedIdx >= 0) selectExploreBreed(opts[_exploreBreedIdx].dataset.val); else runExploreSearch(); return; }
+  else if (e.key === 'Escape') { dd.classList.remove('open'); return; }
+  opts && opts.forEach((o, i) => o.classList.toggle('focused', i === _exploreBreedIdx));
+};
+window.useMyLocationExplore = () => {
+  navigator.geolocation && navigator.geolocation.getCurrentPosition(pos => {
+    myLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    const hint = document.getElementById('explore-location-hint');
+    if (hint) hint.style.display = 'none';
+    runExploreSearch();
+  }, () => showToast('Brak dostępu do lokalizacji'));
+};
+document.getElementById('filter-species') && document.getElementById('filter-species').addEventListener('change', () => {
+  const val = (document.getElementById('filter-breed') && document.getElementById('filter-breed').value) || '';
+  if (val.length >= 2) onExploreBreedInput(val);
 });
 
 // Also update suggestions when species changes
@@ -3751,6 +3832,9 @@ window.runExploreSearch = async () => {
   const el = document.getElementById('explore-results');
   el.innerHTML = '<div class="loading-spinner" style="grid-column:1/-1">🐾</div>';
 
+  const locHint = document.getElementById('explore-location-hint');
+  if (locHint) locHint.style.display = myLocation ? 'none' : 'block';
+
   const snap = await get(ref(db, 'pets'));
   let results = [];
   if (snap.exists()) {
@@ -3763,24 +3847,43 @@ window.runExploreSearch = async () => {
     });
   }
 
+  if (appSettings.demoFeed) {
+    const realIds = new Set(results.map(p => p.id));
+    let demoToAdd = DEMO_PETS.filter(p => !realIds.has(p.id));
+    if (species) demoToAdd = demoToAdd.filter(p => p.species === species);
+    if (breed) demoToAdd = demoToAdd.filter(p => (p.breed || '').toLowerCase().includes(breed));
+    demoToAdd.forEach(p => results.push({ ...p, _isDemo: true }));
+  }
+
+  if (myLocation) {
+    results = results.map(p => ({
+      ...p,
+      _dist: (p.lat && p.lng) ? haversine(myLocation.lat, myLocation.lng, p.lat, p.lng) : 99999
+    })).sort((a, b) => a._dist - b._dist);
+  }
+
   if (!results.length) {
-    el.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="emoji">🔍</div><p>Brak wyników</p></div>`;
+    el.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="emoji">🔍</div><p>Brak wyników</p></div>';
     return;
   }
+
   el.innerHTML = results.map(p => {
     const emoji = speciesEmoji(p.species);
-    const cardAvatarHTML = p.avatarUrl
-      ? `<img src="${p.avatarUrl}">`
-      : `<span style="font-size:64px;display:flex;align-items:center;justify-content:height:200px;justify-content:center;align-items:center;height:200px">${emoji}</span>`;
-    return `
-      <div class="pet-card" onclick="showPetProfile('${p.id}')">
-        <div class="pet-card-img">${cardAvatarHTML}</div>
-        <div class="pet-card-info">
-          <div class="pet-card-name">${p.name}</div>
-          <div class="pet-card-breed">${p.breed || ''} ${p.breed ? '·' : ''} ${p.species}</div>
-          ${p.location ? `<div class="pet-card-location">📍 ${p.location}</div>` : ''}
-        </div>
-      </div>`;
+    const imgHTML = p.avatarUrl
+      ? '<img src="' + p.avatarUrl + '" referrerpolicy="no-referrer" loading="lazy">'
+      : '<span style="font-size:64px;display:flex;align-items:center;justify-content:center;height:200px">' + emoji + '</span>';
+    const distLabel = (p._dist && p._dist < 9000)
+      ? '<div class="pet-card-location">📍 ' + (p._dist < 1 ? '<1' : Math.round(p._dist)) + ' km</div>'
+      : (p.location ? '<div class="pet-card-location">📍 ' + p.location + '</div>' : '');
+    const demoTag = p._isDemo ? '<span class="demo-post-badge" style="font-size:10px;padding:1px 5px">demo</span>' : '';
+    const clickFn = p._isDemo ? "showDemoPetProfile('" + p.id + "')" : "showPetProfile('" + p.id + "')";
+    return '<div class="pet-card" onclick="' + clickFn + '">'
+      + '<div class="pet-card-img">' + imgHTML + '</div>'
+      + '<div class="pet-card-info">'
+      + '<div class="pet-card-name">' + p.name + demoTag + '</div>'
+      + '<div class="pet-card-breed">' + (p.breed || '') + (p.breed ? ' · ' : '') + p.species + '</div>'
+      + distLabel
+      + '</div></div>';
   }).join('');
 };
 
