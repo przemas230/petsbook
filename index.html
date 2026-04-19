@@ -218,6 +218,129 @@
   }
   .btn-signout:hover { border-color: var(--paw); color: var(--paw); }
 
+  /* ── NOTIFICATIONS ── */
+  .notif-wrap {
+    position: relative;
+    flex-shrink: 0;
+  }
+  .notif-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--cream);
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+    position: relative;
+  }
+  .notif-btn:hover { background: #EDD5B8; }
+  .notif-badge {
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    background: #e53935;
+    color: white;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    font-size: 10px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid white;
+    display: none;
+  }
+  .notif-panel {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 8px);
+    width: 340px;
+    background: white;
+    border-radius: 18px;
+    box-shadow: 0 12px 48px rgba(61,43,31,0.18);
+    z-index: 500;
+    overflow: hidden;
+    display: none;
+    animation: fadeUp 0.2s ease;
+  }
+  .notif-panel.open { display: block; }
+  .notif-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px 12px;
+    border-bottom: 2px solid var(--cream);
+  }
+  .notif-panel-title {
+    font-family: 'Fraunces', serif;
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .btn-mark-all-read {
+    background: none;
+    border: none;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--paw);
+    cursor: pointer;
+    font-family: 'Nunito', sans-serif;
+  }
+  .notif-list {
+    max-height: 360px;
+    overflow-y: auto;
+  }
+  .notif-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 20px;
+    cursor: pointer;
+    transition: background 0.15s;
+    border-bottom: 1px solid var(--cream);
+  }
+  .notif-item:last-child { border-bottom: none; }
+  .notif-item:hover { background: var(--cream); }
+  .notif-item.unread { background: #FFF8F5; }
+  .notif-item.unread:hover { background: #FFF0E8; }
+  .notif-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 2px solid var(--paw-light);
+    background: var(--cream);
+    flex-shrink: 0;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+  }
+  .notif-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .notif-content { flex: 1; }
+  .notif-text { font-size: 13px; font-weight: 600; line-height: 1.4; }
+  .notif-text strong { font-weight: 800; }
+  .notif-time { font-size: 11px; color: #aaa; font-weight: 600; margin-top: 2px; }
+  .notif-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--paw);
+    flex-shrink: 0;
+    margin-top: 5px;
+  }
+  .notif-empty {
+    text-align: center;
+    padding: 32px 20px;
+    color: var(--bark-light);
+    font-size: 13px;
+    font-weight: 600;
+  }
+
   /* ── LAYOUT ── */
   .main-layout {
     max-width: 1100px;
@@ -370,6 +493,66 @@
   }
   .btn-post:hover { background: var(--bark); transform: translateY(-1px); }
   #post-image-preview { max-width: 100%; border-radius: 12px; margin-top: 10px; display: none; }
+
+  /* ── FEED FILTER BAR ── */
+  .feed-filter-bar {
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: var(--card-shadow);
+    padding: 14px 20px;
+    margin-bottom: 16px;
+  }
+  .feed-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 14px;
+    border-bottom: 2px solid var(--cream);
+    padding-bottom: 12px;
+  }
+  .feed-tab {
+    padding: 7px 16px;
+    border-radius: 20px;
+    border: none;
+    background: none;
+    font-family: 'Nunito', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--bark-light);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .feed-tab:hover { background: var(--cream); color: var(--bark); }
+  .feed-tab.active { background: var(--paw); color: white; }
+  .feed-filter-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .feed-filter-select {
+    background: var(--cream);
+    border: 2px solid transparent;
+    border-radius: 10px;
+    padding: 7px 12px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--bark);
+    cursor: pointer;
+    flex: 1;
+    min-width: 140px;
+  }
+  .feed-filter-select:focus { outline: none; border-color: var(--paw-light); }
+  .feed-radius-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 2;
+    min-width: 200px;
+  }
+  .feed-radius-wrap label { font-size: 13px; font-weight: 700; white-space: nowrap; }
+  .feed-radius-wrap input[type=range] { flex: 1; accent-color: var(--paw); }
+  #feed-radius-val { font-size: 13px; font-weight: 800; color: var(--paw); min-width: 52px; }
 
   /* ── FEED POSTS ── */
   .post-card {
@@ -647,6 +830,7 @@
   }
   .profile-tag.species { background: #FFF0E8; color: var(--paw); }
   .profile-tag.location { background: #E8F5EE; color: var(--grass); }
+  .profile-tag.followers { background: #FFF8DC; color: #B8860B; cursor: default; }
   .profile-bio {
     padding: 0 24px 20px;
     font-size: 15px;
@@ -654,6 +838,29 @@
     color: var(--bark);
     font-weight: 600;
   }
+
+  /* ── FOLLOW BUTTON ── */
+  .btn-follow {
+    background: var(--gold);
+    color: var(--bark);
+    border: none;
+    border-radius: 10px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 800;
+    font-family: 'Nunito', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-follow:hover { background: #e8a800; transform: translateY(-1px); }
+  .btn-follow.following {
+    background: var(--grass);
+    color: white;
+  }
+  .btn-follow.following:hover { background: #3a7d58; }
 
   /* ── MODAL ── */
   .modal-overlay {
@@ -1119,6 +1326,22 @@
         <button class="nav-tab" id="tab-chat" onclick="showPage('chat')">💬 Czat</button>
       </div>
       <div class="nav-user">
+        <!-- 🔔 NOTIFICATIONS BELL -->
+        <div class="notif-wrap" id="notif-wrap">
+          <button class="notif-btn" id="notif-btn" onclick="toggleNotifPanel()">
+            🔔
+            <span class="notif-badge" id="notif-badge">0</span>
+          </button>
+          <div class="notif-panel" id="notif-panel">
+            <div class="notif-panel-header">
+              <div class="notif-panel-title">🔔 Powiadomienia</div>
+              <button class="btn-mark-all-read" onclick="markAllNotifsRead()">Oznacz wszystkie</button>
+            </div>
+            <div class="notif-list" id="notif-list">
+              <div class="notif-empty">Brak powiadomień</div>
+            </div>
+          </div>
+        </div>
         <div id="nav-avatar-wrap"></div>
         <button class="btn-signout" onclick="signOut()">Wyloguj</button>
       </div>
@@ -1155,6 +1378,38 @@
               <div class="btn-photo-upload">📷 Zdjęcie</div>
             </label>
             <button class="btn-post" onclick="submitPost()">Opublikuj 🐾</button>
+          </div>
+        </div>
+
+        <!-- 🗂️ FEED FILTER BAR -->
+        <div class="feed-filter-bar">
+          <div class="feed-tabs">
+            <button class="feed-tab active" id="ftab-all" onclick="setFeedTab('all')">🌍 Wszyscy</button>
+            <button class="feed-tab" id="ftab-following" onclick="setFeedTab('following')">⭐ Obserwowani</button>
+          </div>
+          <div class="feed-filter-row">
+            <select class="feed-filter-select" id="feed-filter-species" onchange="applyFeedFilters()">
+              <option value="">🐾 Wszystkie gatunki</option>
+              <option value="Pies">🐕 Pies</option>
+              <option value="Kot">🐈 Kot</option>
+              <option value="Królik">🐇 Królik</option>
+              <option value="Chomik">🐹 Chomik</option>
+              <option value="Świnka morska">🐹 Świnka morska</option>
+              <option value="Szczur">🐭 Szczur</option>
+              <option value="Fretka">🦦 Fretka</option>
+              <option value="Ptak">🦜 Ptak</option>
+              <option value="Papuga">🦜 Papuga</option>
+              <option value="Żółw">🐢 Żółw</option>
+              <option value="Wąż">🐍 Wąż</option>
+              <option value="Rybka">🐠 Rybka</option>
+              <option value="Koń">🐴 Koń</option>
+              <option value="Inne">🐾 Inne</option>
+            </select>
+            <div class="feed-radius-wrap">
+              <label>📍</label>
+              <input type="range" min="0" max="200" value="0" step="10" id="feed-radius-slider" oninput="onFeedRadiusChange(this.value)">
+              <span id="feed-radius-val">wszędzie</span>
+            </div>
           </div>
         </div>
 
@@ -1270,7 +1525,6 @@
   </div>
 
   <!-- MOBILE BOTTOM NAV -->
-
   <nav class="bottom-nav">
     <button class="bottom-tab active" id="btab-feed" onclick="showPage('feed')">
       <span class="bottom-tab-icon">🏠</span>Tablica
@@ -1423,7 +1677,7 @@
   </div>
 </div>
 
-<!-- JOIN PET MODAL (wpisz kod zaproszenia) -->
+<!-- JOIN PET MODAL -->
 <div class="modal-overlay" id="join-pet-modal">
   <div class="modal-box">
     <div class="modal-title">🔑 Dołącz do zwierzęcia</div>
@@ -1461,11 +1715,7 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signO
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getDatabase, ref, push, set, get, update, remove, onValue, query, orderByChild, equalTo, limitToLast }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-// Cloudinary used for image uploads (no Firebase Storage needed)
 
-// ═══════════════════════════════════
-//  🔧  FIREBASE CONFIG — wstaw swoje dane poniżej
-// ═══════════════════════════════════
 const firebaseConfig = {
   apiKey: "AIzaSyA0v4InL2jZ-ApajyqBFRTgD_G1P6QpkJI",
   authDomain: "petsbook-f37d0.firebaseapp.com",
@@ -1482,7 +1732,6 @@ const auth = getAuth(app);
 const db = getDatabase(app);
 const provider = new GoogleAuthProvider();
 
-// ── Cloudinary config ──
 const CLOUDINARY_CLOUD = 'dw1p2pqmn';
 const CLOUDINARY_PRESET = 'petsbook_unsigned';
 
@@ -1505,6 +1754,14 @@ let editingPetId = null;
 let postImageFile = null;
 let petAvatarFile = null;
 let currentProfilePetId = null;
+
+// ── Feed filter state ──
+let allFeedPosts = [];
+let feedTab = 'all'; // 'all' | 'following'
+let feedSpeciesFilter = '';
+let feedRadiusKm = 0;
+let myFollows = {}; // petId -> true
+let myLocation = null; // { lat, lng }
 
 // ── Auth ──
 window.signInWithGoogle = async () => {
@@ -1530,20 +1787,128 @@ onAuthStateChanged(auth, user => {
 
 // ── Init ──
 async function initApp() {
-  // Nav avatar
   const wrap = document.getElementById('nav-avatar-wrap');
   if (currentUser.photoURL) {
     wrap.innerHTML = `<img src="${currentUser.photoURL}" class="nav-avatar" referrerpolicy="no-referrer">`;
   } else {
     wrap.innerHTML = `<div class="nav-avatar-placeholder">👤</div>`;
   }
-  // User post avatar
   const pa = document.getElementById('post-user-avatar');
   if (currentUser.photoURL) pa.innerHTML = `<img src="${currentUser.photoURL}" style="width:100%;height:100%;border-radius:50%;object-fit:cover" referrerpolicy="no-referrer">`;
 
   loadMyPets();
   loadFeed();
   loadSuggestions();
+  loadFollows();
+  listenNotifications();
+
+  // Try get geolocation for proximity filter
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(pos => {
+      myLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    }, () => {});
+  }
+
+  // Close notif panel on outside click
+  document.addEventListener('click', (e) => {
+    const wrap = document.getElementById('notif-wrap');
+    const panel = document.getElementById('notif-panel');
+    if (wrap && !wrap.contains(e.target)) panel.classList.remove('open');
+  });
+}
+
+// ═══════════════════════════════════
+//  🔔  NOTIFICATIONS
+// ═══════════════════════════════════
+function listenNotifications() {
+  if (!currentUser || isDemoMode) return;
+  const notifsRef = ref(db, `notifications/${currentUser.uid}`);
+  onValue(notifsRef, snap => {
+    const notifs = [];
+    if (snap.exists()) {
+      snap.forEach(c => notifs.unshift({ id: c.key, ...c.val() }));
+    }
+    renderNotifPanel(notifs);
+    updateNotifBadge(notifs.filter(n => !n.read).length);
+  });
+}
+
+function updateNotifBadge(count) {
+  const badge = document.getElementById('notif-badge');
+  if (!badge) return;
+  if (count > 0) {
+    badge.style.display = 'flex';
+    badge.textContent = count > 9 ? '9+' : count;
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function renderNotifPanel(notifs) {
+  const list = document.getElementById('notif-list');
+  if (!list) return;
+  if (!notifs.length) {
+    list.innerHTML = '<div class="notif-empty">Brak powiadomień 🔔</div>';
+    return;
+  }
+  list.innerHTML = notifs.slice(0, 30).map(n => {
+    const photoHTML = n.fromPhoto
+      ? `<img src="${n.fromPhoto}" referrerpolicy="no-referrer">`
+      : '👤';
+    let text = '';
+    if (n.type === 'like') text = `<strong>${escapeHtml(n.fromName)}</strong> polubił(a) post`;
+    else if (n.type === 'comment') text = `<strong>${escapeHtml(n.fromName)}</strong> skomentował(a): ${escapeHtml((n.commentText || '').substring(0, 40))}${(n.commentText || '').length > 40 ? '...' : ''}`;
+    else if (n.type === 'follow') text = `<strong>${escapeHtml(n.fromName)}</strong> zaczął(a) obserwować Twoje zwierzę`;
+    else text = escapeHtml(n.text || 'Nowe powiadomienie');
+
+    return `<div class="notif-item ${n.read ? '' : 'unread'}" onclick="clickNotif('${n.id}','${n.postId || ''}')">
+      <div class="notif-avatar">${photoHTML}</div>
+      <div class="notif-content">
+        <div class="notif-text">${text}</div>
+        <div class="notif-time">${timeAgo(n.createdAt)}</div>
+      </div>
+      ${!n.read ? '<div class="notif-dot"></div>' : ''}
+    </div>`;
+  }).join('');
+}
+
+window.toggleNotifPanel = () => {
+  document.getElementById('notif-panel').classList.toggle('open');
+};
+
+window.clickNotif = async (notifId, postId) => {
+  // Mark as read
+  await update(ref(db, `notifications/${currentUser.uid}/${notifId}`), { read: true });
+  document.getElementById('notif-panel').classList.remove('open');
+  // Scroll to post
+  if (postId) {
+    showPage('feed');
+    setTimeout(() => {
+      const el = document.getElementById(`post-${postId}`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 300);
+  }
+};
+
+window.markAllNotifsRead = async () => {
+  const snap = await get(ref(db, `notifications/${currentUser.uid}`));
+  if (!snap.exists()) return;
+  const updates = {};
+  snap.forEach(c => { updates[`notifications/${currentUser.uid}/${c.key}/read`] = true; });
+  await update(ref(db), updates);
+  showToast('Wszystkie oznaczone jako przeczytane ✅');
+};
+
+async function sendNotification(toUid, payload) {
+  if (!toUid || toUid === currentUser.uid) return; // no self-notifs
+  await push(ref(db, `notifications/${toUid}`), {
+    ...payload,
+    fromUid: currentUser.uid,
+    fromName: currentUser.displayName || 'Użytkownik',
+    fromPhoto: currentUser.photoURL || null,
+    read: false,
+    createdAt: Date.now()
+  });
 }
 
 // ═══════════════════════════════════
@@ -1667,12 +2032,10 @@ window.savePet = async () => {
     createdAt: Date.now()
   };
 
-  // Save map coordinates if picked
   const lat = document.getElementById('pet-lat').value;
   const lng = document.getElementById('pet-lng').value;
   if (lat && lng) { petData.lat = parseFloat(lat); petData.lng = parseFloat(lng); }
 
-  // Upload avatar if selected
   if (petAvatarFile) {
     try {
       petData.avatarUrl = await uploadToCloudinary(petAvatarFile);
@@ -1692,22 +2055,145 @@ window.savePet = async () => {
 };
 
 // ═══════════════════════════════════
+//  ⭐  FOLLOWS (obserwowanie zwierząt)
+// ═══════════════════════════════════
+function loadFollows() {
+  if (!currentUser || isDemoMode) return;
+  const followRef = ref(db, `follows/${currentUser.uid}`);
+  onValue(followRef, snap => {
+    myFollows = snap.exists() ? snap.val() : {};
+  });
+}
+
+async function isFollowing(petId) {
+  return !!myFollows[petId];
+}
+
+async function getPetFollowersCount(petId) {
+  const snap = await get(ref(db, `petFollowers/${petId}`));
+  return snap.exists() ? Object.keys(snap.val()).length : 0;
+}
+
+window.toggleFollow = async (petId, ownerUid) => {
+  if (isDemoMode) { showToast('🔒 Zaloguj się aby obserwować!'); return; }
+  const currently = !!myFollows[petId];
+
+  if (currently) {
+    // Unfollow
+    await remove(ref(db, `follows/${currentUser.uid}/${petId}`));
+    await remove(ref(db, `petFollowers/${petId}/${currentUser.uid}`));
+    myFollows[petId] = undefined;
+    showToast('Przestałeś obserwować 👋');
+  } else {
+    // Follow
+    await set(ref(db, `follows/${currentUser.uid}/${petId}`), true);
+    await set(ref(db, `petFollowers/${petId}/${currentUser.uid}`), {
+      displayName: currentUser.displayName || 'Użytkownik',
+      photoURL: currentUser.photoURL || null,
+      followedAt: Date.now()
+    });
+    myFollows[petId] = true;
+    showToast('Obserwujesz! ⭐');
+
+    // Send follow notification to pet owner
+    if (ownerUid) {
+      await sendNotification(ownerUid, {
+        type: 'follow',
+        text: `${currentUser.displayName || 'Ktoś'} zaczął obserwować Twoje zwierzę`,
+        petId
+      });
+    }
+  }
+
+  // Re-render follow button if on profile page
+  const followBtn = document.getElementById(`follow-btn-${petId}`);
+  if (followBtn) {
+    const nowFollowing = !!myFollows[petId];
+    followBtn.className = `btn-follow${nowFollowing ? ' following' : ''}`;
+    followBtn.innerHTML = nowFollowing ? '✅ Obserwujesz' : '⭐ Obserwuj';
+    // Update count
+    const countSnap = await get(ref(db, `petFollowers/${petId}`));
+    const count = countSnap.exists() ? Object.keys(countSnap.val()).length : 0;
+    const countEl = document.getElementById(`followers-count-${petId}`);
+    if (countEl) countEl.textContent = `👥 ${count} obserwujących`;
+  }
+};
+
+// ═══════════════════════════════════
 //  FEED / POSTS
 // ═══════════════════════════════════
 function loadFeed() {
-  const feedRef = query(ref(db, 'posts'), orderByChild('createdAt'), limitToLast(30));
+  const feedRef = query(ref(db, 'posts'), orderByChild('createdAt'), limitToLast(60));
   onValue(feedRef, snap => {
-    const posts = [];
-    if (snap.exists()) snap.forEach(c => posts.unshift({ id: c.key, ...c.val() }));
-    renderFeed(posts);
+    allFeedPosts = [];
+    if (snap.exists()) snap.forEach(c => allFeedPosts.unshift({ id: c.key, ...c.val() }));
+    applyFeedFilters();
     loadSuggestions();
   });
+}
+
+// ── Feed filter controls ──
+window.setFeedTab = (tab) => {
+  feedTab = tab;
+  document.getElementById('ftab-all').classList.toggle('active', tab === 'all');
+  document.getElementById('ftab-following').classList.toggle('active', tab === 'following');
+  applyFeedFilters();
+};
+
+window.onFeedRadiusChange = (val) => {
+  feedRadiusKm = Number(val);
+  document.getElementById('feed-radius-val').textContent = feedRadiusKm > 0 ? `${feedRadiusKm} km` : 'wszędzie';
+  if (feedRadiusKm > 0 && !myLocation) {
+    navigator.geolocation?.getCurrentPosition(pos => {
+      myLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      applyFeedFilters();
+    }, () => showToast('Brak dostępu do lokalizacji'));
+    return;
+  }
+  applyFeedFilters();
+};
+
+window.applyFeedFilters = () => {
+  feedSpeciesFilter = document.getElementById('feed-filter-species')?.value || '';
+  let posts = [...allFeedPosts];
+
+  // Tab filter
+  if (feedTab === 'following') {
+    posts = posts.filter(p => myFollows[p.petId]);
+  }
+
+  // Species filter
+  if (feedSpeciesFilter) {
+    posts = posts.filter(p => p.petSpecies === feedSpeciesFilter);
+  }
+
+  // Proximity filter (haversine)
+  if (feedRadiusKm > 0 && myLocation) {
+    posts = posts.filter(p => {
+      if (!p.petLat || !p.petLng) return false;
+      return haversine(myLocation.lat, myLocation.lng, p.petLat, p.petLng) <= feedRadiusKm;
+    });
+  }
+
+  renderFeed(posts);
+};
+
+function haversine(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
 function renderFeed(posts) {
   const el = document.getElementById('feed-posts');
   if (!posts.length) {
-    el.innerHTML = `<div class="empty-state"><div class="emoji">🐾</div><p>Brak postów — dodaj swoje zwierzę i opublikuj coś!</p></div>`;
+    if (feedTab === 'following') {
+      el.innerHTML = `<div class="empty-state"><div class="emoji">⭐</div><p>Nie obserwujesz jeszcze żadnych zwierząt.<br>Przejdź na profil zwierzęcia i kliknij "Obserwuj"!</p></div>`;
+    } else {
+      el.innerHTML = `<div class="empty-state"><div class="emoji">🐾</div><p>Brak postów — dodaj swoje zwierzę i opublikuj coś!</p></div>`;
+    }
     return;
   }
   el.innerHTML = posts.map(p => renderPostCard(p)).join('');
@@ -1723,8 +2209,6 @@ function renderPostCard(p) {
   const isLiked = p.likes && p.likes[currentUser.uid];
   const timeStr = timeAgo(p.createdAt);
   const isMyPost = p.ownerId === currentUser.uid;
-
-  // Check if post belongs to a pet I co-own
   const canManagePost = isMyPost || (myPets[p.petId] != null);
 
   return `
@@ -1747,7 +2231,7 @@ function renderPostCard(p) {
       ${p.text ? `<div class="post-text">${escapeHtml(p.text)}</div>` : ''}
       ${p.imageUrl ? `<img src="${p.imageUrl}" class="post-img" loading="lazy">` : ''}
       <div class="post-actions">
-        <button class="action-btn ${isLiked ? 'liked' : ''}" onclick="toggleLike('${p.id}')">
+        <button class="action-btn ${isLiked ? 'liked' : ''}" onclick="toggleLike('${p.id}','${p.ownerId}')">
           ${isLiked ? '❤️' : '🤍'} <span class="count">${likes}</span>
         </button>
         ${likes > 0 ? `<button class="action-btn" onclick="showLikesPopup('${p.id}')" style="flex:0;padding:8px 6px;font-size:12px;color:var(--bark-light)">kto?</button>` : ''}
@@ -1759,8 +2243,8 @@ function renderPostCard(p) {
       <div class="comments-section" id="comments-${p.id}">
         <div class="comment-input-row">
           <div class="comment-avatar" style="font-size:13px">${currentUser.photoURL ? `<img src="${currentUser.photoURL}" referrerpolicy="no-referrer">` : '👤'}</div>
-          <input class="comment-input" placeholder="Napisz komentarz..." id="comment-input-${p.id}" onkeydown="if(event.key==='Enter')sendComment('${p.id}')">
-          <button class="btn-send-comment" onclick="sendComment('${p.id}')">Wyślij</button>
+          <input class="comment-input" placeholder="Napisz komentarz..." id="comment-input-${p.id}" onkeydown="if(event.key==='Enter')sendComment('${p.id}','${p.ownerId}')">
+          <button class="btn-send-comment" onclick="sendComment('${p.id}','${p.ownerId}')">Wyślij</button>
         </div>
         <div id="comments-list-${p.id}">
           ${renderComments(p.comments, p.id)}
@@ -1822,6 +2306,12 @@ window.submitPost = async () => {
     createdAt: Date.now()
   };
 
+  // Store pet's lat/lng for proximity feed filter
+  if (pet.lat && pet.lng) {
+    postData.petLat = pet.lat;
+    postData.petLng = pet.lng;
+  }
+
   if (postImageFile) {
     try {
       postData.imageUrl = await uploadToCloudinary(postImageFile);
@@ -1838,7 +2328,7 @@ window.submitPost = async () => {
   showToast('Opublikowano! 🎉');
 };
 
-window.toggleLike = async (postId) => {
+window.toggleLike = async (postId, postOwnerId) => {
   const likeRef = ref(db, `posts/${postId}/likes/${currentUser.uid}`);
   const metaRef = ref(db, `posts/${postId}/likesMeta/${currentUser.uid}`);
   const snap = await get(likeRef);
@@ -1851,6 +2341,14 @@ window.toggleLike = async (postId) => {
       displayName: currentUser.displayName || 'Użytkownik',
       photoURL: currentUser.photoURL || null
     });
+    // Send like notification to post owner
+    if (postOwnerId && postOwnerId !== currentUser.uid) {
+      await sendNotification(postOwnerId, {
+        type: 'like',
+        text: `${currentUser.displayName || 'Ktoś'} polubił(a) post`,
+        postId
+      });
+    }
   }
 };
 
@@ -1862,7 +2360,7 @@ window.toggleComments = (postId) => {
   }
 };
 
-window.sendComment = async (postId) => {
+window.sendComment = async (postId, postOwnerId) => {
   const input = document.getElementById(`comment-input-${postId}`);
   const text = input.value.trim();
   if (!text) return;
@@ -1875,6 +2373,17 @@ window.sendComment = async (postId) => {
   });
   input.value = '';
   showToast('Komentarz dodany! 💬');
+
+  // Send comment notification
+  if (postOwnerId && postOwnerId !== currentUser.uid) {
+    await sendNotification(postOwnerId, {
+      type: 'comment',
+      text: `${currentUser.displayName || 'Ktoś'} skomentował(a)`,
+      commentText: text,
+      postId
+    });
+  }
+
   // refresh post comments
   const snap = await get(ref(db, `posts/${postId}/comments`));
   const listEl = document.getElementById(`comments-list-${postId}`);
@@ -1889,12 +2398,10 @@ window.sharePost = (postId) => {
 // ── Post menu ──
 window.togglePostMenu = (postId) => {
   const menu = document.getElementById(`post-menu-${postId}`);
-  // close all other menus first
   document.querySelectorAll('.post-menu-dropdown.open').forEach(m => {
     if (m.id !== `post-menu-${postId}`) m.classList.remove('open');
   });
   menu.classList.toggle('open');
-  // close on outside click
   if (menu.classList.contains('open')) {
     setTimeout(() => {
       document.addEventListener('click', function closeMenu(e) {
@@ -1919,7 +2426,6 @@ window.confirmDeletePost = async () => {
   try {
     await remove(ref(db, `posts/${deletingPostId}`));
     closeModal('delete-post-modal');
-    // Remove card from DOM immediately
     document.getElementById(`post-${deletingPostId}`)?.remove();
     showToast('Post usunięty 🗑️');
     deletingPostId = null;
@@ -1932,9 +2438,7 @@ window.showLikesPopup = async (postId) => {
   const listEl = document.getElementById('likes-popup-list');
   if (!snap.exists()) { listEl.innerHTML = '<p style="color:#aaa;font-weight:600;font-size:13px">Brak polubień</p>'; }
   else {
-    // Likes only store uid:true — we need names. Store them on like action.
     const uids = Object.keys(snap.val());
-    // Try to get names from likes metadata, fallback to uid display
     const likesMetaSnap = await get(ref(db, `posts/${postId}/likesMeta`));
     const meta = likesMetaSnap.val() || {};
     listEl.innerHTML = uids.map(uid => {
@@ -2000,12 +2504,14 @@ window.showPetProfile = async (petId) => {
   const isOwner = p.ownerId === currentUser.uid;
   const isCo = p.coOwners && p.coOwners[currentUser.uid];
   const canEdit = isOwner || isCo;
+  const isStranger = !canEdit;
   const avatarHTML = p.avatarUrl
     ? `<img src="${p.avatarUrl}">`
     : `<span style="font-size:44px">${emoji}</span>`;
 
-  // Co-owners count
   const coOwnersCount = p.coOwners ? Object.keys(p.coOwners).length : 0;
+  const followersCount = await getPetFollowersCount(petId);
+  const amFollowing = !!myFollows[petId];
 
   document.getElementById('profile-content').innerHTML = `
     <div class="profile-hero">
@@ -2022,10 +2528,15 @@ window.showPetProfile = async (petId) => {
             ${p.breed ? `<span class="profile-tag">${p.breed}</span>` : ''}
             ${p.age ? `<span class="profile-tag">🎂 ${p.age} lat</span>` : ''}
             ${p.location ? `<span class="profile-tag location">📍 ${p.location}</span>` : ''}
-            <span class="profile-tag" style="cursor:pointer" onclick="openCoOwnersModal('${petId}')">👥 ${1 + coOwnersCount} opiekun${coOwnersCount >= 1 ? 'ów' : ''}</span>
+            <span class="profile-tag followers" id="followers-count-${petId}">👥 ${followersCount} obserwujących</span>
+            <span class="profile-tag" style="cursor:pointer" onclick="openCoOwnersModal('${petId}')">🤝 ${1 + coOwnersCount} opiekun${coOwnersCount >= 1 ? 'ów' : ''}</span>
           </div>
         </div>
         <div style="display:flex;gap:8px;align-self:flex-start;margin-top:54px;flex-wrap:wrap">
+          ${isStranger ? `
+          <button class="btn-follow${amFollowing ? ' following' : ''}" id="follow-btn-${petId}" onclick="toggleFollow('${petId}','${p.ownerId}')">
+            ${amFollowing ? '✅ Obserwujesz' : '⭐ Obserwuj'}
+          </button>` : ''}
           ${canEdit ? `<button class="btn-save" onclick="openAddPetModal('${petId}')">✏️ Edytuj</button>` : ''}
           ${canEdit ? `<button class="btn-save" style="background:var(--grass)" onclick="openCoOwnersModal('${petId}')">👥 Opiekunowie</button>` : ''}
           ${isOwner ? `<button class="btn-danger" onclick="openDeletePetModal('${petId}')">🗑️ Usuń</button>` : ''}
@@ -2132,7 +2643,6 @@ window.handleSearch = (val) => {
   }
 };
 
-// load explore initially
 window.initExplore = async () => {
   document.getElementById('filter-species').value = '';
   document.getElementById('filter-location').value = '';
@@ -2158,7 +2668,6 @@ window.showPage = (page) => {
   });
   if (page === 'explore') initExplore();
   if (page === 'chat' && !isDemoMode) initChatPage();
-  if (page === 'mypets') {} // already reactive
 };
 
 // ═══════════════════════════════════
@@ -2167,7 +2676,6 @@ window.showPage = (page) => {
 window.openModal = (id) => document.getElementById(id).classList.add('open');
 window.closeModal = (id) => document.getElementById(id).classList.remove('open');
 
-// Close modal on overlay click
 document.querySelectorAll('.modal-overlay').forEach(el => {
   el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
 });
@@ -2240,12 +2748,10 @@ window.confirmDeletePet = async () => {
 // ═══════════════════════════════════
 //  👥  SYSTEM WIELU OPIEKUNÓW
 // ═══════════════════════════════════
-// Generowanie 6-znakowego kodu
 function generateCode() {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
-// Sprawdź czy użytkownik jest opiekunem danego zwierzęcia
 function isCoOwner(petData) {
   if (!petData || !currentUser) return false;
   if (petData.ownerId === currentUser.uid) return true;
@@ -2259,11 +2765,8 @@ window.openCoOwnersModal = async (petId) => {
   const p = snap.val();
   const isMainOwner = p.ownerId === currentUser.uid;
 
-  // Build co-owners HTML
   let html = '<div class="coowners-list">';
-  // Main owner
   html += `<div class="coowner-item"><div class="coowner-avatar">👑</div><div class="coowner-name">${p.ownerName || 'Właściciel'}</div><span class="coowner-badge">Właściciel</span></div>`;
-  // Co-owners
   if (p.coOwners) {
     Object.entries(p.coOwners).forEach(([uid, co]) => {
       const photoHTML = co.photoURL ? `<img src="${co.photoURL}" referrerpolicy="no-referrer">` : '👤';
@@ -2278,7 +2781,6 @@ window.openCoOwnersModal = async (petId) => {
   html += '</div>';
   document.getElementById('coowners-list-content').innerHTML = html;
 
-  // Invite code
   if (!p.inviteCode) {
     const code = generateCode();
     await update(ref(db, `pets/${petId}`), { inviteCode: code });
@@ -2340,7 +2842,7 @@ window.joinPetByCode = async () => {
 };
 
 // ═══════════════════════════════════
-//  🗺️  LEAFLET MAP — PICKER & EXPLORE
+//  🗺️  LEAFLET MAP
 // ═══════════════════════════════════
 let pickMap = null;
 let pickMarker = null;
@@ -2348,7 +2850,6 @@ let exploreMap = null;
 
 window.initPickMap = () => {
   if (pickMap) return;
-  // Default: Warsaw
   pickMap = L.map('map-pick').setView([52.23, 21.01], 11);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap'
@@ -2364,7 +2865,6 @@ window.initPickMap = () => {
   });
 };
 
-// Call initPickMap when modal opens
 const _origOpenModal = window.openModal;
 window.openModal = (id) => {
   _origOpenModal(id);
@@ -2376,7 +2876,6 @@ window.openModal = (id) => {
   }
 };
 
-// Set map marker when editing existing pet
 window.setPickMapMarkerV1 = (lat, lng) => {
   if (!pickMap) return;
   if (pickMarker) pickMarker.setLatLng([lat, lng]);
@@ -2387,9 +2886,7 @@ window.setPickMapMarkerV1 = (lat, lng) => {
   document.getElementById('map-pick-info').textContent = `📍 Zaznaczona lokalizacja`;
 };
 
-// Explore map with radius filter
 function initExploreMap() {
-  // Remove old map container if exists, re-create
   const container = document.getElementById('explore-map-container');
   if (!container) return;
 
@@ -2409,7 +2906,6 @@ function initExploreMap() {
 
 async function refreshExploreMapPins(radiusKm = 0) {
   if (!exploreMap) return;
-  // Clear existing markers
   exploreMap.eachLayer(layer => {
     if (layer instanceof L.Marker || layer instanceof L.Circle) exploreMap.removeLayer(layer);
   });
@@ -2437,7 +2933,6 @@ async function refreshExploreMapPins(radiusKm = 0) {
 
   if (count > 0) exploreMap.setView([centerLat, centerLng], 9);
 
-  // Radius filter
   if (radiusKm > 0 && navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(pos => {
       const { latitude, longitude } = pos.coords;
@@ -2463,7 +2958,6 @@ function getChatId(uid1, uid2) {
 }
 
 async function initChatPage() {
-  // Load conversations for current user
   const snap = await get(ref(db, `chats`));
   const convEl = document.getElementById('chat-conversations-list');
   const convos = [];
@@ -2515,7 +3009,6 @@ window.openChatV1 = (chatId, otherId, otherName, otherPhoto) => {
       <button class="btn-chat-send" onclick="sendChatMessageV1()">Wyślij</button>
     </div>`;
 
-  // Listen for messages
   if (chatListener) chatListener();
   const msgsRef = ref(db, `chats/${chatId}/messages`);
   chatListener = onValue(msgsRef, snap => {
@@ -2548,18 +3041,15 @@ window.sendChatMessageV1 = async () => {
 };
 
 window.openNewChatModal = async () => {
-  // Find all co-owners of pets where current user is owner or co-owner
   const snap = await get(ref(db, 'pets'));
   const usersMap = {};
   if (snap.exists()) {
     snap.forEach(c => {
       const p = c.val();
       if (!isCoOwner(p)) return;
-      // Add main owner if not me
       if (p.ownerId !== currentUser.uid) {
         usersMap[p.ownerId] = { displayName: p.ownerName || 'Właściciel', photoURL: null };
       }
-      // Add co-owners
       if (p.coOwners) {
         Object.entries(p.coOwners).forEach(([uid, co]) => {
           if (uid !== currentUser.uid) usersMap[uid] = { displayName: co.displayName, photoURL: co.photoURL };
@@ -2571,7 +3061,7 @@ window.openNewChatModal = async () => {
   const users = Object.entries(usersMap);
   const listEl = document.getElementById('new-chat-users-list');
   if (!users.length) {
-    listEl.innerHTML = `<div class="empty-state" style="padding:20px 0"><div class="emoji">😔</div><p style="font-size:13px">Nie jesteś jeszcze opiekunem żadnego wspólnego zwierzęcia. Dodaj zwierzę lub dołącz do cudzego kodu zaproszenia.</p></div>`;
+    listEl.innerHTML = `<div class="empty-state" style="padding:20px 0"><div class="emoji">😔</div><p style="font-size:13px">Nie jesteś jeszcze opiekunem żadnego wspólnego zwierzęcia.</p></div>`;
   } else {
     listEl.innerHTML = users.map(([uid, u]) => {
       const photo = u.photoURL ? `<img src="${u.photoURL}" referrerpolicy="no-referrer">` : '👤';
@@ -2589,7 +3079,6 @@ window.startChatWithUserV1 = async (otherId, otherName, otherPhoto) => {
   closeModal('new-chat-modal');
   const chatId = getChatId(currentUser.uid, otherId);
 
-  // Save metadata
   const updates = {};
   updates[`chats/${chatId}/name_${currentUser.uid}`] = currentUser.displayName || 'Użytkownik';
   updates[`chats/${chatId}/photo_${currentUser.uid}`] = currentUser.photoURL || null;
@@ -2598,7 +3087,6 @@ window.startChatWithUserV1 = async (otherId, otherName, otherPhoto) => {
   await update(ref(db), updates);
 
   showPage('chat');
-  // Refresh conv list then open
   await initChatPage();
   openChatV1(chatId, otherId, otherName, otherPhoto);
 };
@@ -2634,11 +3122,9 @@ window.startDemo = () => {
   document.getElementById('app').style.display = 'block';
   document.getElementById('demo-banner').style.display = 'flex';
 
-  // Nav avatar
   document.getElementById('nav-avatar-wrap').innerHTML = `<div class="nav-avatar-placeholder">👤</div>`;
   document.getElementById('post-user-avatar').textContent = '👤';
 
-  // Sidebar pets
   const sidebarEl = document.getElementById('sidebar-my-pets');
   sidebarEl.innerHTML = DEMO_PETS.slice(0,3).map(p => `
     <div class="my-pet-item" onclick="showDemoPetProfile('${p.id}')">
@@ -2646,10 +3132,8 @@ window.startDemo = () => {
       <div><div class="pet-name">${p.name}</div><div class="pet-breed">${p.breed}</div></div>
     </div>`).join('');
 
-  // Feed
   renderDemoFeed();
 
-  // Suggestions sidebar
   const sugEl = document.getElementById('sidebar-suggestions');
   sugEl.innerHTML = DEMO_PETS.slice(3).map(p => `
     <div class="suggest-item" onclick="showDemoPetProfile('${p.id}')">
@@ -2657,7 +3141,6 @@ window.startDemo = () => {
       <div><div class="suggest-name">${p.name}</div><div class="suggest-breed">${p.breed} · ${p.location}</div></div>
     </div>`).join('');
 
-  // Post pet select
   const sel = document.getElementById('post-pet-select');
   sel.innerHTML = '<option value="">🔒 Zaloguj się aby publikować</option>';
   sel.disabled = true;
@@ -2733,7 +3216,11 @@ window.showDemoPetProfile = (petId) => {
             ${p.breed ? `<span class="profile-tag">${p.breed}</span>` : ''}
             ${p.age ? `<span class="profile-tag">🎂 ${p.age} lata</span>` : ''}
             ${p.location ? `<span class="profile-tag location">📍 ${p.location}</span>` : ''}
+            <span class="profile-tag followers">👥 0 obserwujących</span>
           </div>
+        </div>
+        <div style="display:flex;gap:8px;align-self:flex-start;margin-top:54px">
+          <button class="btn-follow" onclick="demoActionBlock()">⭐ Obserwuj</button>
         </div>
       </div>
       ${p.bio ? `<div class="profile-bio">${escapeHtml(p.bio)}</div>` : ''}
@@ -2754,7 +3241,6 @@ window.exitDemo = () => {
   document.getElementById('demo-banner').style.display = 'none';
 };
 
-// Override showPage to handle demo explore
 const _origShowPage = window.showPage;
 window.showPage = (page) => {
   _origShowPage(page);
@@ -2780,10 +3266,6 @@ function renderDemoExplore() {
         </div>
       </div>`;
   }).join('');
-  // override search button in demo
-  document.getElementById('filter-species').disabled = false;
-  document.getElementById('filter-location').disabled = false;
-  document.getElementById('filter-breed').disabled = false;
 }
 
 function renderDemoMyPets() {
@@ -2795,11 +3277,8 @@ function renderDemoMyPets() {
     </div>`;
 }
 
-// ═══════════════════════════════════
-//  📱  PWA — MANIFEST & SERVICE WORKER
-// ═══════════════════════════════════
+// ── PWA ──
 function initPWA() {
-  // Create and attach manifest as Blob URL
   const manifest = {
     name: 'PetsBook',
     short_name: 'PetsBook',
@@ -2814,10 +3293,8 @@ function initPWA() {
     ]
   };
   const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
-  const manifestUrl = URL.createObjectURL(blob);
-  document.getElementById('pwa-manifest').href = manifestUrl;
+  document.getElementById('pwa-manifest').href = URL.createObjectURL(blob);
 
-  // Register minimal Service Worker (inline via Blob)
   if ('serviceWorker' in navigator) {
     const swCode = `
       self.addEventListener('install', e => self.skipWaiting());
@@ -2825,8 +3302,7 @@ function initPWA() {
       self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => caches.match(e.request))));
     `;
     const swBlob = new Blob([swCode], { type: 'application/javascript' });
-    const swUrl = URL.createObjectURL(swBlob);
-    navigator.serviceWorker.register(swUrl).catch(err => console.warn('SW registration failed:', err));
+    navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(err => console.warn('SW:', err));
   }
 }
 
