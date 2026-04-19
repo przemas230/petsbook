@@ -2660,7 +2660,7 @@ function haversine(lat1, lng1, lat2, lng2) {
 function renderPostCard(p) {
   const emoji = speciesEmoji(p.petSpecies);
   const avatarHTML = p.petAvatarUrl
-    ? `<img src="${p.petAvatarUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">`
+    ? `<img src="${p.petAvatarUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover" referrerpolicy="no-referrer" loading="lazy">`
     : emoji;
   const likes = p.likes ? Object.keys(p.likes).length : 0;
   const comments = p.comments ? Object.keys(p.comments).length : 0;
@@ -2688,7 +2688,7 @@ function renderPostCard(p) {
         </div>` : ''}
       </div>
       ${p.text ? `<div class="post-text">${escapeHtml(p.text)}</div>` : ''}
-      ${p.imageUrl ? `<img src="${p.imageUrl}" class="post-img" loading="lazy">` : ''}
+      ${p.imageUrl ? `<img src="${p.imageUrl}" class="post-img" loading="lazy" referrerpolicy="no-referrer">` : ''}
       <div class="reactions-bar">
         ${['❤️','😂','😲','😢','🐾'].map(em => {
           const key = {'❤️':'heart','😂':'laugh','😲':'wow','😢':'sad','🐾':'paw'}[em] || 'heart';
@@ -3126,7 +3126,7 @@ window.renderReactWhoList = (filterKey) => {
     if (filterKey !== 'all' && key !== filterKey) continue;
     for (const uid of Object.keys(users)) {
       const status = reactWhoUserNames[uid];
-      const name = status?.displayName || (uid === currentUser?.uid ? (currentUser.displayName || 'Ty') : 'Użytkownik');
+      const name = firstNameOnly(status?.displayName) || (uid === currentUser?.uid ? firstNameOnly(currentUser.displayName || '') || 'Ty' : 'Użytkownik');
       const photo = status?.photoURL || null;
       entries.push({ uid, emoji: EMOJI_LABELS[key] || key, name, photo });
     }
@@ -3255,9 +3255,9 @@ function renderFeed(posts) {
     }
     // Nie pokazuj demo na zakładce "obserwowani"
     if (feedTab !== 'following') merged = [...merged, ...toAdd];
-    // Sortuj po dacie
-    merged.sort((a, b) => b.createdAt - a.createdAt);
   }
+  // Zawsze sortuj po dacie — nowe posty na górze
+  merged.sort((a, b) => b.createdAt - a.createdAt);
 
   const el = document.getElementById('feed-posts');
   if (!merged.length) {
@@ -3275,7 +3275,7 @@ function renderFeed(posts) {
 function renderDemoPostCardInFeed(p) {
   const emoji = speciesEmoji(p.petSpecies);
   const avatarHTML = p.petAvatarUrl
-    ? `<img src="${p.petAvatarUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">`
+    ? `<img src="${p.petAvatarUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover" referrerpolicy="no-referrer" loading="lazy">`
     : emoji;
   const comments = p.comments ? Object.keys(p.comments).length : 0;
   const timeStr = timeAgo(p.createdAt);
@@ -3297,7 +3297,7 @@ function renderDemoPostCardInFeed(p) {
         <div class="post-time">${timeStr}</div>
       </div>
       ${p.text ? `<div class="post-text">${escapeHtml(p.text)}</div>` : ''}
-      ${p.imageUrl ? `<img src="${p.imageUrl}" class="post-img" loading="lazy">` : ''}
+      ${p.imageUrl ? `<img src="${p.imageUrl}" class="post-img" loading="lazy" referrerpolicy="no-referrer">` : ''}
       <div class="reactions-bar">${reactionsHTML}</div>
       <div class="post-actions">
         <button class="action-btn" onclick="toggleDemoComments('${p.id}')">💬 <span>${comments}</span></button>
@@ -4360,7 +4360,7 @@ function renderDemoFeed() {
 function renderDemoPostCard(p) {
   const emoji = speciesEmoji(p.petSpecies);
   const avatarHTML = p.petAvatarUrl
-    ? `<img src="${p.petAvatarUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">`
+    ? `<img src="${p.petAvatarUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover" referrerpolicy="no-referrer" loading="lazy">`
     : emoji;
   const comments = p.comments ? Object.keys(p.comments).length : 0;
   const timeStr = timeAgo(p.createdAt);
@@ -4383,7 +4383,7 @@ function renderDemoPostCard(p) {
         <div class="post-time">${timeStr}</div>
       </div>
       ${p.text ? `<div class="post-text">${escapeHtml(p.text)}</div>` : ''}
-      ${p.imageUrl ? `<img src="${p.imageUrl}" class="post-img" loading="lazy">` : ''}
+      ${p.imageUrl ? `<img src="${p.imageUrl}" class="post-img" loading="lazy" referrerpolicy="no-referrer">` : ''}
       <div class="reactions-bar">${reactionsHTML}</div>
       <div class="post-actions">
         <button class="action-btn" onclick="toggleDemoComments('${p.id}')">💬 <span>${comments}</span></button>
