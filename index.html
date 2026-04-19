@@ -3,6 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#E8734A">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="PetsBook">
+<link rel="manifest" id="pwa-manifest">
 <title>PetsBook 🐾</title>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fraunces:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
@@ -1176,12 +1181,38 @@
         <div class="filter-row">
           <select class="filter-select" id="filter-species">
             <option value="">🐾 Wszystkie gatunki</option>
-            <option value="Pies">🐕 Psy</option>
-            <option value="Kot">🐈 Koty</option>
-            <option value="Królik">🐇 Króliki</option>
-            <option value="Ptak">🦜 Ptaki</option>
-            <option value="Chomik">🐹 Chomiki</option>
-            <option value="Inne">🦎 Inne</option>
+            <optgroup label="🐕 Psy i koty">
+              <option value="Pies">Pies</option>
+              <option value="Kot">Kot</option>
+            </optgroup>
+            <optgroup label="🐇 Małe ssaki">
+              <option value="Królik">Królik</option>
+              <option value="Chomik">Chomik</option>
+              <option value="Świnka morska">Świnka morska</option>
+              <option value="Szczur">Szczur</option>
+              <option value="Fretka">Fretka</option>
+              <option value="Szynszyla">Szynszyla</option>
+              <option value="Jeż">Jeż</option>
+            </optgroup>
+            <optgroup label="🦜 Ptaki">
+              <option value="Ptak">Ptak</option>
+              <option value="Papuga">Papuga</option>
+              <option value="Kanarek">Kanarek</option>
+            </optgroup>
+            <optgroup label="🐢 Gady">
+              <option value="Żółw">Żółw</option>
+              <option value="Wąż">Wąż</option>
+              <option value="Jaszczurka">Jaszczurka</option>
+            </optgroup>
+            <optgroup label="🐠 Rybki">
+              <option value="Rybka">Rybka</option>
+            </optgroup>
+            <optgroup label="🐴 Duże">
+              <option value="Koń">Koń</option>
+              <option value="Koza">Koza</option>
+              <option value="Alpaka">Alpaka</option>
+            </optgroup>
+            <option value="Inne">Inne</option>
           </select>
           <input class="filter-select" type="text" id="filter-location" placeholder="📍 Miasto / region">
           <input class="filter-select" type="text" id="filter-breed" placeholder="🔤 Rasa">
@@ -1278,8 +1309,38 @@
       <label class="form-label">Gatunek *</label>
       <select class="form-select" id="pet-species">
         <option value="">Wybierz...</option>
-        <option>Pies</option><option>Kot</option><option>Królik</option>
-        <option>Ptak</option><option>Chomik</option><option>Inne</option>
+        <optgroup label="🐕 Psy i koty">
+          <option>Pies</option>
+          <option>Kot</option>
+        </optgroup>
+        <optgroup label="🐇 Małe ssaki">
+          <option>Królik</option>
+          <option>Chomik</option>
+          <option>Świnka morska</option>
+          <option>Szczur</option>
+          <option>Fretka</option>
+          <option>Szynszyla</option>
+          <option>Jeż</option>
+        </optgroup>
+        <optgroup label="🦜 Ptaki">
+          <option>Ptak</option>
+          <option>Papuga</option>
+          <option>Kanarek</option>
+        </optgroup>
+        <optgroup label="🐢 Gady">
+          <option>Żółw</option>
+          <option>Wąż</option>
+          <option>Jaszczurka</option>
+        </optgroup>
+        <optgroup label="🐠 Rybki">
+          <option>Rybka</option>
+        </optgroup>
+        <optgroup label="🐴 Duże">
+          <option>Koń</option>
+          <option>Koza</option>
+          <option>Alpaka</option>
+        </optgroup>
+        <option>Inne</option>
       </select>
     </div>
     <div class="form-group">
@@ -1672,7 +1733,7 @@ function renderPostCard(p) {
         <div class="post-pet-avatar" onclick="showPetProfile('${p.petId}')">${avatarHTML}</div>
         <div class="post-meta">
           <div class="post-pet-name" onclick="showPetProfile('${p.petId}')">${p.petName || 'Zwierzę'}</div>
-          <div class="post-owner">właściciel: ${p.ownerName || ''}</div>
+          <div class="post-owner">${firstNameOnly(p.ownerName)}</div>
         </div>
         <div class="post-time">${timeStr}</div>
         ${canManagePost ? `
@@ -2119,8 +2180,22 @@ function showToast(msg) {
 }
 window.showToast = showToast;
 
+function firstNameOnly(fullName) {
+  if (!fullName) return '';
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0];
+  return parts[0] + ' ' + parts[1].charAt(0) + '.';
+}
+
 function speciesEmoji(s) {
-  const map = { Pies:'🐕', Kot:'🐈', Królik:'🐇', Ptak:'🦜', Chomik:'🐹', Inne:'🐾' };
+  const map = {
+    Pies:'🐕', Kot:'🐈', Królik:'🐇', Chomik:'🐹', 'Świnka morska':'🐹',
+    Szczur:'🐭', Fretka:'🦦', Szynszyla:'🐭', Jeż:'🦔',
+    Ptak:'🦜', Papuga:'🦜', Kanarek:'🐤',
+    Żółw:'🐢', Wąż:'🐍', Jaszczurka:'🦎',
+    Rybka:'🐠', Koń:'🐴', Koza:'🐐', Alpaka:'🦙',
+    Inne:'🐾'
+  };
   return map[s] || '🐾';
 }
 
@@ -2610,7 +2685,7 @@ function renderDemoPostCard(p) {
         <div class="post-pet-avatar" onclick="showDemoPetProfile('${p.petId}')">${avatarHTML}</div>
         <div class="post-meta">
           <div class="post-pet-name" onclick="showDemoPetProfile('${p.petId}')">${p.petName}</div>
-          <div class="post-owner">właściciel: ${p.ownerName}</div>
+          <div class="post-owner">${firstNameOnly(p.ownerName)}</div>
         </div>
         <div class="post-time">${timeStr}</div>
       </div>
@@ -2720,12 +2795,42 @@ function renderDemoMyPets() {
     </div>`;
 }
 
-// Override runExploreSearch in demo mode
-const _origExploreSearch = window.runExploreSearch;
-window.runExploreSearch = async () => {
-  if (isDemoMode) { renderDemoExplore(); return; }
-  await _origExploreSearch();
-};
+// ═══════════════════════════════════
+//  📱  PWA — MANIFEST & SERVICE WORKER
+// ═══════════════════════════════════
+function initPWA() {
+  // Create and attach manifest as Blob URL
+  const manifest = {
+    name: 'PetsBook',
+    short_name: 'PetsBook',
+    description: 'Sieć społecznościowa dla Twoich zwierząt',
+    start_url: './',
+    display: 'standalone',
+    background_color: '#FDF6EC',
+    theme_color: '#E8734A',
+    icons: [
+      { src: 'https://via.placeholder.com/192/E8734A/ffffff?text=🐾', sizes: '192x192', type: 'image/png' },
+      { src: 'https://via.placeholder.com/512/E8734A/ffffff?text=🐾', sizes: '512x512', type: 'image/png' }
+    ]
+  };
+  const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+  const manifestUrl = URL.createObjectURL(blob);
+  document.getElementById('pwa-manifest').href = manifestUrl;
+
+  // Register minimal Service Worker (inline via Blob)
+  if ('serviceWorker' in navigator) {
+    const swCode = `
+      self.addEventListener('install', e => self.skipWaiting());
+      self.addEventListener('activate', e => e.waitUntil(clients.claim()));
+      self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => caches.match(e.request))));
+    `;
+    const swBlob = new Blob([swCode], { type: 'application/javascript' });
+    const swUrl = URL.createObjectURL(swBlob);
+    navigator.serviceWorker.register(swUrl).catch(err => console.warn('SW registration failed:', err));
+  }
+}
+
+initPWA();
 </script>
 </body>
 </html>
