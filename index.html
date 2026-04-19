@@ -830,6 +830,89 @@
   .bottom-tab.active { color: var(--paw); }
   .bottom-tab-icon { font-size: 22px; }
 
+  /* ── POST MENU ── */
+  .post-menu-wrap { position: relative; margin-left: auto; }
+  .post-menu-btn {
+    background: none; border: none; cursor: pointer;
+    font-size: 18px; padding: 4px 8px; border-radius: 8px;
+    color: var(--bark-light); line-height: 1;
+    transition: background 0.15s;
+  }
+  .post-menu-btn:hover { background: var(--cream); }
+  .post-menu-dropdown {
+    position: absolute; right: 0; top: 100%; z-index: 200;
+    background: white; border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(61,43,31,0.15);
+    min-width: 160px; overflow: hidden; display: none;
+  }
+  .post-menu-dropdown.open { display: block; }
+  .post-menu-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 16px; font-size: 14px; font-weight: 700;
+    cursor: pointer; transition: background 0.15s; color: var(--bark);
+    border: none; background: none; width: 100%; text-align: left;
+    font-family: 'Nunito', sans-serif;
+  }
+  .post-menu-item:hover { background: var(--cream); }
+  .post-menu-item.danger { color: #e53935; }
+  .post-menu-item.danger:hover { background: #fff5f5; }
+
+  /* ── LIKES POPUP ── */
+  .likes-popup-overlay {
+    position: fixed; inset: 0; background: rgba(61,43,31,0.4);
+    z-index: 1000; display: none; align-items: center; justify-content: center;
+    padding: 20px; backdrop-filter: blur(3px);
+  }
+  .likes-popup-overlay.open { display: flex; }
+  .likes-popup-box {
+    background: white; border-radius: 20px; padding: 24px;
+    max-width: 360px; width: 100%; max-height: 70vh; overflow-y: auto;
+    box-shadow: 0 16px 60px rgba(61,43,31,0.18);
+  }
+  .likes-popup-title {
+    font-family: 'Fraunces', serif; font-size: 18px; font-weight: 700;
+    margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+  }
+  .likes-user-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 4px; border-bottom: 1px solid var(--cream);
+  }
+  .likes-user-item:last-child { border-bottom: none; }
+  .likes-user-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    border: 2px solid var(--paw-light); overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0; background: var(--cream);
+  }
+  .likes-user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .likes-user-name { font-weight: 700; font-size: 14px; }
+
+  /* ── COMMENT ACTIONS ── */
+  .comment-item { position: relative; }
+  .comment-delete-btn {
+    position: absolute; right: 0; top: 0;
+    background: none; border: none; cursor: pointer;
+    font-size: 13px; padding: 4px 6px; border-radius: 6px;
+    color: #ccc; opacity: 0; transition: opacity 0.15s, color 0.15s;
+    font-family: 'Nunito', sans-serif;
+  }
+  .comment-item:hover .comment-delete-btn { opacity: 1; }
+  .comment-delete-btn:hover { color: #e53935; }
+  .comment-edit-btn {
+    position: absolute; right: 28px; top: 0;
+    background: none; border: none; cursor: pointer;
+    font-size: 13px; padding: 4px 6px; border-radius: 6px;
+    color: #ccc; opacity: 0; transition: opacity 0.15s, color 0.15s;
+    font-family: 'Nunito', sans-serif;
+  }
+  .comment-item:hover .comment-edit-btn { opacity: 1; }
+  .comment-edit-btn:hover { color: var(--paw); }
+  .comment-edit-input {
+    width: 100%; background: white; border: 2px solid var(--paw-light);
+    border-radius: 8px; padding: 6px 10px; font-family: 'Nunito', sans-serif;
+    font-size: 13px; font-weight: 600; color: var(--bark); margin-top: 4px;
+  }
+
   /* ── DELETE CONFIRM ── */
   .btn-danger {
     background: #e53935;
@@ -1226,6 +1309,28 @@
   </div>
 </div>
 
+<!-- LIKES POPUP -->
+<div class="likes-popup-overlay" id="likes-popup" onclick="if(event.target===this)closeLikesPopup()">
+  <div class="likes-popup-box">
+    <div class="likes-popup-title">❤️ Polubienia</div>
+    <div id="likes-popup-list"></div>
+    <button class="btn-cancel" style="width:100%;margin-top:16px;text-align:center" onclick="closeLikesPopup()">Zamknij</button>
+  </div>
+</div>
+
+<!-- DELETE POST MODAL -->
+<div class="modal-overlay" id="delete-post-modal">
+  <div class="modal-box">
+    <div class="modal-title">🗑️ Usuń post</div>
+    <p style="font-size:15px;font-weight:600;line-height:1.6;margin-bottom:8px">Czy na pewno chcesz usunąć ten post?</p>
+    <p style="font-size:13px;color:#e53935;font-weight:700">⚠️ Tej operacji nie można cofnąć.</p>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('delete-post-modal')">Anuluj</button>
+      <button class="btn-danger" onclick="confirmDeletePost()">Usuń post</button>
+    </div>
+  </div>
+</div>
+
 <!-- DELETE PET MODAL -->
 <div class="modal-overlay" id="delete-pet-modal">
   <div class="modal-box">
@@ -1556,6 +1661,10 @@ function renderPostCard(p) {
   const comments = p.comments ? Object.keys(p.comments).length : 0;
   const isLiked = p.likes && p.likes[currentUser.uid];
   const timeStr = timeAgo(p.createdAt);
+  const isMyPost = p.ownerId === currentUser.uid;
+
+  // Check if post belongs to a pet I co-own
+  const canManagePost = isMyPost || (myPets[p.petId] != null);
 
   return `
     <div class="post-card" id="post-${p.id}">
@@ -1566,6 +1675,13 @@ function renderPostCard(p) {
           <div class="post-owner">właściciel: ${p.ownerName || ''}</div>
         </div>
         <div class="post-time">${timeStr}</div>
+        ${canManagePost ? `
+        <div class="post-menu-wrap" id="menu-wrap-${p.id}">
+          <button class="post-menu-btn" onclick="togglePostMenu('${p.id}')">⋯</button>
+          <div class="post-menu-dropdown" id="post-menu-${p.id}">
+            <button class="post-menu-item danger" onclick="openDeletePostModal('${p.id}')">🗑️ Usuń post</button>
+          </div>
+        </div>` : ''}
       </div>
       ${p.text ? `<div class="post-text">${escapeHtml(p.text)}</div>` : ''}
       ${p.imageUrl ? `<img src="${p.imageUrl}" class="post-img" loading="lazy">` : ''}
@@ -1573,6 +1689,7 @@ function renderPostCard(p) {
         <button class="action-btn ${isLiked ? 'liked' : ''}" onclick="toggleLike('${p.id}')">
           ${isLiked ? '❤️' : '🤍'} <span class="count">${likes}</span>
         </button>
+        ${likes > 0 ? `<button class="action-btn" onclick="showLikesPopup('${p.id}')" style="flex:0;padding:8px 6px;font-size:12px;color:var(--bark-light)">kto?</button>` : ''}
         <button class="action-btn" onclick="toggleComments('${p.id}')">
           💬 <span class="count">${comments}</span>
         </button>
@@ -1585,22 +1702,29 @@ function renderPostCard(p) {
           <button class="btn-send-comment" onclick="sendComment('${p.id}')">Wyślij</button>
         </div>
         <div id="comments-list-${p.id}">
-          ${renderComments(p.comments)}
+          ${renderComments(p.comments, p.id)}
         </div>
       </div>
     </div>`;
 }
 
-function renderComments(comments) {
+function renderComments(comments, postId) {
   if (!comments) return '';
-  return Object.entries(comments).map(([k, c]) => `
-    <div class="comment-item">
+  return Object.entries(comments).map(([k, c]) => {
+    const isMyComment = c.userId === currentUser.uid;
+    return `
+    <div class="comment-item" id="comment-item-${postId}-${k}">
       <div class="comment-avatar">${c.userPhotoUrl ? `<img src="${c.userPhotoUrl}" referrerpolicy="no-referrer">` : '👤'}</div>
-      <div class="comment-bubble">
+      <div class="comment-bubble" style="flex:1">
         <div class="comment-author">${c.userName || 'Użytkownik'}</div>
-        <div class="comment-text">${escapeHtml(c.text)}</div>
+        <div class="comment-text" id="comment-text-${postId}-${k}">${escapeHtml(c.text)}</div>
       </div>
-    </div>`).join('');
+      ${isMyComment ? `
+        <button class="comment-edit-btn" onclick="startEditComment('${postId}','${k}','${escapeHtml(c.text).replace(/'/g,"\\'")}')">✏️</button>
+        <button class="comment-delete-btn" onclick="deleteComment('${postId}','${k}')">✕</button>
+      ` : ''}
+    </div>`;
+  }).join('');
 }
 
 window.handlePostImage = (input) => {
@@ -1655,9 +1779,18 @@ window.submitPost = async () => {
 
 window.toggleLike = async (postId) => {
   const likeRef = ref(db, `posts/${postId}/likes/${currentUser.uid}`);
+  const metaRef = ref(db, `posts/${postId}/likesMeta/${currentUser.uid}`);
   const snap = await get(likeRef);
-  if (snap.exists()) await set(likeRef, null);
-  else await set(likeRef, true);
+  if (snap.exists()) {
+    await set(likeRef, null);
+    await set(metaRef, null);
+  } else {
+    await set(likeRef, true);
+    await set(metaRef, {
+      displayName: currentUser.displayName || 'Użytkownik',
+      photoURL: currentUser.photoURL || null
+    });
+  }
 };
 
 window.toggleComments = (postId) => {
@@ -1684,12 +1817,114 @@ window.sendComment = async (postId) => {
   // refresh post comments
   const snap = await get(ref(db, `posts/${postId}/comments`));
   const listEl = document.getElementById(`comments-list-${postId}`);
-  if (listEl) listEl.innerHTML = renderComments(snap.val());
+  if (listEl) listEl.innerHTML = renderComments(snap.val(), postId);
 };
 
 window.sharePost = (postId) => {
   const url = `${location.origin}${location.pathname}#post-${postId}`;
   navigator.clipboard.writeText(url).then(() => showToast('Link skopiowany! 🔗'));
+};
+
+// ── Post menu ──
+window.togglePostMenu = (postId) => {
+  const menu = document.getElementById(`post-menu-${postId}`);
+  // close all other menus first
+  document.querySelectorAll('.post-menu-dropdown.open').forEach(m => {
+    if (m.id !== `post-menu-${postId}`) m.classList.remove('open');
+  });
+  menu.classList.toggle('open');
+  // close on outside click
+  if (menu.classList.contains('open')) {
+    setTimeout(() => {
+      document.addEventListener('click', function closeMenu(e) {
+        if (!menu.contains(e.target)) {
+          menu.classList.remove('open');
+          document.removeEventListener('click', closeMenu);
+        }
+      });
+    }, 10);
+  }
+};
+
+let deletingPostId = null;
+window.openDeletePostModal = (postId) => {
+  deletingPostId = postId;
+  document.getElementById(`post-menu-${postId}`)?.classList.remove('open');
+  openModal('delete-post-modal');
+};
+window.confirmDeletePost = async () => {
+  if (!deletingPostId) return;
+  showToast('Usuwam post...');
+  try {
+    await remove(ref(db, `posts/${deletingPostId}`));
+    closeModal('delete-post-modal');
+    // Remove card from DOM immediately
+    document.getElementById(`post-${deletingPostId}`)?.remove();
+    showToast('Post usunięty 🗑️');
+    deletingPostId = null;
+  } catch(e) { showToast('Błąd: ' + e.message); }
+};
+
+// ── Likes popup ──
+window.showLikesPopup = async (postId) => {
+  const snap = await get(ref(db, `posts/${postId}/likes`));
+  const listEl = document.getElementById('likes-popup-list');
+  if (!snap.exists()) { listEl.innerHTML = '<p style="color:#aaa;font-weight:600;font-size:13px">Brak polubień</p>'; }
+  else {
+    // Likes only store uid:true — we need names. Store them on like action.
+    const uids = Object.keys(snap.val());
+    // Try to get names from likes metadata, fallback to uid display
+    const likesMetaSnap = await get(ref(db, `posts/${postId}/likesMeta`));
+    const meta = likesMetaSnap.val() || {};
+    listEl.innerHTML = uids.map(uid => {
+      const m = meta[uid];
+      const name = m?.displayName || 'Użytkownik';
+      const photo = m?.photoURL;
+      const photoHTML = photo ? `<img src="${photo}" referrerpolicy="no-referrer">` : '👤';
+      return `<div class="likes-user-item">
+        <div class="likes-user-avatar">${photoHTML}</div>
+        <div class="likes-user-name">${name}</div>
+      </div>`;
+    }).join('');
+  }
+  document.getElementById('likes-popup').classList.add('open');
+};
+window.closeLikesPopup = () => document.getElementById('likes-popup').classList.remove('open');
+
+// ── Comment delete & edit ──
+window.deleteComment = async (postId, commentId) => {
+  await remove(ref(db, `posts/${postId}/comments/${commentId}`));
+  document.getElementById(`comment-item-${postId}-${commentId}`)?.remove();
+  showToast('Komentarz usunięty');
+};
+
+window.startEditComment = (postId, commentId, currentText) => {
+  const textEl = document.getElementById(`comment-text-${postId}-${commentId}`);
+  if (!textEl) return;
+  const decoded = currentText.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>');
+  textEl.innerHTML = `
+    <input class="comment-edit-input" id="cedit-${postId}-${commentId}" value="${decoded.replace(/"/g,'&quot;')}"
+      onkeydown="if(event.key==='Enter')saveEditComment('${postId}','${commentId}');if(event.key==='Escape')cancelEditComment('${postId}','${commentId}','${currentText}')">
+    <div style="display:flex;gap:6px;margin-top:4px">
+      <button class="btn-save" style="padding:4px 12px;font-size:12px" onclick="saveEditComment('${postId}','${commentId}')">Zapisz</button>
+      <button class="btn-cancel" style="padding:4px 10px;font-size:12px" onclick="cancelEditComment('${postId}','${commentId}','${currentText}')">Anuluj</button>
+    </div>`;
+  document.getElementById(`cedit-${postId}-${commentId}`)?.focus();
+};
+
+window.saveEditComment = async (postId, commentId) => {
+  const input = document.getElementById(`cedit-${postId}-${commentId}`);
+  const newText = input?.value.trim();
+  if (!newText) return;
+  await update(ref(db, `posts/${postId}/comments/${commentId}`), { text: newText, edited: true });
+  const textEl = document.getElementById(`comment-text-${postId}-${commentId}`);
+  if (textEl) textEl.innerHTML = escapeHtml(newText) + ' <span style="font-size:11px;color:#aaa">(edytowano)</span>';
+  showToast('Komentarz zaktualizowany ✏️');
+};
+
+window.cancelEditComment = (postId, commentId, originalText) => {
+  const textEl = document.getElementById(`comment-text-${postId}-${commentId}`);
+  if (textEl) textEl.innerHTML = originalText;
 };
 
 // ═══════════════════════════════════
