@@ -1803,6 +1803,10 @@
         <div id="chat-conversations-list">
           <div class="empty-state" style="padding:20px 0"><div class="emoji" style="font-size:32px">💬</div><p style="font-size:13px">Brak rozmów</p></div>
         </div>
+        <div id="chat-requests-section" style="display:none;margin-top:12px;border-top:2px solid var(--cream);padding-top:10px">
+          <div class="section-title" style="font-size:13px">📬 Prśśby o kontakt</div>
+          <div id="chat-requests-list"></div>
+        </div>
         <button class="btn-add-pet" style="margin-top:12px" onclick="openNewChatModal()">✉️ Nowa wiadomość</button>
       </div>
       <div class="chat-main" id="chat-main-panel">
@@ -3732,10 +3736,8 @@ window.showPetProfile = async (petId) => {
           <div class="profile-pet-name">${p.name}</div>
           <div class="profile-tags">
             <span class="profile-tag species">${emoji} ${p.species}</span>
-            ${p.breed ? `<span class="profile-tag">${p.breed}</span>` : ''}
-            ${p.age ? `<span class="profile-tag">🎂 ${p.age} lat</span>` : ''}
-            ${p.birthdate ? `<span class="profile-tag">🎂 ur. ${p.birthdate}</span>` : ''}
-            ${p.adoptdate ? `<span class="profile-tag" style="background:#FFF0E8;color:var(--paw)">🏠 adopcja ${p.adoptdate}</span>` : ''}
+            ${p.breed ? `<span class="profile-tag">${escapeHtml(p.breed)} <a href="https://www.google.com/search?q=${encodeURIComponent(p.breed + ' rasa ' + p.species)}" target="_blank" rel="noopener" style="text-decoration:none;font-size:12px;margin-left:2px" title="Szukaj rasy w Google">🔍</a></span>` : ''}
+            ${petAgeTags(p)}
             ${p.location ? `<span class="profile-tag location">📍 ${p.location}</span>` : ''}
             <span class="profile-tag followers" id="followers-count-${petId}">👥 ${followersCount} obserwujących</span>
             <span class="profile-tag" style="cursor:pointer" onclick="openCoOwnersModal('${petId}')">🤝 ${1 + coOwnersCount} opiekun${coOwnersCount >= 1 ? 'ów' : ''}</span>
@@ -3957,6 +3959,68 @@ function speciesEmoji(s) {
     Inne:'🐾'
   };
   return map[s] || '🐾';
+}
+
+function calcPetAge(birthdate) {
+  if (!birthdate) return null;
+  const birth = new Date(birthdate);
+  if (isNaN(birth)) return null;
+  const now = new Date();
+  let years = now.getFullYear() - birth.getFullYear();
+  let months = now.getMonth() - birth.getMonth();
+  if (months < 0) { years--; months += 12; }
+  if (now.getDate() < birth.getDate()) months--;
+  if (months < 0) { years--; months += 12; }
+  return { years, months };
+}
+
+function calcHumanYears(age, species) {
+  if (!age) return null;
+  const total = age.years + age.months / 12;
+  let h;
+  if (species === 'Pies') h = total <= 2 ? total * 12.5 : 25 + (total - 2) * 4.5;
+  else if (species === 'Kot') h = total <= 2 ? total * 12.5 : 25 + (total - 2) * 4;
+  else h = total * 6;
+  return Math.round(h);
+}
+
+function calcBirthdayCountdown(birthdate) {
+  if (!birthdate) return null;
+  const birth = new Date(birthdate);
+  if (isNaN(birth)) return null;
+  const now = new Date();
+  let next = new Date(now.getFullYear(), birth.getMonth(), birth.getDate());
+  if (next < now) next.setFullYear(now.getFullYear() + 1);
+  return Math.round((next - now) / 86400000);
+}
+
+function petAgeTags(p) {
+  var tags = '';
+  if (p.birthdate) {
+    var age = calcPetAge(p.birthdate);
+    if (age) {
+      var ageStr = '';
+      if (age.years > 0) {
+        var sfx = age.years === 1 ? 'o' : age.years < 5 ? 'a' : '';
+        ageStr = age.years + ' lat' + sfx;
+        if (age.months > 0) ageStr += ' i ' + age.months + ' mies.';
+      } else {
+        ageStr = age.months + ' mies.';
+      }
+      tags += '<span class="profile-tag">🎂 ' + ageStr + '</span>';
+      var hy = calcHumanYears(age, p.species);
+      if (hy) tags += '<span class="profile-tag" title="Wiek w przeliczeniu na lata ludzkie">🧑 ≈ ' + hy + ' lat ludzkich</span>';
+      var cd = calcBirthdayCountdown(p.birthdate);
+      if (cd !== null && cd <= 30) {
+        tags += '<span class="profile-tag" style="background:#FFF0E8;color:var(--paw)">🎂 urodziny za ' + (cd === 0 ? 'dziś! 🎉' : cd + ' dni') + '</span>';
+      }
+    }
+  } else if (p.age) {
+    tags += '<span class="profile-tag">🎂 ' + p.age + ' lat</span>';
+  }
+  if (p.birthdate) tags += '<span class="profile-tag" style="opacity:0.7;font-size:11px">ur. ' + p.birthdate + '</span>';
+  if (p.adoptdate) tags += '<span class="profile-tag" style="background:#FFF0E8;color:var(--paw)">🏠 adopcja ' + p.adoptdate + '</span>';
+  return tags;
 }
 
 function timeAgo(ts) {
@@ -4242,7 +4306,49 @@ async function initChatPage() {
       </div>
     </div>`;
   }).join('');
+  await loadChatRequests();
 }
+
+window.loadChatRequests = async () => {
+  const snap = await get(ref(db, 'chats'));
+  const requests = [];
+  if (snap.exists()) {
+    snap.forEach(c => {
+      const chat = c.val();
+      if (!chat.requests) return;
+      Object.entries(chat.requests).forEach(([fromUid, req]) => {
+        if (req.toUid === currentUser.uid) requests.push({ chatId: c.key, ...req, fromUid });
+      });
+    });
+  }
+  const section = document.getElementById('chat-requests-section');
+  const listEl = document.getElementById('chat-requests-list');
+  if (!requests.length) { if (section) section.style.display = 'none'; return; }
+  if (section) section.style.display = 'block';
+  listEl.innerHTML = requests.map(r => {
+    const photo = r.fromPhoto
+      ? '<img src="' + r.fromPhoto + '" referrerpolicy="no-referrer" style="width:36px;height:36px;border-radius:50%;object-fit:cover">'
+      : '<span style="font-size:22px">👤</span>';
+    return '<div class="coowner-item" style="align-items:center;gap:8px">'
+      + '<div style="width:36px;height:36px;border-radius:50%;overflow:hidden;flex-shrink:0">' + photo + '</div>'
+      + '<div style="flex:1;font-size:13px;font-weight:700">' + escapeHtml(r.fromName || 'Użytkownik') + '</div>'
+      + '<button onclick="acceptChatRequest(\'' + r.chatId + '\',\'' + r.fromUid + '\',\'' + escapeHtml(r.fromName || '') + '\',\'' + (r.fromPhoto || '') + '\')" style="font-size:11px;padding:3px 8px;background:var(--grass);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700">Akceptuj</button>'
+      + '<button onclick="declineChatRequest(\'' + r.chatId + '\',\'' + r.fromUid + '\')" style="font-size:11px;padding:3px 8px;background:#ddd;color:#666;border:none;border-radius:8px;cursor:pointer;font-weight:700">Odrzuć</button>'
+      + '</div>';
+  }).join('');
+};
+
+window.acceptChatRequest = async (chatId, fromUid, fromName, fromPhoto) => {
+  await remove(ref(db, 'chats/' + chatId + '/requests/' + fromUid));
+  await loadChatRequests();
+  await initChatPage();
+  openChatV1(chatId, fromUid, fromName, fromPhoto);
+};
+
+window.declineChatRequest = async (chatId, fromUid) => {
+  await remove(ref(db, 'chats/' + chatId + '/requests/' + fromUid));
+  await loadChatRequests();
+};
 
 window.openChatV1 = (chatId, otherId, otherName, otherPhoto) => {
   activeChatId = chatId;
@@ -4293,35 +4399,58 @@ window.sendChatMessageV1 = async () => {
 };
 
 window.openNewChatModal = async () => {
-  const snap = await get(ref(db, 'pets'));
   const usersMap = {};
-  if (snap.exists()) {
-    snap.forEach(c => {
+
+  // Współopiekunowie
+  const petsSnap = await get(ref(db, 'pets'));
+  if (petsSnap.exists()) {
+    petsSnap.forEach(c => {
       const p = c.val();
       if (!isCoOwner(p)) return;
-      if (p.ownerId !== currentUser.uid) {
-        usersMap[p.ownerId] = { displayName: p.ownerName || 'Właściciel', photoURL: null };
-      }
-      if (p.coOwners) {
-        Object.entries(p.coOwners).forEach(([uid, co]) => {
-          if (uid !== currentUser.uid) usersMap[uid] = { displayName: co.displayName, photoURL: co.photoURL };
-        });
-      }
+      if (p.ownerId !== currentUser.uid)
+        usersMap[p.ownerId] = { displayName: firstNameOnly(p.ownerName) || 'Właściciel', photoURL: null, type: 'coowner' };
+      if (p.coOwners) Object.entries(p.coOwners).forEach(([uid, co]) => {
+        if (uid !== currentUser.uid)
+          usersMap[uid] = { displayName: firstNameOnly(co.displayName) || 'Opiekun', photoURL: co.photoURL, type: 'coowner' };
+      });
     });
+  }
+
+  // Wzajemni obserwujący
+  const myFollowsSnap = await get(ref(db, 'follows/' + currentUser.uid));
+  const followedPetIds = myFollowsSnap.exists() ? Object.keys(myFollowsSnap.val()) : [];
+  const theirOwners = {};
+  for (const petId of followedPetIds) {
+    const ps = await get(ref(db, 'pets/' + petId));
+    if (ps.exists()) {
+      const pet = ps.val();
+      if (pet.ownerId && pet.ownerId !== currentUser.uid)
+        theirOwners[pet.ownerId] = { displayName: firstNameOnly(pet.ownerName) || 'Właściciel', photoURL: null };
+    }
+  }
+  const myPetIds = Object.keys(myPets);
+  for (const [theirUid, info] of Object.entries(theirOwners)) {
+    if (usersMap[theirUid]) continue;
+    for (const myPetId of myPetIds) {
+      const snap = await get(ref(db, 'petFollowers/' + myPetId + '/' + theirUid));
+      if (snap.exists()) { usersMap[theirUid] = { ...info, type: 'mutual' }; break; }
+    }
   }
 
   const users = Object.entries(usersMap);
   const listEl = document.getElementById('new-chat-users-list');
   if (!users.length) {
-    listEl.innerHTML = `<div class="empty-state" style="padding:20px 0"><div class="emoji">😔</div><p style="font-size:13px">Nie jesteś jeszcze opiekunem żadnego wspólnego zwierzęcia.</p></div>`;
+    listEl.innerHTML = '<div class="empty-state" style="padding:20px 0"><div class="emoji">😔</div><p style="font-size:13px">Obserwujcie się wzajemnie aby móc pisać!</p></div>';
   } else {
     listEl.innerHTML = users.map(([uid, u]) => {
-      const photo = u.photoURL ? `<img src="${u.photoURL}" referrerpolicy="no-referrer">` : '👤';
-      return `<div class="coowner-item" style="cursor:pointer" onclick="startChatWithUserV1('${uid}','${escapeHtml(u.displayName)}','${u.photoURL || ''}')">
-        <div class="coowner-avatar">${photo}</div>
-        <div class="coowner-name">${u.displayName}</div>
-        <span style="font-size:13px;color:var(--paw)">→ Napisz</span>
-      </div>`;
+      const photo = u.photoURL ? '<img src="' + u.photoURL + '" referrerpolicy="no-referrer">' : '👤';
+      const badge = u.type === 'mutual'
+        ? '<span style="font-size:10px;color:var(--grass);font-weight:700">⭐ wzajemni</span>'
+        : '<span style="font-size:10px;color:var(--paw);font-weight:700">🤝 opiekun</span>';
+      return '<div class="coowner-item" style="cursor:pointer" onclick="startChatWithUserV1(\'' + uid + '\',\'' + escapeHtml(u.displayName) + '\',\'' + (u.photoURL || '') + '\')">'
+        + '<div class="coowner-avatar">' + photo + '</div>'
+        + '<div style="flex:1"><div class="coowner-name">' + u.displayName + '</div>' + badge + '</div>'
+        + '<span style="font-size:13px;color:var(--paw)">→ Napisz</span></div>';
     }).join('');
   }
   openModal('new-chat-modal');
