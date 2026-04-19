@@ -1232,6 +1232,87 @@
   }
   .react-who-tab.active { background: var(--paw); color: white; }
 
+  /* ── SETTINGS PANEL ── */
+  .settings-overlay {
+    position: fixed; inset: 0; background: rgba(61,43,31,0.5);
+    z-index: 1000; display: none; align-items: center; justify-content: center;
+    padding: 20px; backdrop-filter: blur(4px);
+  }
+  .settings-overlay.open { display: flex; }
+  .settings-box {
+    background: white; border-radius: 24px; padding: 32px;
+    max-width: 460px; width: 100%;
+    box-shadow: 0 24px 80px rgba(61,43,31,0.2);
+    max-height: 90vh; overflow-y: auto;
+  }
+  .settings-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 0; border-bottom: 1px solid var(--cream);
+  }
+  .settings-row:last-child { border-bottom: none; }
+  .settings-label { font-size: 15px; font-weight: 700; }
+  .settings-desc { font-size: 12px; color: var(--bark-light); font-weight: 600; margin-top: 2px; }
+  .toggle-switch {
+    width: 44px; height: 24px; border-radius: 12px;
+    background: #ddd; border: none; cursor: pointer;
+    position: relative; transition: background 0.2s; flex-shrink: 0;
+  }
+  .toggle-switch.on { background: var(--paw); }
+  .toggle-switch::after {
+    content: ''; position: absolute; top: 3px; left: 3px;
+    width: 18px; height: 18px; border-radius: 50%; background: white;
+    transition: left 0.2s; box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  }
+  .toggle-switch.on::after { left: 23px; }
+
+  /* ── DEMO POST BADGE ── */
+  .demo-post-badge {
+    display: inline-block; font-size: 10px; font-weight: 800;
+    background: var(--gold); color: var(--bark); padding: 2px 7px;
+    border-radius: 8px; margin-left: 8px; vertical-align: middle;
+  }
+
+  /* ── VACCINE CALENDAR ── */
+  .vaccine-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px; border-radius: 12px; background: var(--cream);
+    margin-bottom: 8px;
+  }
+  .vaccine-icon { font-size: 22px; flex-shrink: 0; }
+  .vaccine-name { font-weight: 800; font-size: 14px; }
+  .vaccine-date { font-size: 12px; color: var(--bark-light); font-weight: 600; }
+  .vaccine-due {
+    margin-left: auto; font-size: 12px; font-weight: 800;
+    padding: 4px 10px; border-radius: 8px;
+  }
+  .vaccine-due.ok { background: #E8F5EE; color: var(--grass); }
+  .vaccine-due.soon { background: #FFF8DC; color: #B8860B; }
+  .vaccine-due.overdue { background: #FFF5F5; color: #e53935; }
+  .vaccine-btn-delete {
+    background: none; border: none; cursor: pointer;
+    color: #ccc; font-size: 16px; padding: 4px; transition: color 0.15s;
+  }
+  .vaccine-btn-delete:hover { color: #e53935; }
+
+  /* ── WALK CALENDAR ── */
+  .walk-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px; border-radius: 12px; background: var(--cream);
+    margin-bottom: 8px;
+  }
+  .walk-icon { font-size: 22px; flex-shrink: 0; }
+  .walk-info { flex: 1; }
+  .walk-title { font-weight: 800; font-size: 14px; }
+  .walk-meta { font-size: 12px; color: var(--bark-light); font-weight: 600; margin-top: 2px; }
+  .walk-join-btn {
+    background: var(--paw); color: white; border: none;
+    border-radius: 8px; padding: 6px 14px; font-size: 12px;
+    font-weight: 800; cursor: pointer; font-family: 'Nunito', sans-serif;
+    transition: background 0.15s; flex-shrink: 0;
+  }
+  .walk-join-btn:hover { background: var(--bark); }
+  .walk-join-btn.joined { background: var(--grass); }
+
   /* ── LIKES POPUP ── */
   .likes-popup-overlay {
     position: fixed; inset: 0; background: rgba(61,43,31,0.4);
@@ -1506,6 +1587,7 @@
           </div>
         </div>
         <div id="nav-avatar-wrap"></div>
+        <button class="notif-btn" onclick="openSettings()" title="Ustawienia" style="font-size:16px">⚙️</button>
         <button class="btn-signout" onclick="signOut()">Wyloguj</button>
       </div>
     </div>
@@ -1903,6 +1985,99 @@
   </div>
 </div>
 
+<!-- SETTINGS MODAL -->
+<div class="settings-overlay" id="settings-modal" onclick="if(event.target===this)closeSettings()">
+  <div class="settings-box">
+    <div class="modal-title">⚙️ Ustawienia</div>
+    <div class="settings-row">
+      <div>
+        <div class="settings-label">🎭 Profile demo w feedzie</div>
+        <div class="settings-desc">Pokazuje przykładowe zwierzęta kiedy feed jest pusty lub zawsze</div>
+      </div>
+      <button class="toggle-switch on" id="toggle-demo-feed" onclick="toggleSetting('demoFeed',this)"></button>
+    </div>
+    <div class="settings-row">
+      <div>
+        <div class="settings-label">🔔 Powiadomienia</div>
+        <div class="settings-desc">Otrzymuj powiadomienia o reakcjach i komentarzach</div>
+      </div>
+      <button class="toggle-switch on" id="toggle-notifs" onclick="toggleSetting('notifs',this)"></button>
+    </div>
+    <div class="settings-row">
+      <div>
+        <div class="settings-label">🟢 Status online</div>
+        <div class="settings-desc">Pokaż innym kiedy jesteś aktywny</div>
+      </div>
+      <button class="toggle-switch on" id="toggle-online" onclick="toggleSetting('online',this)"></button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-save" onclick="closeSettings()">Gotowe</button>
+    </div>
+  </div>
+</div>
+
+<!-- VACCINE CALENDAR MODAL -->
+<div class="modal-overlay" id="vaccine-modal">
+  <div class="modal-box">
+    <div class="modal-title">💉 Kalendarz szczepień</div>
+    <div id="vaccine-pet-name" style="font-size:13px;color:var(--bark-light);font-weight:700;margin-bottom:16px"></div>
+    <div id="vaccine-list" style="margin-bottom:20px"></div>
+    <div style="background:var(--cream);border-radius:14px;padding:16px;margin-bottom:4px">
+      <div style="font-size:13px;font-weight:800;margin-bottom:12px;color:var(--bark-light);text-transform:uppercase;letter-spacing:.5px">Dodaj szczepienie</div>
+      <div class="form-group" style="margin-bottom:10px">
+        <input class="form-input" id="vaccine-name-input" placeholder="Nazwa szczepionki (np. Wścieklizna)">
+      </div>
+      <div style="display:flex;gap:8px">
+        <div class="form-group" style="flex:1;margin-bottom:0">
+          <label class="form-label">Data podania</label>
+          <input class="form-input" id="vaccine-date-input" type="date">
+        </div>
+        <div class="form-group" style="flex:1;margin-bottom:0">
+          <label class="form-label">Następne (opcjonalne)</label>
+          <input class="form-input" id="vaccine-next-input" type="date">
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('vaccine-modal')">Zamknij</button>
+      <button class="btn-save" onclick="addVaccine()">Dodaj 💉</button>
+    </div>
+  </div>
+</div>
+
+<!-- WALK CALENDAR MODAL -->
+<div class="modal-overlay" id="walk-modal">
+  <div class="modal-box">
+    <div class="modal-title">🦮 Kalendarz spacerów</div>
+    <div id="walk-pet-name" style="font-size:13px;color:var(--bark-light);font-weight:700;margin-bottom:16px"></div>
+    <div id="walk-list" style="margin-bottom:20px"></div>
+    <div style="background:var(--cream);border-radius:14px;padding:16px;margin-bottom:4px">
+      <div style="font-size:13px;font-weight:800;margin-bottom:12px;color:var(--bark-light);text-transform:uppercase;letter-spacing:.5px">Zaplanuj spacer</div>
+      <div class="form-group" style="margin-bottom:10px">
+        <input class="form-input" id="walk-title-input" placeholder="np. Park Łazienkowski, poranny spacer...">
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <div class="form-group" style="flex:1;margin-bottom:0">
+          <label class="form-label">Data i godzina</label>
+          <input class="form-input" id="walk-datetime-input" type="datetime-local">
+        </div>
+        <div class="form-group" style="flex:1;margin-bottom:0">
+          <label class="form-label">Miejsce spotkania</label>
+          <input class="form-input" id="walk-place-input" placeholder="np. Fontanna, wejście od ul. Agrykoli">
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Maks. uczestników</label>
+        <input class="form-input" id="walk-max-input" type="number" min="2" max="20" value="5" style="max-width:100px">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('walk-modal')">Zamknij</button>
+      <button class="btn-save" style="background:var(--grass)" onclick="addWalk()">Zaplanuj 🦮</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
@@ -2000,6 +2175,7 @@ async function initApp() {
   loadFollows();
   listenNotifications();
   initOnlineStatus();
+  loadSettings();
 
   // Try get geolocation for proximity filter
   if (navigator.geolocation) {
@@ -2383,19 +2559,6 @@ function haversine(lat1, lng1, lat2, lng2) {
   const dLng = (lng2 - lng1) * Math.PI / 180;
   const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-}
-
-function renderFeed(posts) {
-  const el = document.getElementById('feed-posts');
-  if (!posts.length) {
-    if (feedTab === 'following') {
-      el.innerHTML = `<div class="empty-state"><div class="emoji">⭐</div><p>Nie obserwujesz jeszcze żadnych zwierząt.<br>Przejdź na profil zwierzęcia i kliknij "Obserwuj"!</p></div>`;
-    } else {
-      el.innerHTML = `<div class="empty-state"><div class="emoji">🐾</div><p>Brak postów — dodaj swoje zwierzę i opublikuj coś!</p></div>`;
-    }
-    return;
-  }
-  el.innerHTML = posts.map(p => renderPostCard(p)).join('');
 }
 
 function renderPostCard(p) {
@@ -2911,6 +3074,297 @@ function initOnlineStatus() {
 
 // ── Gallery lightbox (end marker) ──
 
+// ═══════════════════════════════════
+//  ⚙️  USTAWIENIA
+// ═══════════════════════════════════
+const SETTINGS_DEFAULTS = { demoFeed: true, notifs: true, online: true };
+let appSettings = { ...SETTINGS_DEFAULTS };
+
+function loadSettings() {
+  try {
+    const saved = localStorage.getItem('petsbook_settings');
+    if (saved) appSettings = { ...SETTINGS_DEFAULTS, ...JSON.parse(saved) };
+  } catch(e) {}
+  // Sync toggles
+  ['demoFeed','notifs','online'].forEach(k => {
+    const el = document.getElementById(`toggle-${k === 'demoFeed' ? 'demo-feed' : k}`);
+    if (el) el.classList.toggle('on', !!appSettings[k]);
+  });
+}
+
+function saveSettings() {
+  try { localStorage.setItem('petsbook_settings', JSON.stringify(appSettings)); } catch(e) {}
+}
+
+window.toggleSetting = (key, btn) => {
+  appSettings[key] = !appSettings[key];
+  btn.classList.toggle('on', appSettings[key]);
+  saveSettings();
+  if (key === 'demoFeed') applyFeedFilters();
+};
+
+window.openSettings = () => {
+  loadSettings();
+  document.getElementById('settings-modal').classList.add('open');
+};
+window.closeSettings = () => {
+  document.getElementById('settings-modal').classList.remove('open');
+};
+
+// ═══════════════════════════════════
+//  🎭  DEMO POSTS W NORMALNYM FEEDZIE
+// ═══════════════════════════════════
+// Generuje "żywe" daty: posty rotują w ostatnich 7 dniach
+function getLiveDemoDate(index) {
+  const spread = 7 * 24 * 3600000; // 7 dni
+  const seed = (index * 2654435761) >>> 0; // deterministyczny hash
+  return Date.now() - (seed % spread);
+}
+
+function getDemoPostsForFeed() {
+  if (!appSettings.demoFeed) return [];
+  return DEMO_POSTS.map((p, i) => ({
+    ...p,
+    id: p.id,
+    createdAt: getLiveDemoDate(i),
+    _isDemo: true,
+    petLat: (DEMO_PETS.find(x => x.id === p.petId) || {}).lat || null,
+    petLng: (DEMO_PETS.find(x => x.id === p.petId) || {}).lng || null,
+  }));
+}
+
+// ═══════════════════════════════════
+//  NADPISANIE renderFeed — mieszanie demo + real
+// ═══════════════════════════════════
+function renderFeed(posts) {
+  let merged = [...posts];
+
+  if (appSettings.demoFeed) {
+    const demoPosts = getDemoPostsForFeed();
+    // Nie dubluj ID które już są w real posts
+    const realIds = new Set(posts.map(p => p.id));
+    const toAdd = demoPosts.filter(p => !realIds.has(p.id));
+    merged = [...merged, ...toAdd];
+    // Filtruj demo po gatunku/odległości też
+    if (feedSpeciesFilter) merged = merged.filter(p => p.petSpecies === feedSpeciesFilter);
+    if (feedRadiusKm > 0 && myLocation) {
+      merged = merged.filter(p => {
+        if (!p.petLat || !p.petLng) return appSettings.demoFeed; // demo bez lokalizacji przepuszczamy
+        return haversine(myLocation.lat, myLocation.lng, p.petLat, p.petLng) <= feedRadiusKm;
+      });
+    }
+    // Sortuj po dacie
+    merged.sort((a, b) => b.createdAt - a.createdAt);
+  }
+
+  const el = document.getElementById('feed-posts');
+  if (!merged.length) {
+    if (feedTab === 'following') {
+      el.innerHTML = `<div class="empty-state"><div class="emoji">⭐</div><p>Nie obserwujesz jeszcze żadnych zwierząt.<br>Przejdź na profil zwierzęcia i kliknij "Obserwuj"!</p></div>`;
+    } else {
+      el.innerHTML = `<div class="empty-state"><div class="emoji">🐾</div><p>Brak postów — dodaj swoje zwierzę i opublikuj coś!</p></div>`;
+    }
+    return;
+  }
+  el.innerHTML = merged.map(p => p._isDemo ? renderDemoPostCardInFeed(p) : renderPostCard(p)).join('');
+}
+
+// Wersja karty demo do normalnego feedu (z odznaczką demo)
+function renderDemoPostCardInFeed(p) {
+  const emoji = speciesEmoji(p.petSpecies);
+  const avatarHTML = p.petAvatarUrl
+    ? `<img src="${p.petAvatarUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">`
+    : emoji;
+  const comments = p.comments ? Object.keys(p.comments).length : 0;
+  const timeStr = timeAgo(p.createdAt);
+  const reactionsHTML = ['❤️','😂','😲','😢','🐾'].map(em => {
+    const key = {'❤️':'heart','😂':'laugh','😲':'wow','😢':'sad','🐾':'paw'}[em];
+    const count = p.reactions && p.reactions[key] ? Object.keys(p.reactions[key]).length : 0;
+    return `<button class="reaction-btn" onclick="showToast('🎭 To jest przykładowy profil demo')">
+      <span class="r-emoji">${em}</span>${count > 0 ? `<span class="r-count">${count}</span>` : ''}
+    </button>`;
+  }).join('');
+  return `
+    <div class="post-card" id="post-${p.id}">
+      <div class="post-header">
+        <div class="post-pet-avatar" onclick="showDemoPetProfile('${p.petId}')">${avatarHTML}</div>
+        <div class="post-meta">
+          <div class="post-pet-name" onclick="showDemoPetProfile('${p.petId}')">${p.petName}<span class="demo-post-badge">demo</span></div>
+          <div class="post-owner">${firstNameOnly(p.ownerName)}</div>
+        </div>
+        <div class="post-time">${timeStr}</div>
+      </div>
+      ${p.text ? `<div class="post-text">${escapeHtml(p.text)}</div>` : ''}
+      ${p.imageUrl ? `<img src="${p.imageUrl}" class="post-img" loading="lazy">` : ''}
+      <div class="reactions-bar">${reactionsHTML}</div>
+      <div class="post-actions">
+        <button class="action-btn" onclick="toggleDemoComments('${p.id}')">💬 <span>${comments}</span></button>
+        <button class="action-btn" onclick="showToast('🎭 To jest przykładowy profil demo')">🔗 Udostępnij</button>
+      </div>
+      <div class="comments-section" id="comments-${p.id}">
+        ${renderComments(p.comments)}
+        <div style="text-align:center;padding:10px;font-size:13px;color:var(--bark-light);font-weight:700">
+          🎭 Profil demo — <span style="cursor:pointer;color:var(--paw)" onclick="openAddPetModal()">dodaj swoje zwierzę</span> aby komentować
+        </div>
+      </div>
+    </div>`;
+}
+
+// ═══════════════════════════════════
+//  ETAP 5: 💉 KALENDARZ SZCZEPIEŃ
+// ═══════════════════════════════════
+let vaccineModalPetId = null;
+
+window.openVaccineModal = async (petId, petName) => {
+  vaccineModalPetId = petId;
+  document.getElementById('vaccine-pet-name').textContent = `🐾 ${petName}`;
+  document.getElementById('vaccine-name-input').value = '';
+  document.getElementById('vaccine-date-input').value = '';
+  document.getElementById('vaccine-next-input').value = '';
+  await renderVaccineList(petId);
+  openModal('vaccine-modal');
+};
+
+async function renderVaccineList(petId) {
+  const snap = await get(ref(db, `vaccines/${petId}`));
+  const listEl = document.getElementById('vaccine-list');
+  if (!snap.exists()) {
+    listEl.innerHTML = `<div class="empty-state" style="padding:20px 0"><div class="emoji" style="font-size:32px">💉</div><p style="font-size:13px">Brak wpisów szczepień</p></div>`;
+    return;
+  }
+  const vaccines = [];
+  snap.forEach(c => vaccines.push({ id: c.key, ...c.val() }));
+  vaccines.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+  const today = new Date().toISOString().slice(0, 10);
+  listEl.innerHTML = vaccines.map(v => {
+    let dueLabel = '', dueClass = '';
+    if (v.nextDate) {
+      const diff = Math.round((new Date(v.nextDate) - new Date(today)) / 86400000);
+      if (diff < 0) { dueLabel = `Zaległa (${Math.abs(diff)}d)`; dueClass = 'overdue'; }
+      else if (diff <= 30) { dueLabel = `Za ${diff} dni`; dueClass = 'soon'; }
+      else { dueLabel = `${v.nextDate}`; dueClass = 'ok'; }
+    }
+    return `<div class="vaccine-item">
+      <div class="vaccine-icon">💉</div>
+      <div>
+        <div class="vaccine-name">${escapeHtml(v.name)}</div>
+        <div class="vaccine-date">Podano: ${v.date || '—'}${v.nextDate ? ` · Kolejne: ${v.nextDate}` : ''}</div>
+      </div>
+      ${dueLabel ? `<div class="vaccine-due ${dueClass}">${dueLabel}</div>` : ''}
+      <button class="vaccine-btn-delete" onclick="deleteVaccine('${petId}','${v.id}')">✕</button>
+    </div>`;
+  }).join('');
+}
+
+window.addVaccine = async () => {
+  const name = document.getElementById('vaccine-name-input').value.trim();
+  const date = document.getElementById('vaccine-date-input').value;
+  if (!name || !date) { showToast('Podaj nazwę i datę!'); return; }
+  const entry = { name, date };
+  const next = document.getElementById('vaccine-next-input').value;
+  if (next) entry.nextDate = next;
+  await push(ref(db, `vaccines/${vaccineModalPetId}`), entry);
+  document.getElementById('vaccine-name-input').value = '';
+  document.getElementById('vaccine-date-input').value = '';
+  document.getElementById('vaccine-next-input').value = '';
+  await renderVaccineList(vaccineModalPetId);
+  showToast('Szczepienie dodane 💉');
+};
+
+window.deleteVaccine = async (petId, vaccineId) => {
+  await remove(ref(db, `vaccines/${petId}/${vaccineId}`));
+  await renderVaccineList(petId);
+  showToast('Usunięto wpis');
+};
+
+// ═══════════════════════════════════
+//  ETAP 5: 🦮 KALENDARZ SPACERÓW
+// ═══════════════════════════════════
+let walkModalPetId = null;
+
+window.openWalkModal = async (petId, petName) => {
+  walkModalPetId = petId;
+  document.getElementById('walk-pet-name').textContent = `🐾 ${petName}`;
+  document.getElementById('walk-title-input').value = '';
+  document.getElementById('walk-place-input').value = '';
+  document.getElementById('walk-max-input').value = '5';
+  // Default datetime: jutro 10:00
+  const tomorrow = new Date(Date.now() + 86400000);
+  tomorrow.setHours(10, 0, 0, 0);
+  document.getElementById('walk-datetime-input').value = tomorrow.toISOString().slice(0, 16);
+  await renderWalkList(petId);
+  openModal('walk-modal');
+};
+
+async function renderWalkList(petId) {
+  const snap = await get(ref(db, `walks/${petId}`));
+  const listEl = document.getElementById('walk-list');
+  if (!snap.exists()) {
+    listEl.innerHTML = `<div class="empty-state" style="padding:16px 0"><div class="emoji" style="font-size:32px">🦮</div><p style="font-size:13px">Brak zaplanowanych spacerów</p></div>`;
+    return;
+  }
+  const walks = [];
+  snap.forEach(c => walks.push({ id: c.key, ...c.val() }));
+  walks.sort((a, b) => (a.datetime || '').localeCompare(b.datetime || ''));
+  const now = new Date().toISOString();
+
+  listEl.innerHTML = walks.map(w => {
+    const isPast = w.datetime < now;
+    const joiners = w.joiners ? Object.keys(w.joiners).length : 0;
+    const iJoined = w.joiners && w.joiners[currentUser.uid];
+    const isOwner = w.ownerId === currentUser.uid;
+    const dt = w.datetime ? new Date(w.datetime).toLocaleString('pl-PL', { weekday:'short', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : '—';
+    return `<div class="walk-item">
+      <div class="walk-icon">${isPast ? '✅' : '🦮'}</div>
+      <div class="walk-info">
+        <div class="walk-title">${escapeHtml(w.title)}</div>
+        <div class="walk-meta">${dt}${w.place ? ` · 📍 ${escapeHtml(w.place)}` : ''} · 👥 ${joiners}/${w.maxJoiners || 5}</div>
+      </div>
+      ${!isPast && !isOwner ? `<button class="walk-join-btn ${iJoined ? 'joined' : ''}" onclick="joinWalk('${petId}','${w.id}',${!!iJoined})">
+        ${iJoined ? '✅ Dołączyłeś' : '➕ Dołącz'}
+      </button>` : ''}
+      ${isOwner && !isPast ? `<button class="vaccine-btn-delete" onclick="deleteWalk('${petId}','${w.id}')">✕</button>` : ''}
+    </div>`;
+  }).join('');
+}
+
+window.addWalk = async () => {
+  const title = document.getElementById('walk-title-input').value.trim();
+  const datetime = document.getElementById('walk-datetime-input').value;
+  if (!title || !datetime) { showToast('Podaj tytuł i datę!'); return; }
+  const maxJoiners = parseInt(document.getElementById('walk-max-input').value) || 5;
+  const place = document.getElementById('walk-place-input').value.trim();
+  await push(ref(db, `walks/${walkModalPetId}`), {
+    title, datetime, place, maxJoiners,
+    ownerId: currentUser.uid,
+    ownerName: currentUser.displayName || 'Właściciel',
+    createdAt: Date.now()
+  });
+  document.getElementById('walk-title-input').value = '';
+  document.getElementById('walk-place-input').value = '';
+  await renderWalkList(walkModalPetId);
+  showToast('Spacer zaplanowany! 🦮');
+};
+
+window.joinWalk = async (petId, walkId, alreadyJoined) => {
+  const joinRef = ref(db, `walks/${petId}/${walkId}/joiners/${currentUser.uid}`);
+  if (alreadyJoined) {
+    await remove(joinRef);
+    showToast('Wycofano dołączenie');
+  } else {
+    await set(joinRef, { displayName: currentUser.displayName || 'Użytkownik', joinedAt: Date.now() });
+    showToast('Dołączono do spaceru! 🦮');
+  }
+  await renderWalkList(petId);
+};
+
+window.deleteWalk = async (petId, walkId) => {
+  await remove(ref(db, `walks/${petId}/${walkId}`));
+  await renderWalkList(petId);
+  showToast('Spacer usunięty');
+};
+
 // ── Likes popup ──
 window.showLikesPopup = async (postId) => {
   const snap = await get(ref(db, `posts/${postId}/likes`));
@@ -3018,8 +3472,10 @@ window.showPetProfile = async (petId) => {
           </button>` : ''}
           ${canEdit ? `<button class="btn-save" onclick="openAddPetModal('${petId}')">✏️ Edytuj</button>` : ''}
           ${canEdit ? `<button class="btn-save" style="background:var(--grass)" onclick="openCoOwnersModal('${petId}')">👥 Opiekunowie</button>` : ''}
+          ${canEdit ? `<button class="btn-save" style="background:#9B59B6;color:white" onclick="openVaccineModal('${petId}','${p.name}')">💉 Szczepienia</button>` : ''}
+          ${canEdit ? `<button class="btn-save" style="background:var(--sky);color:white" onclick="openWalkModal('${petId}','${p.name}')">🦮 Spacery</button>` : ''}
           ${isOwner ? `<button class="btn-danger" onclick="openDeletePetModal('${petId}')">🗑️ Usuń</button>` : ''}
-          <button class="btn-save" style="background:var(--sky);color:white" onclick="sharePetProfile('${petId}')">🔗 Udostępnij</button>
+          <button class="btn-save" style="background:#aaa;color:white" onclick="sharePetProfile('${petId}')">🔗 Udostępnij</button>
         </div>
       </div>
       ${p.bio ? `<div class="profile-bio">${escapeHtml(p.bio)}</div>` : ''}
