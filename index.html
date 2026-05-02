@@ -2706,6 +2706,10 @@ function loadFeed() {
     }
     applyFeedFilters();
     loadSuggestions();
+  }, err => {
+    console.error('❌ loadFeed Firebase error:', err.code, err.message);
+    document.getElementById('feed-posts').innerHTML =
+      '<div class="empty-state"><div class="emoji">⚠️</div><p>Błąd ładowania feedu: ' + err.message + '</p></div>';
   });
 }
 
@@ -2923,7 +2927,7 @@ window.submitPost = async () => {
   showToast('Opublikowano! 🎉');
   // Scroll do góry feedu żeby zobaczyć nowy post
   setTimeout(() => {
-    const feedEl = document.getElementById('feed-list');
+    const feedEl = document.getElementById('feed-posts');
     if (feedEl) feedEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, 600);
 };
