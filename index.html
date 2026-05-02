@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#E8734A">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -351,7 +351,7 @@
     gap: 24px;
   }
   @media (max-width: 900px) {
-    .main-layout { grid-template-columns: 1fr; }
+    .main-layout { grid-template-columns: 1fr; padding: 16px 12px; }
     .sidebar-left, .sidebar-right { display: none; }
   }
 
@@ -597,8 +597,14 @@
   .post-img {
     width: 100%;
     max-height: 480px;
+    min-height: 180px;
     object-fit: cover;
+    object-position: center;
     display: block;
+    border-radius: 0;
+  }
+  @media (max-width: 390px) {
+    .post-img { max-height: 300px; min-height: 140px; }
   }
   .post-actions {
     display: flex;
@@ -1041,6 +1047,41 @@
   }
   .bottom-tab.active { color: var(--paw); }
   .bottom-tab-icon { font-size: 22px; }
+
+  /* ── RESPONSIVE: małe ekrany ≤ 390px (iPhone SE, starsze Androidy) ── */
+  @media (max-width: 390px) {
+    .topnav-inner { padding: 0 10px; gap: 6px; height: 54px; }
+    .nav-logo { font-size: 20px; }
+    .nav-search { max-width: 160px; }
+    .nav-search input { font-size: 13px; padding: 7px 10px 7px 34px; }
+    .nav-avatar, .nav-btn { width: 32px; height: 32px; font-size: 14px; }
+    .btn-logout { padding: 6px 10px; font-size: 12px; }
+    .main-content { padding: 10px; }
+    .card-pad { padding: 14px; }
+    .modal-box { padding: 20px 16px; border-radius: 18px; }
+    .modal-title { font-size: 20px; margin-bottom: 16px; }
+    .post-card { border-radius: 14px; }
+    .post-text { font-size: 14px; padding: 0 14px 12px; }
+    .bottom-tab { font-size: 9px; padding: 4px; }
+    .bottom-tab-icon { font-size: 20px; }
+    .profile-pet-name { font-size: 22px; }
+    .profile-big-avatar { width: 80px; height: 80px; }
+    .notif-panel { width: calc(100vw - 20px); right: -10px; }
+  }
+
+  /* ── RESPONSIVE: średnie telefony 391–430px ── */
+  @media (min-width: 391px) and (max-width: 430px) {
+    .topnav-inner { padding: 0 14px; gap: 8px; }
+    .nav-search { max-width: 200px; }
+    .notif-panel { width: calc(100vw - 24px); right: -4px; }
+  }
+
+  /* ── RESPONSIVE: iPhone z Dynamic Island / notch (górne safe-area) ── */
+  @supports (padding-top: env(safe-area-inset-top)) {
+    .topnav { padding-top: env(safe-area-inset-top, 0px); }
+    .bottom-nav { padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+    body { padding-bottom: max(70px, calc(60px + env(safe-area-inset-bottom))); }
+  }
 
   /* ── POST MENU ── */
   .post-menu-wrap { position: relative; margin-left: auto; }
@@ -1768,6 +1809,9 @@
         <span id="radius-val">wszędzie</span>
         <span style="font-size:13px;font-weight:600;color:var(--bark-light)">Pokaż w promieniu</span>
       </div>
+      <div style="margin-bottom:8px">
+        <button id="btn-dog-parks" class="btn-search-filter" onclick="toggleDogParks()" style="background:var(--grass);color:white">🐕 Wybiegi</button>
+      </div>
       <div id="explore-map-container"><div id="map-explore"></div></div>
       <div id="explore-results" class="pets-grid"></div>
     </div>
@@ -2240,6 +2284,7 @@ let allFeedPosts = [];
 let feedTab = 'all'; // 'all' | 'following'
 let feedSpeciesFilter = '';
 let feedRadiusKm = 0;
+let feedDisplayLimit = 20;
 let myFollows = {}; // petId -> true
 let myLocation = null; // { lat, lng }
 
@@ -2416,7 +2461,7 @@ function loadMyPets() {
         myPets[child.key] = p;
           const emoji = speciesEmoji(p.species);
           const avatarHTML = p.avatarUrl
-            ? `<img src="${p.avatarUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">`
+            ? `<img src="${p.avatarUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover" referrerpolicy="no-referrer" onerror="this.style.display='none'">`
             : emoji;
 
           petSelect.innerHTML += `<option value="${child.key}">${emoji} ${p.name}</option>`;
@@ -2431,7 +2476,7 @@ function loadMyPets() {
             </div>`;
 
           const cardAvatarHTML = p.avatarUrl
-            ? `<img src="${p.avatarUrl}">`
+            ? `<img src="${p.avatarUrl}" referrerpolicy="no-referrer" onerror="this.style.display='none'">`
             : `<span style="font-size:64px;display:flex;align-items:center;justify-content:center;height:100%">${emoji}</span>`;
 
           mypetsHTML += `
@@ -2488,14 +2533,13 @@ window.openAddPetModal = (petId = null) => {
 window.handleAvatarPreview = (input) => {
   const file = input.files[0];
   if (!file) return;
-  petAvatarFile = file;
-  const reader = new FileReader();
-  reader.onload = e => {
-    document.getElementById('avatar-preview').src = e.target.result;
+  resizeImageFile(file, 400, 400, 0.88).then(resized => {
+    petAvatarFile = resized;
+    const url = URL.createObjectURL(resized);
+    document.getElementById('avatar-preview').src = url;
     document.getElementById('avatar-preview').style.display = 'block';
     document.getElementById('avatar-upload-text').textContent = '✅ Zdjęcie wybrane';
-  };
-  reader.readAsDataURL(file);
+  });
 };
 
 window.savePet = async () => {
@@ -2538,9 +2582,11 @@ window.savePet = async () => {
   try {
     if (editingPetId) {
       await update(ref(db, `pets/${editingPetId}`), petData);
+      if (petData.breed) fetchAndSaveBreedInfo(editingPetId, petData.breed, petData.species);
       showToast('Zaktualizowano profil! 🐾');
     } else {
-      await push(ref(db, 'pets'), petData);
+      const newPetRef = await push(ref(db, 'pets'), petData);
+      if (petData.breed) fetchAndSaveBreedInfo(newPetRef.key, petData.breed, petData.species);
       showToast('Dodano zwierzę! 🎉');
     }
   } finally {
@@ -2549,6 +2595,25 @@ window.savePet = async () => {
   }
   closeModal('add-pet-modal');
 };
+
+async function fetchAndSaveBreedInfo(petId, breed, species) {
+  try {
+    const existing = await get(ref(db, 'pets/' + petId + '/breedInfo'));
+    if (existing.exists() && existing.val().breed === breed) return;
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: 'Napisz krótki opis (3-5 zdań) rasy ' + breed + ' (' + species + ') po polsku. Uwzględnij charakter, potrzeby ruchu, długość życia i jedną ciekawostkę. Odpowiedz tylko opisem, bez nagłówków.' }]
+      })
+    });
+    const data = await response.json();
+    const text = data.content && data.content[0] ? data.content[0].text : '';
+    if (text) await set(ref(db, 'pets/' + petId + '/breedInfo'), { breed, text, updatedAt: Date.now() });
+  } catch(e) { console.error('breedInfo error:', e); }
+}
 
 // ═══════════════════════════════════
 //  ⭐  FOLLOWS (obserwowanie zwierząt)
@@ -2646,6 +2711,7 @@ function loadFeed() {
 
 // ── Feed filter controls ──
 window.setFeedTab = (tab) => {
+  feedDisplayLimit = 20;
   feedTab = tab;
   document.getElementById('ftab-all').classList.toggle('active', tab === 'all');
   document.getElementById('ftab-following').classList.toggle('active', tab === 'following');
@@ -2653,6 +2719,7 @@ window.setFeedTab = (tab) => {
 };
 
 window.onFeedRadiusChange = (val) => {
+  feedDisplayLimit = 20;
   feedRadiusKm = Number(val);
   document.getElementById('feed-radius-val').textContent = feedRadiusKm > 0 ? `${feedRadiusKm} km` : 'wszędzie';
   if (feedRadiusKm > 0 && !myLocation) {
@@ -2666,7 +2733,9 @@ window.onFeedRadiusChange = (val) => {
 };
 
 window.applyFeedFilters = () => {
-  feedSpeciesFilter = document.getElementById('feed-filter-species')?.value || '';
+  const newSpecies = document.getElementById('feed-filter-species')?.value || '';
+  if (newSpecies !== feedSpeciesFilter) feedDisplayLimit = 20;
+  feedSpeciesFilter = newSpecies;
   let posts = [...allFeedPosts];
 
   // Tab filter
@@ -2779,17 +2848,36 @@ function renderComments(comments, postId) {
   }).join('');
 }
 
+function resizeImageFile(file, maxW, maxH, quality) {
+  return new Promise(resolve => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let w = img.width, h = img.height;
+      if (w > maxW || h > maxH) {
+        const ratio = Math.min(maxW / w, maxH / h);
+        w = Math.round(w * ratio);
+        h = Math.round(h * ratio);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      canvas.toBlob(blob => resolve(new File([blob], file.name, { type: 'image/jpeg' })), 'image/jpeg', quality);
+    };
+    img.src = url;
+  });
+}
+
 window.handlePostImage = (input) => {
   const file = input.files[0];
   if (!file) return;
-  postImageFile = file;
-  const reader = new FileReader();
-  reader.onload = e => {
+  resizeImageFile(file, 1200, 1200, 0.85).then(resized => {
+    postImageFile = resized;
     const prev = document.getElementById('post-image-preview');
-    prev.src = e.target.result;
+    prev.src = URL.createObjectURL(resized);
     prev.style.display = 'block';
-  };
-  reader.readAsDataURL(file);
+  });
 };
 
 window.submitPost = async () => {
@@ -3365,8 +3453,20 @@ function renderFeed(posts) {
     }
     return;
   }
-  el.innerHTML = merged.map(p => p._isDemo ? renderDemoPostCardInFeed(p) : renderPostCard(p)).join('');
+  const visible = merged.slice(0, feedDisplayLimit);
+  const remaining = merged.length - feedDisplayLimit;
+  el.innerHTML = visible.map(p => p._isDemo ? renderDemoPostCardInFeed(p) : renderPostCard(p)).join('');
+  if (remaining > 0) {
+    el.innerHTML += '<div style="text-align:center;padding:16px">'
+      + '<button class="btn-save" style="background:var(--bark-light)" onclick="loadMoreFeedPosts()">'
+      + '📜 Załaduj więcej (' + remaining + ')</button></div>';
+  }
 }
+
+window.loadMoreFeedPosts = () => {
+  feedDisplayLimit += 20;
+  applyFeedFilters();
+};
 
 // Wersja karty demo do normalnego feedu (z odznaczką demo)
 function renderDemoPostCardInFeed(p) {
@@ -3717,7 +3817,7 @@ window.showPetProfile = async (petId) => {
   const canEdit = isOwner || isCo;
   const isStranger = !canEdit;
   const avatarHTML = p.avatarUrl
-    ? `<img src="${p.avatarUrl}">`
+    ? `<img src="${p.avatarUrl}" referrerpolicy="no-referrer" onerror="this.style.display='none'">`
     : `<span style="font-size:44px">${emoji}</span>`;
 
   const coOwnersCount = p.coOwners ? Object.keys(p.coOwners).length : 0;
@@ -3762,6 +3862,15 @@ window.showPetProfile = async (petId) => {
     <h3 style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;margin-bottom:16px">Posty</h3>`;
 
   currentProfilePetId = petId;
+
+  if (p.breedInfo && p.breedInfo.text) {
+    const biContainer = document.createElement('div');
+    biContainer.style.cssText = 'background:white;border-radius:16px;padding:16px;margin-bottom:16px';
+    biContainer.innerHTML = '<details><summary style="cursor:pointer;font-weight:700;font-size:15px">ℹ️ O rasie ' + escapeHtml(p.breedInfo.breed) + '</summary>'
+      + '<p style="margin-top:12px;font-size:14px;line-height:1.6;color:var(--bark)">' + escapeHtml(p.breedInfo.text) + '</p></details>';
+    document.getElementById('profile-posts').insertAdjacentElement('beforebegin', biContainer);
+  }
+
   loadProfilePosts(petId);
 };
 
@@ -3781,7 +3890,7 @@ async function loadProfilePosts(petId) {
       <div class="profile-gallery">
         ${photoPosts.slice(0, 9).map(p => `
           <div class="gallery-item" onclick="openGalleryLightbox('${p.imageUrl}')">
-            <img src="${p.imageUrl}" loading="lazy" alt="">
+            <img src="${p.imageUrl}" loading="lazy" alt="" referrerpolicy="no-referrer" onerror="this.style.display='none'">
           </div>`).join('')}
       </div>`;
   }
@@ -3816,7 +3925,7 @@ async function loadSuggestions() {
   const shown = pets.sort(() => Math.random() - 0.5).slice(0, 5);
   el.innerHTML = shown.map(p => {
     const emoji = speciesEmoji(p.species);
-    const avatarHTML = p.avatarUrl ? `<img src="${p.avatarUrl}">` : emoji;
+    const avatarHTML = p.avatarUrl ? `<img src="${p.avatarUrl}" referrerpolicy="no-referrer" onerror="this.style.display='none'">` : emoji;
     return `<div class="suggest-item" onclick="showPetProfile('${p.id}')">
       <div class="suggest-avatar">${avatarHTML}</div>
       <div>
@@ -4213,12 +4322,44 @@ function initExploreMap() {
   container.innerHTML = '<div id="map-explore"></div>';
 
   exploreMap = L.map('map-explore').setView([52.23, 21.01], 7);
+  window._exploreMap = exploreMap;
+  window._dogParkLayer = null;
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap'
   }).addTo(exploreMap);
 
   refreshExploreMapPins();
 }
+
+window.toggleDogParks = async () => {
+  if (!window._exploreMap) { showToast('Najpierw otwórz mapę'); return; }
+  const btn = document.getElementById('btn-dog-parks');
+  if (window._dogParkLayer) {
+    window._exploreMap.removeLayer(window._dogParkLayer);
+    window._dogParkLayer = null;
+    if (btn) btn.textContent = '🐕 Wybiegi';
+    return;
+  }
+  showToast('Szukam wybiegów...');
+  const b = window._exploreMap.getBounds();
+  const bbox = b.getSouth()+','+b.getWest()+','+b.getNorth()+','+b.getEast();
+  const q = '[out:json];(node["leisure"="dog_park"]('+bbox+');way["leisure"="dog_park"]('+bbox+'););out center;';
+  try {
+    const resp = await fetch('https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(q));
+    const data = await resp.json();
+    const markers = [];
+    data.elements.forEach(el => {
+      const lat = el.lat || (el.center && el.center.lat);
+      const lng = el.lon || (el.center && el.center.lon);
+      if (!lat || !lng) return;
+      const icon = L.divIcon({ html: '🐕', className: '', iconSize: [28, 28] });
+      markers.push(L.marker([lat, lng], { icon }).bindPopup(el.tags && el.tags.name ? el.tags.name : 'Psie wybiegisko'));
+    });
+    window._dogParkLayer = L.layerGroup(markers).addTo(window._exploreMap);
+    if (btn) btn.textContent = '🐕 Ukryj wybiegi (' + markers.length + ')';
+    if (!markers.length) showToast('Brak wybiegów w tym obszarze');
+  } catch(e) { showToast('Błąd ładowania wybiegów'); }
+};
 
 async function refreshExploreMapPins(radiusKm = 0) {
   if (!exploreMap) return;
@@ -4238,7 +4379,7 @@ async function refreshExploreMapPins(radiusKm = 0) {
     const emoji = speciesEmoji(p.species);
     const popupContent = `
       <div class="map-pet-popup" onclick="showPetProfile('${c.key}')">
-        ${p.avatarUrl ? `<img src="${p.avatarUrl}">` : `<div style="font-size:32px">${emoji}</div>`}
+        ${p.avatarUrl ? `<img src="${p.avatarUrl}" referrerpolicy="no-referrer" onerror="this.style.display='none'">` : `<div style="font-size:32px">${emoji}</div>`}
         <strong>${p.name}</strong>
         <span style="color:#888;font-size:11px">${p.species}${p.location ? ' · ' + p.location : ''}</span>
       </div>`;
@@ -4478,86 +4619,86 @@ window.startChatWithUserV1 = async (otherId, otherName, otherPhoto) => {
 
 const DEMO_PETS = [
   // ── PSY (10) ──
-  { id: 'demo-1',  name: 'Burek',    species: 'Pies', breed: 'Labrador Retriever',   age: '3', location: 'Warszawa',  lat: 52.2297, lng: 21.0122, bio: 'Uwielbiam biegać po parku i gonić piłkę! Najszczęśliwszy pies na świecie 🎾', ownerId: 'demo-owner-1',  ownerName: 'Marek K.',   avatarUrl: 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=200&h=200&fit=crop' },
-  { id: 'demo-2',  name: 'Zuzia',    species: 'Pies', breed: 'Golden Retriever',      age: '2', location: 'Gdańsk',    lat: 54.3520, lng: 18.6466, bio: 'Kocham wszystkich ludzi i psy! Na plaży jestem w swoim żywiole 🌊', ownerId: 'demo-owner-3',  ownerName: 'Piotr L.',   avatarUrl: 'https://images.unsplash.com/photo-1552053831-71594a27632d?w=200&h=200&fit=crop' },
-  { id: 'demo-3',  name: 'Reksio',   species: 'Pies', breed: 'Beagle',                age: '1', location: 'Poznań',    lat: 52.4064, lng: 16.9252, bio: 'Szczeniak w pełnej krasie! Wszystko jest nowe i ekscytujące 🐕', ownerId: 'demo-owner-5',  ownerName: 'Tomek B.',   avatarUrl: 'https://images.unsplash.com/photo-1505628346881-b72b27e84530?w=200&h=200&fit=crop' },
-  { id: 'demo-4',  name: 'Azor',     species: 'Pies', breed: 'Border Collie',         age: '4', location: 'Kraków',    lat: 50.0647, lng: 19.9450, bio: 'Frisbee, owce, piłka — nie ma znaczenia, byle się ruszać 🏃', ownerId: 'demo-owner-7',  ownerName: 'Kasia R.',   avatarUrl: 'https://images.unsplash.com/photo-1503256207526-0d5523f31f68?w=200&h=200&fit=crop' },
-  { id: 'demo-5',  name: 'Bella',    species: 'Pies', breed: 'Cavalier King Charles', age: '5', location: 'Wrocław',   lat: 51.1079, lng: 17.0385, bio: 'Dama z charakterem. Salonowy styl życia, królewskie rasy 👑', ownerId: 'demo-owner-8',  ownerName: 'Zofia M.',   avatarUrl: 'https://images.unsplash.com/photo-1583511655826-05700d52f4d9?w=200&h=200&fit=crop' },
-  { id: 'demo-6',  name: 'Max',      species: 'Pies', breed: 'Owczarek Niemiecki',    age: '6', location: 'Łódź',      lat: 51.7592, lng: 19.4560, bio: 'Pilnuję domu i serca swojej rodziny. Zawsze czujny 🛡️', ownerId: 'demo-owner-9',  ownerName: 'Bartek J.',  avatarUrl: 'https://images.unsplash.com/photo-1589941013453-ec89f33b5e95?w=200&h=200&fit=crop' },
-  { id: 'demo-7',  name: 'Luna',     species: 'Pies', breed: 'Husky Syberyjski',      age: '3', location: 'Szczecin',  lat: 53.4285, lng: 14.5528, bio: 'Śnieg to mój żywioł. Zimą szaleję, latem śpię 🌨️', ownerId: 'demo-owner-10', ownerName: 'Ola P.',     avatarUrl: 'https://images.unsplash.com/photo-1617895153857-82fe0c82b8c4?w=200&h=200&fit=crop' },
-  { id: 'demo-8',  name: 'Tofik',    species: 'Pies', breed: 'Jamnik',                age: '7', location: 'Lublin',    lat: 51.2465, lng: 22.5684, bio: 'Krótkie nogi, wielkie serce. Nory mnie fascynują 🕳️', ownerId: 'demo-owner-11', ownerName: 'Paweł N.',   avatarUrl: 'https://images.unsplash.com/photo-1608096299210-db7e38487075?w=200&h=200&fit=crop' },
-  { id: 'demo-9',  name: 'Rocky',    species: 'Pies', breed: 'Bokser',                age: '2', location: 'Katowice',  lat: 50.2649, lng: 19.0238, bio: 'Energetyczny, zabawny, trochę głupi — ale za to bardzo kochany 💪', ownerId: 'demo-owner-12', ownerName: 'Michał D.',  avatarUrl: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=200&h=200&fit=crop' },
-  { id: 'demo-10', name: 'Pusia',    species: 'Pies', breed: 'Shih Tzu',              age: '4', location: 'Gdynia',    lat: 54.5189, lng: 18.5305, bio: 'Fryzura zawsze idealna. Modna psinka z Trójmiasta 💅', ownerId: 'demo-owner-13', ownerName: 'Natalia W.', avatarUrl: 'https://images.unsplash.com/photo-1615751072497-5f5169febe17?w=200&h=200&fit=crop' },
+  { id: 'demo-1',  name: 'Burek',    species: 'Pies', breed: 'Labrador Retriever',   age: '3', location: 'Warszawa',  lat: 52.2297, lng: 21.0122, bio: 'Uwielbiam biegać po parku i gonić piłkę! Najszczęśliwszy pies na świecie 🎾', ownerId: 'demo-owner-1',  ownerName: 'Marek K.',   avatarUrl: 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22200%22%20height%3D%22200%22%3E%3Crect%20width%3D%22200%22%20height%3D%22200%22%20rx%3D%22100%22%20fill%3D%22%23E8B89A%22/%3E%3Ctext%20x%3D%22100%22%20y%3D%22130%22%20font-size%3D%2290%22%20text-anchor%3D%22middle%22%3E%F0%9F%90%B6%3C/text%3E%3C/svg%3E' },
+  { id: 'demo-2',  name: 'Zuzia',    species: 'Pies', breed: 'Golden Retriever',      age: '2', location: 'Gdańsk',    lat: 54.3520, lng: 18.6466, bio: 'Kocham wszystkich ludzi i psy! Na plaży jestem w swoim żywiole 🌊', ownerId: 'demo-owner-3',  ownerName: 'Piotr L.',   avatarUrl: 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22200%22%20height%3D%22200%22%3E%3Crect%20width%3D%22200%22%20height%3D%22200%22%20rx%3D%22100%22%20fill%3D%22%23F4D03F%22/%3E%3Ctext%20x%3D%22100%22%20y%3D%22130%22%20font-size%3D%2290%22%20text-anchor%3D%22middle%22%3E%F0%9F%90%95%3C/text%3E%3C/svg%3E' },
+  { id: 'demo-3',  name: 'Reksio',   species: 'Pies', breed: 'Beagle',                age: '1', location: 'Poznań',    lat: 52.4064, lng: 16.9252, bio: 'Szczeniak w pełnej krasie! Wszystko jest nowe i ekscytujące 🐕', ownerId: 'demo-owner-5',  ownerName: 'Tomek B.',   avatarUrl: 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22200%22%20height%3D%22200%22%3E%3Crect%20width%3D%22200%22%20height%3D%22200%22%20rx%3D%22100%22%20fill%3D%22%23AED6F1%22/%3E%3Ctext%20x%3D%22100%22%20y%3D%22130%22%20font-size%3D%2290%22%20text-anchor%3D%22middle%22%3E%F0%9F%90%BE%3C/text%3E%3C/svg%3E' },
+  { id: 'demo-4',  name: 'Azor',     species: 'Pies', breed: 'Border Collie',         age: '4', location: 'Kraków',    lat: 50.0647, lng: 19.9450, bio: 'Frisbee, owce, piłka — nie ma znaczenia, byle się ruszać 🏃', ownerId: 'demo-owner-7',  ownerName: 'Kasia R.',   avatarUrl: 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22200%22%20height%3D%22200%22%3E%3Crect%20width%3D%22200%22%20height%3D%22200%22%20rx%3D%22100%22%20fill%3D%22%23A9DFBF%22/%3E%3Ctext%20x%3D%22100%22%20y%3D%22130%22%20font-size%3D%2290%22%20text-anchor%3D%22middle%22%3E%F0%9F%A6%A8%3C/text%3E%3C/svg%3E' },
+  { id: 'demo-5',  name: 'Bella',    species: 'Pies', breed: 'Cavalier King Charles', age: '5', location: 'Wrocław',   lat: 51.1079, lng: 17.0385, bio: 'Dama z charakterem. Salonowy styl życia, królewskie rasy 👑', ownerId: 'demo-owner-8',  ownerName: 'Zofia M.',   avatarUrl: 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22200%22%20height%3D%22200%22%3E%3Crect%20width%3D%22200%22%20height%3D%22200%22%20rx%3D%22100%22%20fill%3D%22%23F9E79F%22/%3E%3Ctext%20x%3D%22100%22%20y%3D%22130%22%20font-size%3D%2290%22%20text-anchor%3D%22middle%22%3E%F0%9F%90%B6%3C/text%3E%3C/svg%3E' },
+  { id: 'demo-6',  name: 'Max',      species: 'Pies', breed: 'Owczarek Niemiecki',    age: '6', location: 'Łódź',      lat: 51.7592, lng: 19.4560, bio: 'Pilnuję domu i serca swojej rodziny. Zawsze czujny 🛡️', ownerId: 'demo-owner-9',  ownerName: 'Bartek J.',  avatarUrl: 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22200%22%20height%3D%22200%22%3E%3Crect%20width%3D%22200%22%20height%3D%22200%22%20rx%3D%22100%22%20fill%3D%22%23D5D8DC%22/%3E%3Ctext%20x%3D%22100%22%20y%3D%22130%22%20font-size%3D%2290%22%20text-anchor%3D%22middle%22%3E%F0%9F%90%95%3C/text%3E%3C/svg%3E' },
+  { id: 'demo-7',  name: 'Luna',     species: 'Pies', breed: 'Husky Syberyjski',      age: '3', location: 'Szczecin',  lat: 53.4285, lng: 14.5528, bio: 'Śnieg to mój żywioł. Zimą szaleję, latem śpię 🌨️', ownerId: 'demo-owner-10', ownerName: 'Ola P.',     avatarUrl: 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22200%22%20height%3D%22200%22%3E%3Crect%20width%3D%22200%22%20height%3D%22200%22%20rx%3D%22100%22%20fill%3D%22%23AED6F1%22/%3E%3Ctext%20x%3D%22100%22%20y%3D%22130%22%20font-size%3D%2290%22%20text-anchor%3D%22middle%22%3E%F0%9F%90%BA%3C/text%3E%3C/svg%3E' },
+  { id: 'demo-8',  name: 'Tofik',    species: 'Pies', breed: 'Jamnik',                age: '7', location: 'Lublin',    lat: 51.2465, lng: 22.5684, bio: 'Krótkie nogi, wielkie serce. Nory mnie fascynują 🕳️', ownerId: 'demo-owner-11', ownerName: 'Paweł N.',   avatarUrl: 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22200%22%20height%3D%22200%22%3E%3Crect%20width%3D%22200%22%20height%3D%22200%22%20rx%3D%22100%22%20fill%3D%22%23D7BADE%22/%3E%3Ctext%20x%3D%22100%22%20y%3D%22130%22%20font-size%3D%2290%22%20text-anchor%3D%22middle%22%3E%F0%9F%90%B6%3C/text%3E%3C/svg%3E' },
+  { id: 'demo-9',  name: 'Rocky',    species: 'Pies', breed: 'Bokser',                age: '2', location: 'Katowice',  lat: 50.2649, lng: 19.0238, bio: 'Energetyczny, zabawny, trochę głupi — ale za to bardzo kochany 💪', ownerId: 'demo-owner-12', ownerName: 'Michał D.',  avatarUrl: 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22200%22%20height%3D%22200%22%3E%3Crect%20width%3D%22200%22%20height%3D%22200%22%20rx%3D%22100%22%20fill%3D%22%23F5B7B1%22/%3E%3Ctext%20x%3D%22100%22%20y%3D%22130%22%20font-size%3D%2290%22%20text-anchor%3D%22middle%22%3E%F0%9F%90%95%3C/text%3E%3C/svg%3E' },
+  { id: 'demo-10', name: 'Pusia',    species: 'Pies', breed: 'Shih Tzu',              age: '4', location: 'Gdynia',    lat: 54.5189, lng: 18.5305, bio: 'Fryzura zawsze idealna. Modna psinka z Trójmiasta 💅', ownerId: 'demo-owner-13', ownerName: 'Natalia W.', avatarUrl: 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22200%22%20height%3D%22200%22%3E%3Crect%20width%3D%22200%22%20height%3D%22200%22%20rx%3D%22100%22%20fill%3D%22%23FAD7A0%22/%3E%3Ctext%20x%3D%22100%22%20y%3D%22130%22%20font-size%3D%2290%22%20text-anchor%3D%22middle%22%3E%F0%9F%90%B6%3C/text%3E%3C/svg%3E' },
   // ── KOTY (10) ──
-  { id: 'demo-11', name: 'Mruczek',  species: 'Kot',  breed: 'Maine Coon',            age: '5', location: 'Kraków',    lat: 50.0617, lng: 19.9366, bio: 'Jestem największym kotem w okolicy. Lubię drzemki i tuńczyk 😺', ownerId: 'demo-owner-2',  ownerName: 'Anna W.',    avatarUrl: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=200&h=200&fit=crop' },
-  { id: 'demo-12', name: 'Filemon',  species: 'Kot',  breed: 'Brytyjski Krótkowłosy', age: '4', location: 'Wrocław',   lat: 51.1000, lng: 17.0333, bio: 'Poważny kot z klasą. Nie przepadam za poniedziałkami 🎩', ownerId: 'demo-owner-4',  ownerName: 'Ewa S.',     avatarUrl: 'https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=200&h=200&fit=crop' },
-  { id: 'demo-13', name: 'Cleo',     species: 'Kot',  breed: 'Syjamski',              age: '3', location: 'Warszawa',  lat: 52.2200, lng: 21.0300, bio: 'Królowa Egiptu. Wymagam wielbienia o każdej porze 🏛️', ownerId: 'demo-owner-14', ownerName: 'Sandra K.',  avatarUrl: 'https://images.unsplash.com/photo-1519052537078-e6302a4968d4?w=200&h=200&fit=crop' },
-  { id: 'demo-14', name: 'Zefir',    species: 'Kot',  breed: 'Perski',                age: '6', location: 'Gdańsk',    lat: 54.3600, lng: 18.6300, bio: 'Puszysty i dostojny. Każdy koc należy do mnie 🌬️', ownerId: 'demo-owner-15', ownerName: 'Robert F.',  avatarUrl: 'https://images.unsplash.com/photo-1574158622682-e40e69881006?w=200&h=200&fit=crop' },
-  { id: 'demo-15', name: 'Kicia',    species: 'Kot',  breed: 'Europejski',            age: '2', location: 'Poznań',    lat: 52.4100, lng: 16.9100, bio: 'Polna kotka z miejskim stylem życia. Myszy? Nie ma problemu 🐭', ownerId: 'demo-owner-16', ownerName: 'Agata M.',   avatarUrl: 'https://images.unsplash.com/photo-1548247416-ec66f4900b2e?w=200&h=200&fit=crop' },
-  { id: 'demo-16', name: 'Shadow',   species: 'Kot',  breed: 'Czarny mix',            age: '5', location: 'Łódź',      lat: 51.7700, lng: 19.4700, bio: 'Czarny kot przynosi szczęście — pytaj moich właścicieli 🖤', ownerId: 'demo-owner-17', ownerName: 'Kamil Z.',   avatarUrl: 'https://images.unsplash.com/photo-1518288774672-b94e808873ff?w=200&h=200&fit=crop' },
-  { id: 'demo-17', name: 'Marchewa', species: 'Kot',  breed: 'Rudy mix',              age: '3', location: 'Lublin',    lat: 51.2500, lng: 22.5600, bio: 'Imię losowe. Charakter legendarny. Żarcie zawsze na czas 🥕', ownerId: 'demo-owner-18', ownerName: 'Gosia T.',   avatarUrl: 'https://images.unsplash.com/photo-1533743983669-94fa5c4338ec?w=200&h=200&fit=crop' },
-  { id: 'demo-18', name: 'Śnieżka',  species: 'Kot',  breed: 'Angora Turecka',        age: '4', location: 'Szczecin',  lat: 53.4300, lng: 14.5600, bio: 'Biała jak śnieg, dumna jak paw. Poranna kawa bez mojego towarzystwa nie istnieje ☁️', ownerId: 'demo-owner-19', ownerName: 'Marta C.',   avatarUrl: 'https://images.unsplash.com/photo-1495360010541-f48722b74f44?w=200&h=200&fit=crop' },
-  { id: 'demo-19', name: 'Tygrys',   species: 'Kot',  breed: 'Tygrysek (mix pręgowany)', age: '7', location: 'Katowice', lat: 50.2600, lng: 19.0300, bio: 'Nikt nie śpi kiedy chcę jeść. Mam precyzję do minuty 🐯', ownerId: 'demo-owner-20', ownerName: 'Łukasz H.',  avatarUrl: 'https://images.unsplash.com/photo-1561948955-570b270e7c36?w=200&h=200&fit=crop' },
-  { id: 'demo-20', name: 'Gacek',    species: 'Kot',  breed: 'Ragdoll',               age: '2', location: 'Gdynia',    lat: 54.5200, lng: 18.5400, bio: 'Opadnę ci na rękach i zasnę w 5 sekund. Dlatego zwie mnie Gacek 💤', ownerId: 'demo-owner-21', ownerName: 'Inga R.',    avatarUrl: 'https://images.unsplash.com/photo-1478098711619-5ab0b478d6e6?w=200&h=200&fit=crop' },
+  { id: 'demo-11', name: 'Mruczek',  species: 'Kot',  breed: 'Maine Coon',            age: '5', location: 'Kraków',    lat: 50.0617, lng: 19.9366, bio: 'Jestem największym kotem w okolicy. Lubię drzemki i tuńczyk 😺', ownerId: 'demo-owner-2',  ownerName: 'Anna W.',    avatarUrl: 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22200%22%20height%3D%22200%22%3E%3Crect%20width%3D%22200%22%20height%3D%22200%22%20rx%3D%22100%22%20fill%3D%22%23D5F5E3%22/%3E%3Ctext%20x%3D%22100%22%20y%3D%22130%22%20font-size%3D%2290%22%20text-anchor%3D%22middle%22%3E%F0%9F%90%B1%3C/text%3E%3C/svg%3E' },
+  { id: 'demo-12', name: 'Filemon',  species: 'Kot',  breed: 'Brytyjski Krótkowłosy', age: '4', location: 'Wrocław',   lat: 51.1000, lng: 17.0333, bio: 'Poważny kot z klasą. Nie przepadam za poniedziałkami 🎩', ownerId: 'demo-owner-4',  ownerName: 'Ewa S.',     avatarUrl: 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22200%22%20height%3D%22200%22%3E%3Crect%20width%3D%22200%22%20height%3D%22200%22%20rx%3D%22100%22%20fill%3D%22%23D6EAF8%22/%3E%3Ctext%20x%3D%22100%22%20y%3D%22130%22%20font-size%3D%2290%22%20text-anchor%3D%22middle%22%3E%F0%9F%90%88%3C/text%3E%3C/svg%3E' },
+  { id: 'demo-13', name: 'Cleo',     species: 'Kot',  breed: 'Syjamski',              age: '3', location: 'Warszawa',  lat: 52.2200, lng: 21.0300, bio: 'Królowa Egiptu. Wymagam wielbienia o każdej porze 🏛️', ownerId: 'demo-owner-14', ownerName: 'Sandra K.',  avatarUrl: 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22200%22%20height%3D%22200%22%3E%3Crect%20width%3D%22200%22%20height%3D%22200%22%20rx%3D%22100%22%20fill%3D%22%23FDEBD0%22/%3E%3Ctext%20x%3D%22100%22%20y%3D%22130%22%20font-size%3D%2290%22%20text-anchor%3D%22middle%22%3E%F0%9F%90%B1%3C/text%3E%3C/svg%3E' },
+  { id: 'demo-14', name: 'Zefir',    species: 'Kot',  breed: 'Perski',                age: '6', location: 'Gdańsk',    lat: 54.3600, lng: 18.6300, bio: 'Puszysty i dostojny. Każdy koc należy do mnie 🌬️', ownerId: 'demo-owner-15', ownerName: 'Robert F.',  avatarUrl: 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22200%22%20height%3D%22200%22%3E%3Crect%20width%3D%22200%22%20height%3D%22200%22%20rx%3D%22100%22%20fill%3D%22%23FFF9C4%22/%3E%3Ctext%20x%3D%22100%22%20y%3D%22130%22%20font-size%3D%2290%22%20text-anchor%3D%22middle%22%3E%F0%9F%98%BA%3C/text%3E%3C/svg%3E' },
+  { id: 'demo-15', name: 'Kicia',    species: 'Kot',  breed: 'Europejski',            age: '2', location: 'Poznań',    lat: 52.4100, lng: 16.9100, bio: 'Polna kotka z miejskim stylem życia. Myszy? Nie ma problemu 🐭', ownerId: 'demo-owner-16', ownerName: 'Agata M.',   avatarUrl: 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22200%22%20height%3D%22200%22%3E%3Crect%20width%3D%22200%22%20height%3D%22200%22%20rx%3D%22100%22%20fill%3D%22%23E8DAEF%22/%3E%3Ctext%20x%3D%22100%22%20y%3D%22130%22%20font-size%3D%2290%22%20text-anchor%3D%22middle%22%3E%F0%9F%90%88%3C/text%3E%3C/svg%3E' },
+  { id: 'demo-16', name: 'Shadow',   species: 'Kot',  breed: 'Czarny mix',            age: '5', location: 'Łódź',      lat: 51.7700, lng: 19.4700, bio: 'Czarny kot przynosi szczęście — pytaj moich właścicieli 🖤', ownerId: 'demo-owner-17', ownerName: 'Kamil Z.',   avatarUrl: 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22200%22%20height%3D%22200%22%3E%3Crect%20width%3D%22200%22%20height%3D%22200%22%20rx%3D%22100%22%20fill%3D%22%232C3E50%22/%3E%3Ctext%20x%3D%22100%22%20y%3D%22130%22%20font-size%3D%2290%22%20text-anchor%3D%22middle%22%3E%F0%9F%90%88%3C/text%3E%3C/svg%3E' },
+  { id: 'demo-17', name: 'Marchewa', species: 'Kot',  breed: 'Rudy mix',              age: '3', location: 'Lublin',    lat: 51.2500, lng: 22.5600, bio: 'Imię losowe. Charakter legendarny. Żarcie zawsze na czas 🥕', ownerId: 'demo-owner-18', ownerName: 'Gosia T.',   avatarUrl: 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22200%22%20height%3D%22200%22%3E%3Crect%20width%3D%22200%22%20height%3D%22200%22%20rx%3D%22100%22%20fill%3D%22%23FAD7A0%22/%3E%3Ctext%20x%3D%22100%22%20y%3D%22130%22%20font-size%3D%2290%22%20text-anchor%3D%22middle%22%3E%F0%9F%A6%81%3C/text%3E%3C/svg%3E' },
+  { id: 'demo-18', name: 'Śnieżka',  species: 'Kot',  breed: 'Angora Turecka',        age: '4', location: 'Szczecin',  lat: 53.4300, lng: 14.5600, bio: 'Biała jak śnieg, dumna jak paw. Poranna kawa bez mojego towarzystwa nie istnieje ☁️', ownerId: 'demo-owner-19', ownerName: 'Marta C.',   avatarUrl: 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22200%22%20height%3D%22200%22%3E%3Crect%20width%3D%22200%22%20height%3D%22200%22%20rx%3D%22100%22%20fill%3D%22%23F5EEF8%22/%3E%3Ctext%20x%3D%22100%22%20y%3D%22130%22%20font-size%3D%2290%22%20text-anchor%3D%22middle%22%3E%F0%9F%98%BB%3C/text%3E%3C/svg%3E' },
+  { id: 'demo-19', name: 'Tygrys',   species: 'Kot',  breed: 'Tygrysek (mix pręgowany)', age: '7', location: 'Katowice', lat: 50.2600, lng: 19.0300, bio: 'Nikt nie śpi kiedy chcę jeść. Mam precyzję do minuty 🐯', ownerId: 'demo-owner-20', ownerName: 'Łukasz H.',  avatarUrl: 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22200%22%20height%3D%22200%22%3E%3Crect%20width%3D%22200%22%20height%3D%22200%22%20rx%3D%22100%22%20fill%3D%22%23FDEBD0%22/%3E%3Ctext%20x%3D%22100%22%20y%3D%22130%22%20font-size%3D%2290%22%20text-anchor%3D%22middle%22%3E%F0%9F%90%B1%3C/text%3E%3C/svg%3E' },
+  { id: 'demo-20', name: 'Gacek',    species: 'Kot',  breed: 'Ragdoll',               age: '2', location: 'Gdynia',    lat: 54.5200, lng: 18.5400, bio: 'Opadnę ci na rękach i zasnę w 5 sekund. Dlatego zwie mnie Gacek 💤', ownerId: 'demo-owner-21', ownerName: 'Inga R.',    avatarUrl: 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22200%22%20height%3D%22200%22%3E%3Crect%20width%3D%22200%22%20height%3D%22200%22%20rx%3D%22100%22%20fill%3D%22%23D5F5E3%22/%3E%3Ctext%20x%3D%22100%22%20y%3D%22130%22%20font-size%3D%2290%22%20text-anchor%3D%22middle%22%3E%F0%9F%90%88%3C/text%3E%3C/svg%3E' },
   // ── INNE (6) ──
-  { id: 'demo-21', name: 'Whiskers', species: 'Królik', breed: 'Angorski',            age: '2', location: 'Łódź',      lat: 51.7592, lng: 19.4560, bio: 'Miękki jak chmurka, szybki jak błyskawica. Marchewki to moje życie 🥕', ownerId: 'demo-owner-6',  ownerName: 'Julia M.',   avatarUrl: 'https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=200&h=200&fit=crop' },
-  { id: 'demo-22', name: 'Hamidżo',  species: 'Chomik', breed: 'Złocisty',           age: '1', location: 'Bydgoszcz', lat: 53.1235, lng: 18.0084, bio: 'Kółko w klatce kręcę z 23:00 do 3:00. Nikt mi nie mówi co robić 🏃', ownerId: 'demo-owner-22', ownerName: 'Wiktor S.',  avatarUrl: 'https://images.unsplash.com/photo-1425082661705-1834bfd09dca?w=200&h=200&fit=crop' },
-  { id: 'demo-23', name: 'Żółwik',   species: 'Żółw',  breed: 'Żółw stepowy',        age: '12', location: 'Kraków',   lat: 50.0600, lng: 19.9400, bio: 'Pośpiech jest złodziejem czasu. Wiem co mówię 🐢', ownerId: 'demo-owner-23', ownerName: 'Dorota K.',  avatarUrl: 'https://images.unsplash.com/photo-1437622368342-7a3d73a34c8f?w=200&h=200&fit=crop' },
-  { id: 'demo-24', name: 'Papryk',   species: 'Papuga', breed: 'Papużka falista',     age: '3', location: 'Wrocław',   lat: 51.1100, lng: 17.0400, bio: 'Mówię "hej" i "kocham cię" ale tylko wtedy kiedy chcę 🦜', ownerId: 'demo-owner-24', ownerName: 'Renata L.',  avatarUrl: 'https://images.unsplash.com/photo-1551085254-e96b210db58a?w=200&h=200&fit=crop' },
-  { id: 'demo-25', name: 'Arabella', species: 'Koń',   breed: 'Klacz Arabska',        age: '8', location: 'Stajnia k. Warszawy', lat: 52.1500, lng: 20.9000, bio: 'Grzywa na wietrze, galop po łąkach. Jestem wolnością 🐴', ownerId: 'demo-owner-25', ownerName: 'Klaudia B.', avatarUrl: 'https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?w=200&h=200&fit=crop' },
-  { id: 'demo-26', name: 'Fretka',   species: 'Fretka', breed: 'Fretka domowa',       age: '2', location: 'Gdańsk',    lat: 54.3550, lng: 18.6500, bio: 'Kradnę skarpety i chowam pod kanapą. To moja misja życiowa 🧦', ownerId: 'demo-owner-26', ownerName: 'Adrian M.',  avatarUrl: 'https://images.unsplash.com/photo-1591825729269-caeb344f6df2?w=200&h=200&fit=crop' },
+  { id: 'demo-21', name: 'Whiskers', species: 'Królik', breed: 'Angorski',            age: '2', location: 'Łódź',      lat: 51.7592, lng: 19.4560, bio: 'Miękki jak chmurka, szybki jak błyskawica. Marchewki to moje życie 🥕', ownerId: 'demo-owner-6',  ownerName: 'Julia M.',   avatarUrl: 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22200%22%20height%3D%22200%22%3E%3Crect%20width%3D%22200%22%20height%3D%22200%22%20rx%3D%22100%22%20fill%3D%22%23F9EBEA%22/%3E%3Ctext%20x%3D%22100%22%20y%3D%22130%22%20font-size%3D%2290%22%20text-anchor%3D%22middle%22%3E%F0%9F%90%B0%3C/text%3E%3C/svg%3E' },
+  { id: 'demo-22', name: 'Hamidżo',  species: 'Chomik', breed: 'Złocisty',           age: '1', location: 'Bydgoszcz', lat: 53.1235, lng: 18.0084, bio: 'Kółko w klatce kręcę z 23:00 do 3:00. Nikt mi nie mówi co robić 🏃', ownerId: 'demo-owner-22', ownerName: 'Wiktor S.',  avatarUrl: 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22200%22%20height%3D%22200%22%3E%3Crect%20width%3D%22200%22%20height%3D%22200%22%20rx%3D%22100%22%20fill%3D%22%23FEF9E7%22/%3E%3Ctext%20x%3D%22100%22%20y%3D%22130%22%20font-size%3D%2290%22%20text-anchor%3D%22middle%22%3E%F0%9F%90%B9%3C/text%3E%3C/svg%3E' },
+  { id: 'demo-23', name: 'Żółwik',   species: 'Żółw',  breed: 'Żółw stepowy',        age: '12', location: 'Kraków',   lat: 50.0600, lng: 19.9400, bio: 'Pośpiech jest złodziejem czasu. Wiem co mówię 🐢', ownerId: 'demo-owner-23', ownerName: 'Dorota K.',  avatarUrl: 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22200%22%20height%3D%22200%22%3E%3Crect%20width%3D%22200%22%20height%3D%22200%22%20rx%3D%22100%22%20fill%3D%22%23D5F5E3%22/%3E%3Ctext%20x%3D%22100%22%20y%3D%22130%22%20font-size%3D%2290%22%20text-anchor%3D%22middle%22%3E%F0%9F%90%A2%3C/text%3E%3C/svg%3E' },
+  { id: 'demo-24', name: 'Papryk',   species: 'Papuga', breed: 'Papużka falista',     age: '3', location: 'Wrocław',   lat: 51.1100, lng: 17.0400, bio: 'Mówię "hej" i "kocham cię" ale tylko wtedy kiedy chcę 🦜', ownerId: 'demo-owner-24', ownerName: 'Renata L.',  avatarUrl: 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22200%22%20height%3D%22200%22%3E%3Crect%20width%3D%22200%22%20height%3D%22200%22%20rx%3D%22100%22%20fill%3D%22%23D6EAF8%22/%3E%3Ctext%20x%3D%22100%22%20y%3D%22130%22%20font-size%3D%2290%22%20text-anchor%3D%22middle%22%3E%F0%9F%A6%9C%3C/text%3E%3C/svg%3E' },
+  { id: 'demo-25', name: 'Arabella', species: 'Koń',   breed: 'Klacz Arabska',        age: '8', location: 'Stajnia k. Warszawy', lat: 52.1500, lng: 20.9000, bio: 'Grzywa na wietrze, galop po łąkach. Jestem wolnością 🐴', ownerId: 'demo-owner-25', ownerName: 'Klaudia B.', avatarUrl: 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22200%22%20height%3D%22200%22%3E%3Crect%20width%3D%22200%22%20height%3D%22200%22%20rx%3D%22100%22%20fill%3D%22%23F5CBA7%22/%3E%3Ctext%20x%3D%22100%22%20y%3D%22130%22%20font-size%3D%2290%22%20text-anchor%3D%22middle%22%3E%F0%9F%90%B4%3C/text%3E%3C/svg%3E' },
+  { id: 'demo-26', name: 'Fretka',   species: 'Fretka', breed: 'Fretka domowa',       age: '2', location: 'Gdańsk',    lat: 54.3550, lng: 18.6500, bio: 'Kradnę skarpety i chowam pod kanapą. To moja misja życiowa 🧦', ownerId: 'demo-owner-26', ownerName: 'Adrian M.',  avatarUrl: 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22200%22%20height%3D%22200%22%3E%3Crect%20width%3D%22200%22%20height%3D%22200%22%20rx%3D%22100%22%20fill%3D%22%23FDFEFE%22/%3E%3Ctext%20x%3D%22100%22%20y%3D%22130%22%20font-size%3D%2290%22%20text-anchor%3D%22middle%22%3E%F0%9F%A6%A1%3C/text%3E%3C/svg%3E' },
 ];
 
 const _d = (h) => Date.now() - 3600000 * h;
 const DEMO_POSTS = [
   // Burek (demo-1)
-  { id: 'dp-1',  petId:'demo-1',  petName:'Burek',    petSpecies:'Pies', petAvatarUrl:DEMO_PETS[0].avatarUrl,  ownerName:'Marek K.',   ownerId:'demo-owner-1',  text:'Dzisiejszy spacer w Łazienkach był niesamowity! Poznałem 3 nowe psy 🐕🐕🐕', imageUrl:'https://images.unsplash.com/photo-1534361960057-19f4434a5cef?w=600&h=400&fit=crop', createdAt:_d(2),  reactions:{heart:{'u1':true,'u2':true,'u3':true}}, comments:{'c1':{userName:'Anna W.', text:'Mruczek też chciałby... ale wiadomo, kot 😂', createdAt:_d(1.5)}} },
-  { id: 'dp-2',  petId:'demo-1',  petName:'Burek',    petSpecies:'Pies', petAvatarUrl:DEMO_PETS[0].avatarUrl,  ownerName:'Marek K.',   ownerId:'demo-owner-1',  text:'Weekendowa łaźnia. Twarz mówi wszystko. 🛁', imageUrl:'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=600&h=400&fit=crop', createdAt:_d(48), reactions:{laugh:{'u2':true,'u4':true}}, comments:{} },
-  { id: 'dp-3',  petId:'demo-1',  petName:'Burek',    petSpecies:'Pies', petAvatarUrl:DEMO_PETS[0].avatarUrl,  ownerName:'Marek K.',   ownerId:'demo-owner-1',  text:'Znalazłem nowego przyjaciela w parku. Obaj byliśmy zmęczeni 😅', imageUrl:'https://images.unsplash.com/photo-1548199973-03cce0bbc87b?w=600&h=400&fit=crop', createdAt:_d(120), reactions:{heart:{'u1':true}}, comments:{} },
+  { id: 'dp-1',  petId:'demo-1',  petName:'Burek',    petSpecies:'Pies', petAvatarUrl:DEMO_PETS[0].avatarUrl,  ownerName:'Marek K.',   ownerId:'demo-owner-1',  text:'Dzisiejszy spacer w Łazienkach był niesamowity! Poznałem 3 nowe psy 🐕🐕🐕', imageUrl:'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22600%22%20height%3D%22380%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%23a8edbd%22/%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%233a9e6a%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%22600%22%20height%3D%22380%22%20fill%3D%22url%28%23g%29%22/%3E%3Ctext%20x%3D%22300%22%20y%3D%22210%22%20font-size%3D%22130%22%20text-anchor%3D%22middle%22%3E%F0%9F%8C%B3%3C/text%3E%3C/svg%3E', createdAt:_d(2),  reactions:{heart:{'u1':true,'u2':true,'u3':true}}, comments:{'c1':{userName:'Anna W.', text:'Mruczek też chciałby... ale wiadomo, kot 😂', createdAt:_d(1.5)}} },
+  { id: 'dp-2',  petId:'demo-1',  petName:'Burek',    petSpecies:'Pies', petAvatarUrl:DEMO_PETS[0].avatarUrl,  ownerName:'Marek K.',   ownerId:'demo-owner-1',  text:'Weekendowa łaźnia. Twarz mówi wszystko. 🛁', imageUrl:'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22600%22%20height%3D%22380%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%23aecbf5%22/%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%234a90d9%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%22600%22%20height%3D%22380%22%20fill%3D%22url%28%23g%29%22/%3E%3Ctext%20x%3D%22300%22%20y%3D%22210%22%20font-size%3D%22130%22%20text-anchor%3D%22middle%22%3E%F0%9F%9B%81%3C/text%3E%3C/svg%3E', createdAt:_d(48), reactions:{laugh:{'u2':true,'u4':true}}, comments:{} },
+  { id: 'dp-3',  petId:'demo-1',  petName:'Burek',    petSpecies:'Pies', petAvatarUrl:DEMO_PETS[0].avatarUrl,  ownerName:'Marek K.',   ownerId:'demo-owner-1',  text:'Znalazłem nowego przyjaciela w parku. Obaj byliśmy zmęczeni 😅', imageUrl:'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22600%22%20height%3D%22380%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%23f5e6a3%22/%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%23d4a843%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%22600%22%20height%3D%22380%22%20fill%3D%22url%28%23g%29%22/%3E%3Ctext%20x%3D%22300%22%20y%3D%22210%22%20font-size%3D%22130%22%20text-anchor%3D%22middle%22%3E%F0%9F%98%B4%3C/text%3E%3C/svg%3E', createdAt:_d(120), reactions:{heart:{'u1':true}}, comments:{} },
   // Zuzia (demo-2)
-  { id: 'dp-4',  petId:'demo-2',  petName:'Zuzia',    petSpecies:'Pies', petAvatarUrl:DEMO_PETS[1].avatarUrl,  ownerName:'Piotr L.',   ownerId:'demo-owner-3',  text:'Pierwszy raz na plaży w Sopocie!! Woda mokra ale super!! 🌊🐾', imageUrl:'https://images.unsplash.com/photo-1601758174493-45d0a4d3e407?w=600&h=400&fit=crop', createdAt:_d(10), reactions:{heart:{'u1':true,'u2':true,'u3':true,'u5':true}}, comments:{'c2':{userName:'Marek K.',text:'Burek też uwielbia plażę! 🐕',createdAt:_d(9)},'c3':{userName:'Ewa S.',text:'Jaka słodka! ❤️',createdAt:_d(8)}} },
-  { id: 'dp-5',  petId:'demo-2',  petName:'Zuzia',    petSpecies:'Pies', petAvatarUrl:DEMO_PETS[1].avatarUrl,  ownerName:'Piotr L.',   ownerId:'demo-owner-3',  text:'Spacer o świcie. Gdańsk jest piękny kiedy jeszcze śpią 🌅', imageUrl:'https://images.unsplash.com/photo-1552053831-71594a27632d?w=600&h=400&fit=crop', createdAt:_d(60), reactions:{paw:{'u3':true}}, comments:{} },
-  { id: 'dp-6',  petId:'demo-2',  petName:'Zuzia',    petSpecies:'Pies', petAvatarUrl:DEMO_PETS[1].avatarUrl,  ownerName:'Piotr L.',   ownerId:'demo-owner-3',  text:'Agility po raz pierwszy — upadłam na trzeciej przeszkodzie ale wstałam! 💪', imageUrl:'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=600&h=400&fit=crop', createdAt:_d(200), reactions:{heart:{'u1':true,'u4':true},paw:{'u2':true}}, comments:{} },
+  { id: 'dp-4',  petId:'demo-2',  petName:'Zuzia',    petSpecies:'Pies', petAvatarUrl:DEMO_PETS[1].avatarUrl,  ownerName:'Piotr L.',   ownerId:'demo-owner-3',  text:'Pierwszy raz na plaży w Sopocie!! Woda mokra ale super!! 🌊🐾', imageUrl:'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22600%22%20height%3D%22380%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%2374c0e8%22/%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a6fa8%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%22600%22%20height%3D%22380%22%20fill%3D%22url%28%23g%29%22/%3E%3Ctext%20x%3D%22300%22%20y%3D%22210%22%20font-size%3D%22130%22%20text-anchor%3D%22middle%22%3E%F0%9F%8C%8A%3C/text%3E%3C/svg%3E', createdAt:_d(10), reactions:{heart:{'u1':true,'u2':true,'u3':true,'u5':true}}, comments:{'c2':{userName:'Marek K.',text:'Burek też uwielbia plażę! 🐕',createdAt:_d(9)},'c3':{userName:'Ewa S.',text:'Jaka słodka! ❤️',createdAt:_d(8)}} },
+  { id: 'dp-5',  petId:'demo-2',  petName:'Zuzia',    petSpecies:'Pies', petAvatarUrl:DEMO_PETS[1].avatarUrl,  ownerName:'Piotr L.',   ownerId:'demo-owner-3',  text:'Spacer o świcie. Gdańsk jest piękny kiedy jeszcze śpią 🌅', imageUrl:'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22600%22%20height%3D%22380%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%23f5c07a%22/%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%23e07b39%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%22600%22%20height%3D%22380%22%20fill%3D%22url%28%23g%29%22/%3E%3Ctext%20x%3D%22300%22%20y%3D%22210%22%20font-size%3D%22130%22%20text-anchor%3D%22middle%22%3E%F0%9F%8C%85%3C/text%3E%3C/svg%3E', createdAt:_d(60), reactions:{paw:{'u3':true}}, comments:{} },
+  { id: 'dp-6',  petId:'demo-2',  petName:'Zuzia',    petSpecies:'Pies', petAvatarUrl:DEMO_PETS[1].avatarUrl,  ownerName:'Piotr L.',   ownerId:'demo-owner-3',  text:'Agility po raz pierwszy — upadłam na trzeciej przeszkodzie ale wstałam! 💪', imageUrl:'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22600%22%20height%3D%22380%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%23b5e8a0%22/%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%234caf50%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%22600%22%20height%3D%22380%22%20fill%3D%22url%28%23g%29%22/%3E%3Ctext%20x%3D%22300%22%20y%3D%22210%22%20font-size%3D%22130%22%20text-anchor%3D%22middle%22%3E%F0%9F%8F%83%3C/text%3E%3C/svg%3E', createdAt:_d(200), reactions:{heart:{'u1':true,'u4':true},paw:{'u2':true}}, comments:{} },
   // Reksio (demo-3)
   { id: 'dp-7',  petId:'demo-3',  petName:'Reksio',   petSpecies:'Pies', petAvatarUrl:DEMO_PETS[2].avatarUrl,  ownerName:'Tomek B.',   ownerId:'demo-owner-5',  text:'Znalazłem skarpetę. Nie wiem czyja. Jest moja teraz. 🧦', imageUrl:'', createdAt:_d(20), reactions:{laugh:{'u2':true,'u3':true,'u6':true}}, comments:{'c4':{userName:'Julia M.',text:'HAHA najlepsza historia tygodnia 😂',createdAt:_d(18)}} },
-  { id: 'dp-8',  petId:'demo-3',  petName:'Reksio',   petSpecies:'Pies', petAvatarUrl:DEMO_PETS[2].avatarUrl,  ownerName:'Tomek B.',   ownerId:'demo-owner-5',  text:'Mój pierwszy trening węchu. Znalazłem smakołyk za 8 minut 🔍', imageUrl:'https://images.unsplash.com/photo-1505628346881-b72b27e84530?w=600&h=400&fit=crop', createdAt:_d(80), reactions:{heart:{'u1':true}}, comments:{} },
+  { id: 'dp-8',  petId:'demo-3',  petName:'Reksio',   petSpecies:'Pies', petAvatarUrl:DEMO_PETS[2].avatarUrl,  ownerName:'Tomek B.',   ownerId:'demo-owner-5',  text:'Mój pierwszy trening węchu. Znalazłem smakołyk za 8 minut 🔍', imageUrl:'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22600%22%20height%3D%22380%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%23d4b8f0%22/%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%237c4dbb%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%22600%22%20height%3D%22380%22%20fill%3D%22url%28%23g%29%22/%3E%3Ctext%20x%3D%22300%22%20y%3D%22210%22%20font-size%3D%22130%22%20text-anchor%3D%22middle%22%3E%F0%9F%94%8D%3C/text%3E%3C/svg%3E', createdAt:_d(80), reactions:{heart:{'u1':true}}, comments:{} },
   // Azor (demo-4)
-  { id: 'dp-9',  petId:'demo-4',  petName:'Azor',     petSpecies:'Pies', petAvatarUrl:DEMO_PETS[3].avatarUrl,  ownerName:'Kasia R.',   ownerId:'demo-owner-7',  text:'Frisbee na Błoniach — nowy rekord! 15 łapań bez upuszczenia 🥏', imageUrl:'https://images.unsplash.com/photo-1503256207526-0d5523f31f68?w=600&h=400&fit=crop', createdAt:_d(6),  reactions:{paw:{'u1':true,'u3':true},heart:{'u2':true}}, comments:{} },
+  { id: 'dp-9',  petId:'demo-4',  petName:'Azor',     petSpecies:'Pies', petAvatarUrl:DEMO_PETS[3].avatarUrl,  ownerName:'Kasia R.',   ownerId:'demo-owner-7',  text:'Frisbee na Błoniach — nowy rekord! 15 łapań bez upuszczenia 🥏', imageUrl:'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22600%22%20height%3D%22380%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%23a0d8f0%22/%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%232196f3%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%22600%22%20height%3D%22380%22%20fill%3D%22url%28%23g%29%22/%3E%3Ctext%20x%3D%22300%22%20y%3D%22210%22%20font-size%3D%22130%22%20text-anchor%3D%22middle%22%3E%F0%9F%A5%8F%3C/text%3E%3C/svg%3E', createdAt:_d(6),  reactions:{paw:{'u1':true,'u3':true},heart:{'u2':true}}, comments:{} },
   { id: 'dp-10', petId:'demo-4',  petName:'Azor',     petSpecies:'Pies', petAvatarUrl:DEMO_PETS[3].avatarUrl,  ownerName:'Kasia R.',   ownerId:'demo-owner-7',  text:'Kurs posłuszeństwa ukończony z wyróżnieniem 🎓', imageUrl:'', createdAt:_d(150), reactions:{heart:{'u1':true,'u5':true}}, comments:{'c5':{userName:'Piotr L.',text:'Gratulacje Azorku!',createdAt:_d(148)}} },
   // Mruczek (demo-11)
-  { id: 'dp-11', petId:'demo-11', petName:'Mruczek',  petSpecies:'Kot',  petAvatarUrl:DEMO_PETS[10].avatarUrl, ownerName:'Anna W.',    ownerId:'demo-owner-2',  text:'Poniedziałkowy nastrój 😴 Pięć minut więcej snu proszę.', imageUrl:'https://images.unsplash.com/photo-1574158622682-e40e69881006?w=600&h=400&fit=crop', createdAt:_d(5),  reactions:{laugh:{'u1':true,'u4':true}}, comments:{} },
-  { id: 'dp-12', petId:'demo-11', petName:'Mruczek',  petSpecies:'Kot',  petAvatarUrl:DEMO_PETS[10].avatarUrl, ownerName:'Anna W.',    ownerId:'demo-owner-2',  text:'Znalazłem słoneczny kwadrat na podłodze. To mój teraz. ☀️', imageUrl:'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=600&h=400&fit=crop', createdAt:_d(36), reactions:{paw:{'u2':true,'u3':true},heart:{'u1':true}}, comments:{} },
+  { id: 'dp-11', petId:'demo-11', petName:'Mruczek',  petSpecies:'Kot',  petAvatarUrl:DEMO_PETS[10].avatarUrl, ownerName:'Anna W.',    ownerId:'demo-owner-2',  text:'Poniedziałkowy nastrój 😴 Pięć minut więcej snu proszę.', imageUrl:'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22600%22%20height%3D%22380%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%23ffe0b2%22/%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%23ff9800%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%22600%22%20height%3D%22380%22%20fill%3D%22url%28%23g%29%22/%3E%3Ctext%20x%3D%22300%22%20y%3D%22210%22%20font-size%3D%22130%22%20text-anchor%3D%22middle%22%3E%F0%9F%98%B4%3C/text%3E%3C/svg%3E', createdAt:_d(5),  reactions:{laugh:{'u1':true,'u4':true}}, comments:{} },
+  { id: 'dp-12', petId:'demo-11', petName:'Mruczek',  petSpecies:'Kot',  petAvatarUrl:DEMO_PETS[10].avatarUrl, ownerName:'Anna W.',    ownerId:'demo-owner-2',  text:'Znalazłem słoneczny kwadrat na podłodze. To mój teraz. ☀️', imageUrl:'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22600%22%20height%3D%22380%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%23fff9c4%22/%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%23ffc107%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%22600%22%20height%3D%22380%22%20fill%3D%22url%28%23g%29%22/%3E%3Ctext%20x%3D%22300%22%20y%3D%22210%22%20font-size%3D%22130%22%20text-anchor%3D%22middle%22%3E%E2%98%80%EF%B8%8F%3C/text%3E%3C/svg%3E', createdAt:_d(36), reactions:{paw:{'u2':true,'u3':true},heart:{'u1':true}}, comments:{} },
   { id: 'dp-13', petId:'demo-11', petName:'Mruczek',  petSpecies:'Kot',  petAvatarUrl:DEMO_PETS[10].avatarUrl, ownerName:'Anna W.',    ownerId:'demo-owner-2',  text:'Jutro weterynarz. Dziś jem co chcę. 🍣', imageUrl:'', createdAt:_d(100), reactions:{laugh:{'u5':true}}, comments:{} },
   // Filemon (demo-12)
-  { id: 'dp-14', petId:'demo-12', petName:'Filemon',  petSpecies:'Kot',  petAvatarUrl:DEMO_PETS[11].avatarUrl, ownerName:'Ewa S.',     ownerId:'demo-owner-4',  text:'Wtorek. Słońce świeci na moje futro. Życie jest znośne.', imageUrl:'https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=600&h=400&fit=crop', createdAt:_d(28), reactions:{heart:{'u1':true}}, comments:{} },
-  { id: 'dp-15', petId:'demo-12', petName:'Filemon',  petSpecies:'Kot',  petAvatarUrl:DEMO_PETS[11].avatarUrl, ownerName:'Ewa S.',     ownerId:'demo-owner-4',  text:'Biblioteka w salonie to mój szczyt Everestu 📚', imageUrl:'https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=600&h=400&fit=crop', createdAt:_d(72), reactions:{paw:{'u3':true},laugh:{'u2':true}}, comments:{} },
+  { id: 'dp-14', petId:'demo-12', petName:'Filemon',  petSpecies:'Kot',  petAvatarUrl:DEMO_PETS[11].avatarUrl, ownerName:'Ewa S.',     ownerId:'demo-owner-4',  text:'Wtorek. Słońce świeci na moje futro. Życie jest znośne.', imageUrl:'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22600%22%20height%3D%22380%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%23f8bbd0%22/%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%23e91e8c%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%22600%22%20height%3D%22380%22%20fill%3D%22url%28%23g%29%22/%3E%3Ctext%20x%3D%22300%22%20y%3D%22210%22%20font-size%3D%22130%22%20text-anchor%3D%22middle%22%3E%F0%9F%8C%9E%3C/text%3E%3C/svg%3E', createdAt:_d(28), reactions:{heart:{'u1':true}}, comments:{} },
+  { id: 'dp-15', petId:'demo-12', petName:'Filemon',  petSpecies:'Kot',  petAvatarUrl:DEMO_PETS[11].avatarUrl, ownerName:'Ewa S.',     ownerId:'demo-owner-4',  text:'Biblioteka w salonie to mój szczyt Everestu 📚', imageUrl:'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22600%22%20height%3D%22380%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%23c8e6c9%22/%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%23388e3c%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%22600%22%20height%3D%22380%22%20fill%3D%22url%28%23g%29%22/%3E%3Ctext%20x%3D%22300%22%20y%3D%22210%22%20font-size%3D%22130%22%20text-anchor%3D%22middle%22%3E%F0%9F%93%9A%3C/text%3E%3C/svg%3E', createdAt:_d(72), reactions:{paw:{'u3':true},laugh:{'u2':true}}, comments:{} },
   // Cleo (demo-13)
-  { id: 'dp-16', petId:'demo-13', petName:'Cleo',     petSpecies:'Kot',  petAvatarUrl:DEMO_PETS[12].avatarUrl, ownerName:'Sandra K.',  ownerId:'demo-owner-14', text:'Przynoszę ofiary: dwa liście i martwy motyl. Jesteście wdzięczni? 🏛️', imageUrl:'https://images.unsplash.com/photo-1519052537078-e6302a4968d4?w=600&h=400&fit=crop', createdAt:_d(14), reactions:{laugh:{'u1':true,'u3':true,'u6':true}}, comments:{'c6':{userName:'Ewa S.',text:'Cleo nie zmienia się 😂',createdAt:_d(13)}} },
-  { id: 'dp-17', petId:'demo-13', petName:'Cleo',     petSpecies:'Kot',  petAvatarUrl:DEMO_PETS[12].avatarUrl, ownerName:'Sandra K.',  ownerId:'demo-owner-14', text:'Sesja zdjęciowa dla mnie — bo sobie zasłużyłam 📸', imageUrl:'https://images.unsplash.com/photo-1519052537078-e6302a4968d4?w=600&h=400&fit=crop', createdAt:_d(90), reactions:{heart:{'u2':true,'u4':true}}, comments:{} },
+  { id: 'dp-16', petId:'demo-13', petName:'Cleo',     petSpecies:'Kot',  petAvatarUrl:DEMO_PETS[12].avatarUrl, ownerName:'Sandra K.',  ownerId:'demo-owner-14', text:'Przynoszę ofiary: dwa liście i martwy motyl. Jesteście wdzięczni? 🏛️', imageUrl:'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22600%22%20height%3D%22380%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%23ffe0b2%22/%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%23ff6f00%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%22600%22%20height%3D%22380%22%20fill%3D%22url%28%23g%29%22/%3E%3Ctext%20x%3D%22300%22%20y%3D%22210%22%20font-size%3D%22130%22%20text-anchor%3D%22middle%22%3E%F0%9F%8F%9B%EF%B8%8F%3C/text%3E%3C/svg%3E', createdAt:_d(14), reactions:{laugh:{'u1':true,'u3':true,'u6':true}}, comments:{'c6':{userName:'Ewa S.',text:'Cleo nie zmienia się 😂',createdAt:_d(13)}} },
+  { id: 'dp-17', petId:'demo-13', petName:'Cleo',     petSpecies:'Kot',  petAvatarUrl:DEMO_PETS[12].avatarUrl, ownerName:'Sandra K.',  ownerId:'demo-owner-14', text:'Sesja zdjęciowa dla mnie — bo sobie zasłużyłam 📸', imageUrl:'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22600%22%20height%3D%22380%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%23e1bee7%22/%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%237b1fa2%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%22600%22%20height%3D%22380%22%20fill%3D%22url%28%23g%29%22/%3E%3Ctext%20x%3D%22300%22%20y%3D%22210%22%20font-size%3D%22130%22%20text-anchor%3D%22middle%22%3E%F0%9F%8E%B8%3C/text%3E%3C/svg%3E', createdAt:_d(90), reactions:{heart:{'u2':true,'u4':true}}, comments:{} },
   // Luna (demo-7)
-  { id: 'dp-18', petId:'demo-7',  petName:'Luna',     petSpecies:'Pies', petAvatarUrl:DEMO_PETS[6].avatarUrl,  ownerName:'Ola P.',     ownerId:'demo-owner-10', text:'Śnieg!!! Nareszcie!!! Szczecin biały jak moje futro 🌨️❄️', imageUrl:'https://images.unsplash.com/photo-1617895153857-82fe0c82b8c4?w=600&h=400&fit=crop', createdAt:_d(3),  reactions:{paw:{'u1':true,'u2':true,'u3':true,'u4':true}}, comments:{'c7':{userName:'Bartek J.',text:'Max też by chciał śnieg 🐕',createdAt:_d(2.5)}} },
+  { id: 'dp-18', petId:'demo-7',  petName:'Luna',     petSpecies:'Pies', petAvatarUrl:DEMO_PETS[6].avatarUrl,  ownerName:'Ola P.',     ownerId:'demo-owner-10', text:'Śnieg!!! Nareszcie!!! Szczecin biały jak moje futro 🌨️❄️', imageUrl:'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22600%22%20height%3D%22380%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%23b3e5fc%22/%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%230288d1%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%22600%22%20height%3D%22380%22%20fill%3D%22url%28%23g%29%22/%3E%3Ctext%20x%3D%22300%22%20y%3D%22210%22%20font-size%3D%22130%22%20text-anchor%3D%22middle%22%3E%E2%9D%84%EF%B8%8F%3C/text%3E%3C/svg%3E', createdAt:_d(3),  reactions:{paw:{'u1':true,'u2':true,'u3':true,'u4':true}}, comments:{'c7':{userName:'Bartek J.',text:'Max też by chciał śnieg 🐕',createdAt:_d(2.5)}} },
   { id: 'dp-19', petId:'demo-7',  petName:'Luna',     petSpecies:'Pies', petAvatarUrl:DEMO_PETS[6].avatarUrl,  ownerName:'Ola P.',     ownerId:'demo-owner-10', text:'Latem to ja śpię. Nie pytajcie. 💤', imageUrl:'', createdAt:_d(200), reactions:{laugh:{'u5':true,'u6':true}}, comments:{} },
   // Arabella (demo-25)
-  { id: 'dp-20', petId:'demo-25', petName:'Arabella', petSpecies:'Koń',  petAvatarUrl:DEMO_PETS[24].avatarUrl, ownerName:'Klaudia B.', ownerId:'demo-owner-25', text:'Poranny galop przez łąki. Nie ma nic piękniejszego 🐴🌅', imageUrl:'https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?w=600&h=400&fit=crop', createdAt:_d(8),  reactions:{heart:{'u1':true,'u2':true,'u7':true},paw:{'u3':true}}, comments:{'c8':{userName:'Ola P.',text:'Piękna! ❤️',createdAt:_d(7)}} },
-  { id: 'dp-21', petId:'demo-25', petName:'Arabella', petSpecies:'Koń',  petAvatarUrl:DEMO_PETS[24].avatarUrl, ownerName:'Klaudia B.', ownerId:'demo-owner-25', text:'Konkurs ujeżdżania — 3. miejsce! Trenujemy dalej 🏆', imageUrl:'https://images.unsplash.com/photo-1449379888370-9e0b76a5c8f2?w=600&h=400&fit=crop', createdAt:_d(300), reactions:{heart:{'u1':true,'u4':true}}, comments:{} },
+  { id: 'dp-20', petId:'demo-25', petName:'Arabella', petSpecies:'Koń',  petAvatarUrl:DEMO_PETS[24].avatarUrl, ownerName:'Klaudia B.', ownerId:'demo-owner-25', text:'Poranny galop przez łąki. Nie ma nic piękniejszego 🐴🌅', imageUrl:'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22600%22%20height%3D%22380%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%23ffe082%22/%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%23f57f17%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%22600%22%20height%3D%22380%22%20fill%3D%22url%28%23g%29%22/%3E%3Ctext%20x%3D%22300%22%20y%3D%22210%22%20font-size%3D%22130%22%20text-anchor%3D%22middle%22%3E%F0%9F%8C%84%3C/text%3E%3C/svg%3E', createdAt:_d(8),  reactions:{heart:{'u1':true,'u2':true,'u7':true},paw:{'u3':true}}, comments:{'c8':{userName:'Ola P.',text:'Piękna! ❤️',createdAt:_d(7)}} },
+  { id: 'dp-21', petId:'demo-25', petName:'Arabella', petSpecies:'Koń',  petAvatarUrl:DEMO_PETS[24].avatarUrl, ownerName:'Klaudia B.', ownerId:'demo-owner-25', text:'Konkurs ujeżdżania — 3. miejsce! Trenujemy dalej 🏆', imageUrl:'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22600%22%20height%3D%22380%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%23a8edbd%22/%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%233a9e6a%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%22600%22%20height%3D%22380%22%20fill%3D%22url%28%23g%29%22/%3E%3Ctext%20x%3D%22300%22%20y%3D%22210%22%20font-size%3D%22130%22%20text-anchor%3D%22middle%22%3E%F0%9F%8C%B3%3C/text%3E%3C/svg%3E', createdAt:_d(300), reactions:{heart:{'u1':true,'u4':true}}, comments:{} },
   // Whiskers (demo-21)
-  { id: 'dp-22', petId:'demo-21', petName:'Whiskers', petSpecies:'Królik', petAvatarUrl:DEMO_PETS[20].avatarUrl, ownerName:'Julia M.', ownerId:'demo-owner-6',  text:'Marchewka > wszystko. To nie jest opinia, to fakt. 🥕', imageUrl:'https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=600&h=400&fit=crop', createdAt:_d(18), reactions:{heart:{'u2':true,'u5':true},laugh:{'u3':true}}, comments:{} },
+  { id: 'dp-22', petId:'demo-21', petName:'Whiskers', petSpecies:'Królik', petAvatarUrl:DEMO_PETS[20].avatarUrl, ownerName:'Julia M.', ownerId:'demo-owner-6',  text:'Marchewka > wszystko. To nie jest opinia, to fakt. 🥕', imageUrl:'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22600%22%20height%3D%22380%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%23fff3e0%22/%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%23e65100%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%22600%22%20height%3D%22380%22%20fill%3D%22url%28%23g%29%22/%3E%3Ctext%20x%3D%22300%22%20y%3D%22210%22%20font-size%3D%22130%22%20text-anchor%3D%22middle%22%3E%F0%9F%A5%95%3C/text%3E%3C/svg%3E', createdAt:_d(18), reactions:{heart:{'u2':true,'u5':true},laugh:{'u3':true}}, comments:{} },
   // Papryk (demo-24)
-  { id: 'dp-23', petId:'demo-24', petName:'Papryk',   petSpecies:'Papuga', petAvatarUrl:DEMO_PETS[23].avatarUrl, ownerName:'Renata L.', ownerId:'demo-owner-24', text:'Nauczyłem się nowego słowa: "obiad". Używam go 80 razy dziennie. 🦜', imageUrl:'https://images.unsplash.com/photo-1551085254-e96b210db58a?w=600&h=400&fit=crop', createdAt:_d(12), reactions:{laugh:{'u1':true,'u2':true,'u3':true,'u4':true,'u5':true}}, comments:{'c9':{userName:'Julia M.',text:'😂😂😂 Klasyk!',createdAt:_d(11)}} },
+  { id: 'dp-23', petId:'demo-24', petName:'Papryk',   petSpecies:'Papuga', petAvatarUrl:DEMO_PETS[23].avatarUrl, ownerName:'Renata L.', ownerId:'demo-owner-24', text:'Nauczyłem się nowego słowa: "obiad". Używam go 80 razy dziennie. 🦜', imageUrl:'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22600%22%20height%3D%22380%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%23f3e5f5%22/%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%236a1b9a%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%22600%22%20height%3D%22380%22%20fill%3D%22url%28%23g%29%22/%3E%3Ctext%20x%3D%22300%22%20y%3D%22210%22%20font-size%3D%22130%22%20text-anchor%3D%22middle%22%3E%F0%9F%8F%83%3C/text%3E%3C/svg%3E', createdAt:_d(12), reactions:{laugh:{'u1':true,'u2':true,'u3':true,'u4':true,'u5':true}}, comments:{'c9':{userName:'Julia M.',text:'😂😂😂 Klasyk!',createdAt:_d(11)}} },
   // Żółwik (demo-23)
-  { id: 'dp-24', petId:'demo-23', petName:'Żółwik',   petSpecies:'Żółw', petAvatarUrl:DEMO_PETS[22].avatarUrl, ownerName:'Dorota K.', ownerId:'demo-owner-23', text:'Dziś przeszedłem cały pokój. Zajęło mi to 40 minut. Jestem zmęczony. 🐢', imageUrl:'https://images.unsplash.com/photo-1437622368342-7a3d73a34c8f?w=600&h=400&fit=crop', createdAt:_d(30), reactions:{laugh:{'u1':true,'u6':true},heart:{'u3':true}}, comments:{} },
+  { id: 'dp-24', petId:'demo-23', petName:'Żółwik',   petSpecies:'Żółw', petAvatarUrl:DEMO_PETS[22].avatarUrl, ownerName:'Dorota K.', ownerId:'demo-owner-23', text:'Dziś przeszedłem cały pokój. Zajęło mi to 40 minut. Jestem zmęczony. 🐢', imageUrl:'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22600%22%20height%3D%22380%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%23e0f7fa%22/%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%2300838f%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%22600%22%20height%3D%22380%22%20fill%3D%22url%28%23g%29%22/%3E%3Ctext%20x%3D%22300%22%20y%3D%22210%22%20font-size%3D%22130%22%20text-anchor%3D%22middle%22%3E%F0%9F%97%A3%EF%B8%8F%3C/text%3E%3C/svg%3E', createdAt:_d(30), reactions:{laugh:{'u1':true,'u6':true},heart:{'u3':true}}, comments:{} },
   // Bella (demo-5)
-  { id: 'dp-25', petId:'demo-5',  petName:'Bella',    petSpecies:'Pies', petAvatarUrl:DEMO_PETS[4].avatarUrl,  ownerName:'Zofia M.',   ownerId:'demo-owner-8',  text:'Herbatka o 17:00, obowiązkowo. Pani Bella wymaga kultury 🫖', imageUrl:'https://images.unsplash.com/photo-1583511655826-05700d52f4d9?w=600&h=400&fit=crop', createdAt:_d(16), reactions:{heart:{'u2':true,'u4':true},paw:{'u1':true}}, comments:{} },
+  { id: 'dp-25', petId:'demo-5',  petName:'Bella',    petSpecies:'Pies', petAvatarUrl:DEMO_PETS[4].avatarUrl,  ownerName:'Zofia M.',   ownerId:'demo-owner-8',  text:'Herbatka o 17:00, obowiązkowo. Pani Bella wymaga kultury 🫖', imageUrl:'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22600%22%20height%3D%22380%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%23e8f5e9%22/%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%232e7d32%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%22600%22%20height%3D%22380%22%20fill%3D%22url%28%23g%29%22/%3E%3Ctext%20x%3D%22300%22%20y%3D%22210%22%20font-size%3D%22130%22%20text-anchor%3D%22middle%22%3E%F0%9F%8C%BF%3C/text%3E%3C/svg%3E', createdAt:_d(16), reactions:{heart:{'u2':true,'u4':true},paw:{'u1':true}}, comments:{} },
   // Max owczarek (demo-6)
-  { id: 'dp-26', petId:'demo-6',  petName:'Max',      petSpecies:'Pies', petAvatarUrl:DEMO_PETS[5].avatarUrl,  ownerName:'Bartek J.',  ownerId:'demo-owner-9',  text:'Nocna warta. Wszystko spokojne. Melduję 🛡️', imageUrl:'https://images.unsplash.com/photo-1589941013453-ec89f33b5e95?w=600&h=400&fit=crop', createdAt:_d(22), reactions:{paw:{'u1':true,'u3':true,'u5':true}}, comments:{} },
+  { id: 'dp-26', petId:'demo-6',  petName:'Max',      petSpecies:'Pies', petAvatarUrl:DEMO_PETS[5].avatarUrl,  ownerName:'Bartek J.',  ownerId:'demo-owner-9',  text:'Nocna warta. Wszystko spokojne. Melduję 🛡️', imageUrl:'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22600%22%20height%3D%22380%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%23fce4ec%22/%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%23c2185b%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%22600%22%20height%3D%22380%22%20fill%3D%22url%28%23g%29%22/%3E%3Ctext%20x%3D%22300%22%20y%3D%22210%22%20font-size%3D%22130%22%20text-anchor%3D%22middle%22%3E%F0%9F%91%91%3C/text%3E%3C/svg%3E', createdAt:_d(22), reactions:{paw:{'u1':true,'u3':true,'u5':true}}, comments:{} },
   // Shadow (demo-16)
-  { id: 'dp-27', petId:'demo-16', petName:'Shadow',   petSpecies:'Kot',  petAvatarUrl:DEMO_PETS[15].avatarUrl, ownerName:'Kamil Z.',   ownerId:'demo-owner-17', text:'Czarny kot, czarny humor 🖤', imageUrl:'https://images.unsplash.com/photo-1518288774672-b94e808873ff?w=600&h=400&fit=crop', createdAt:_d(40), reactions:{heart:{'u2':true},laugh:{'u4':true}}, comments:{} },
+  { id: 'dp-27', petId:'demo-16', petName:'Shadow',   petSpecies:'Kot',  petAvatarUrl:DEMO_PETS[15].avatarUrl, ownerName:'Kamil Z.',   ownerId:'demo-owner-17', text:'Czarny kot, czarny humor 🖤', imageUrl:'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22600%22%20height%3D%22380%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%23eceff1%22/%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%23546e7a%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%22600%22%20height%3D%22380%22%20fill%3D%22url%28%23g%29%22/%3E%3Ctext%20x%3D%22300%22%20y%3D%22210%22%20font-size%3D%22130%22%20text-anchor%3D%22middle%22%3E%F0%9F%9B%A1%EF%B8%8F%3C/text%3E%3C/svg%3E', createdAt:_d(40), reactions:{heart:{'u2':true},laugh:{'u4':true}}, comments:{} },
   // Śnieżka (demo-18)
-  { id: 'dp-28', petId:'demo-18', petName:'Śnieżka',  petSpecies:'Kot',  petAvatarUrl:DEMO_PETS[17].avatarUrl, ownerName:'Marta C.',   ownerId:'demo-owner-19', text:'Biała jak śnieg, miękka jak chmura. Taka po prostu jestem ☁️', imageUrl:'https://images.unsplash.com/photo-1495360010541-f48722b74f44?w=600&h=400&fit=crop', createdAt:_d(55), reactions:{heart:{'u1':true,'u2':true,'u3':true}}, comments:{'c10':{userName:'Anna W.',text:'Przepiękna! ❤️',createdAt:_d(54)}} },
+  { id: 'dp-28', petId:'demo-18', petName:'Śnieżka',  petSpecies:'Kot',  petAvatarUrl:DEMO_PETS[17].avatarUrl, ownerName:'Marta C.',   ownerId:'demo-owner-19', text:'Biała jak śnieg, miękka jak chmura. Taka po prostu jestem ☁️', imageUrl:'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22600%22%20height%3D%22380%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%23f5f5f5%22/%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%23bdbdbd%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%22600%22%20height%3D%22380%22%20fill%3D%22url%28%23g%29%22/%3E%3Ctext%20x%3D%22300%22%20y%3D%22210%22%20font-size%3D%22130%22%20text-anchor%3D%22middle%22%3E%E2%98%81%EF%B8%8F%3C/text%3E%3C/svg%3E', createdAt:_d(55), reactions:{heart:{'u1':true,'u2':true,'u3':true}}, comments:{'c10':{userName:'Anna W.',text:'Przepiękna! ❤️',createdAt:_d(54)}} },
   // Fretka (demo-26)
-  { id: 'dp-29', petId:'demo-26', petName:'Fretka',   petSpecies:'Fretka', petAvatarUrl:DEMO_PETS[25].avatarUrl, ownerName:'Adrian M.', ownerId:'demo-owner-26', text:'Dzisiejszy łup: jeden but, kapsel i długopis 🧦', imageUrl:'https://images.unsplash.com/photo-1591825729269-caeb344f6df2?w=600&h=400&fit=crop', createdAt:_d(9),  reactions:{laugh:{'u1':true,'u2':true,'u3':true,'u4':true}}, comments:{'c11':{userName:'Julia M.',text:'Fretki są najzabawniejsze 😂',createdAt:_d(8)}} },
+  { id: 'dp-29', petId:'demo-26', petName:'Fretka',   petSpecies:'Fretka', petAvatarUrl:DEMO_PETS[25].avatarUrl, ownerName:'Adrian M.', ownerId:'demo-owner-26', text:'Dzisiejszy łup: jeden but, kapsel i długopis 🧦', imageUrl:'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22600%22%20height%3D%22380%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%23fff8e1%22/%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%23ff8f00%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%22600%22%20height%3D%22380%22%20fill%3D%22url%28%23g%29%22/%3E%3Ctext%20x%3D%22300%22%20y%3D%22210%22%20font-size%3D%22130%22%20text-anchor%3D%22middle%22%3E%F0%9F%A7%A6%3C/text%3E%3C/svg%3E', createdAt:_d(9),  reactions:{laugh:{'u1':true,'u2':true,'u3':true,'u4':true}}, comments:{'c11':{userName:'Julia M.',text:'Fretki są najzabawniejsze 😂',createdAt:_d(8)}} },
   // Tofik (demo-8)
-  { id: 'dp-30', petId:'demo-8',  petName:'Tofik',    petSpecies:'Pies', petAvatarUrl:DEMO_PETS[7].avatarUrl,  ownerName:'Paweł N.',   ownerId:'demo-owner-11', text:'Krótkie nogi, wielki duch. Dziś zdobyłem kanapę 🏔️', imageUrl:'https://images.unsplash.com/photo-1608096299210-db7e38487075?w=600&h=400&fit=crop', createdAt:_d(35), reactions:{laugh:{'u2':true},heart:{'u5':true}}, comments:{} },
+  { id: 'dp-30', petId:'demo-8',  petName:'Tofik',    petSpecies:'Pies', petAvatarUrl:DEMO_PETS[7].avatarUrl,  ownerName:'Paweł N.',   ownerId:'demo-owner-11', text:'Krótkie nogi, wielki duch. Dziś zdobyłem kanapę 🏔️', imageUrl:'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22600%22%20height%3D%22380%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%23e8eaf6%22/%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%233949ab%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%22600%22%20height%3D%22380%22%20fill%3D%22url%28%23g%29%22/%3E%3Ctext%20x%3D%22300%22%20y%3D%22210%22%20font-size%3D%22130%22%20text-anchor%3D%22middle%22%3E%F0%9F%A4%B8%3C/text%3E%3C/svg%3E', createdAt:_d(35), reactions:{laugh:{'u2':true},heart:{'u5':true}}, comments:{} },
 ];
 
 let isDemoMode = false;
@@ -4576,7 +4717,7 @@ window.startDemo = () => {
   const sidebarEl = document.getElementById('sidebar-my-pets');
   sidebarEl.innerHTML = DEMO_PETS.slice(0,4).map(p => `
     <div class="my-pet-item" onclick="showDemoPetProfile('${p.id}')">
-      <div class="pet-avatar"><img src="${p.avatarUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover"></div>
+      <div class="pet-avatar"><img src="${p.avatarUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover" referrerpolicy="no-referrer" onerror="this.style.display='none'"></div>
       <div><div class="pet-name">${p.name}</div><div class="pet-breed">${p.breed}</div></div>
     </div>`).join('');
 
@@ -4585,7 +4726,7 @@ window.startDemo = () => {
   const sugEl = document.getElementById('sidebar-suggestions');
   sugEl.innerHTML = DEMO_PETS.slice(4, 10).map(p => `
     <div class="suggest-item" onclick="showDemoPetProfile('${p.id}')">
-      <div class="suggest-avatar"><img src="${p.avatarUrl}"></div>
+      <div class="suggest-avatar"><img src="${p.avatarUrl}" referrerpolicy="no-referrer" onerror="this.style.display='none'"></div>
       <div><div class="suggest-name">${p.name}</div><div class="suggest-breed">${p.breed} · ${p.location}</div></div>
     </div>`).join('');
 
@@ -4661,7 +4802,7 @@ window.showDemoPetProfile = (petId) => {
       <div class="profile-cover"></div>
       <div class="profile-info">
         <div class="profile-big-avatar">
-          <img src="${p.avatarUrl}">
+          <img src="${p.avatarUrl}" referrerpolicy="no-referrer" onerror="this.style.display='none'">
         </div>
         <div class="profile-text">
           <div class="profile-pet-name">${p.name}</div>
@@ -4689,7 +4830,7 @@ window.showDemoPetProfile = (petId) => {
       <div class="profile-gallery">
         ${photoPosts.slice(0,9).map(x => `
           <div class="gallery-item" onclick="openGalleryLightbox('${x.imageUrl}')">
-            <img src="${x.imageUrl}" loading="lazy" alt="">
+            <img src="${x.imageUrl}" loading="lazy" alt="" referrerpolicy="no-referrer" onerror="this.style.display='none'">
           </div>`).join('')}
       </div>`;
   }
@@ -4724,7 +4865,7 @@ function renderDemoExplore() {
     const emoji = speciesEmoji(p.species);
     return `
       <div class="pet-card" onclick="showDemoPetProfile('${p.id}')">
-        <div class="pet-card-img"><img src="${p.avatarUrl}"></div>
+        <div class="pet-card-img"><img src="${p.avatarUrl}" referrerpolicy="no-referrer" onerror="this.style.display='none'"></div>
         <div class="pet-card-info">
           <div class="pet-card-name">${p.name}</div>
           <div class="pet-card-breed">${p.breed} · ${p.species}</div>
