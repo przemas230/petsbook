@@ -4798,10 +4798,16 @@ const _breedImgCache = {};
 async function fetchBreedImageUrl(breedName) {
   if (_breedImgCache[breedName]) return _breedImgCache[breedName];
   try {
-    const r = await fetch('https://en.wikipedia.org/api/rest_v1/page/summary/' + encodeURIComponent(breedName.replace(/ /g,'_')));
+    // Wikipedia pageimages API - zwraca oryginalny plik bez ograniczeń rozmiaru
+    const q = new URLSearchParams({
+      action: 'query', titles: breedName, prop: 'pageimages',
+      piprop: 'original', format: 'json', origin: '*'
+    });
+    const r = await fetch('https://en.wikipedia.org/w/api.php?' + q);
     if (!r.ok) throw new Error();
     const d = await r.json();
-    const url = d.thumbnail && d.thumbnail.source ? d.thumbnail.source.replace(/\/\d+px-/, '/640px-') : null;
+    const pages = d.query && d.query.pages ? Object.values(d.query.pages) : [];
+    const url = pages[0] && pages[0].original ? pages[0].original.source : null;
     if (url) _breedImgCache[breedName] = url;
     return url;
   } catch(e) { return null; }
