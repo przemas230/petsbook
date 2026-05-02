@@ -612,6 +612,119 @@
   .search-results-bar { background: white; border-radius: 16px; padding: 14px 20px; margin-bottom: 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
   .search-tag-chip { background: var(--paw); color: white; border-radius: 20px; padding: 4px 14px; font-size: 13px; font-weight: 800; display: flex; align-items: center; gap: 6px; }
   .search-tag-chip button { background: none; border: none; color: white; cursor: pointer; font-size: 16px; line-height: 1; padding: 0; }
+
+  /* ── STORIES ── */
+  .stories-bar {
+    display: flex; gap: 12px; padding: 16px 4px 8px;
+    overflow-x: auto; scrollbar-width: none;
+  }
+  .stories-bar::-webkit-scrollbar { display: none; }
+  .story-bubble {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    cursor: pointer; flex-shrink: 0; min-width: 64px;
+  }
+  .story-ring {
+    width: 60px; height: 60px; border-radius: 50%;
+    padding: 3px;
+    background: linear-gradient(135deg, var(--paw), var(--paw-light), #f5a623);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    transition: transform 0.15s;
+  }
+  .story-ring.seen { background: #ddd; }
+  .story-ring:hover { transform: scale(1.07); }
+  .story-ring img, .story-ring .story-ring-inner {
+    width: 100%; height: 100%; border-radius: 50%;
+    object-fit: cover; border: 2px solid white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; background: var(--cream);
+  }
+  .story-add-btn {
+    width: 60px; height: 60px; border-radius: 50%;
+    background: var(--cream); border: 2px dashed var(--paw-light);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; cursor: pointer; transition: background 0.15s;
+    flex-shrink: 0;
+  }
+  .story-add-btn:hover { background: #f5e6d8; }
+  .story-label {
+    font-size: 11px; font-weight: 800; color: var(--bark-light);
+    max-width: 64px; text-align: center;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  /* ── STORY VIEWER ── */
+  .story-viewer {
+    position: fixed; inset: 0; background: #111;
+    z-index: 9000; display: none;
+    flex-direction: column; align-items: center; justify-content: center;
+  }
+  .story-viewer.open { display: flex; }
+  .story-viewer-inner {
+    position: relative; width: 100%; max-width: 420px; height: 100%;
+    display: flex; flex-direction: column;
+  }
+  .story-progress-bar {
+    display: flex; gap: 4px; padding: 12px 16px 8px;
+    position: absolute; top: 0; left: 0; right: 0; z-index: 10;
+  }
+  .story-progress-seg {
+    flex: 1; height: 3px; background: rgba(255,255,255,0.35); border-radius: 2px; overflow: hidden;
+  }
+  .story-progress-fill {
+    height: 100%; background: white; width: 0%;
+    transition: width linear;
+  }
+  .story-header {
+    position: absolute; top: 28px; left: 0; right: 0; z-index: 10;
+    display: flex; align-items: center; gap: 10px; padding: 8px 16px;
+  }
+  .story-header-avatar {
+    width: 38px; height: 38px; border-radius: 50%;
+    border: 2px solid white; overflow: hidden; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; background: #333;
+  }
+  .story-header-name { color: white; font-weight: 800; font-size: 14px; text-shadow: 0 1px 4px rgba(0,0,0,0.5); flex: 1; }
+  .story-header-time { color: rgba(255,255,255,0.7); font-size: 11px; font-weight: 700; }
+  .story-close-btn {
+    color: white; background: none; border: none; font-size: 24px;
+    cursor: pointer; padding: 4px; line-height: 1;
+  }
+  .story-content {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    position: relative; overflow: hidden;
+  }
+  .story-content img {
+    max-width: 100%; max-height: 100%; object-fit: contain;
+  }
+  .story-text-overlay {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: linear-gradient(transparent, rgba(0,0,0,0.75));
+    color: white; padding: 40px 20px 20px;
+    font-size: 16px; font-weight: 700; line-height: 1.5;
+  }
+  .story-nav-area {
+    position: absolute; top: 0; bottom: 0; width: 40%; cursor: pointer;
+  }
+  .story-nav-prev { left: 0; }
+  .story-nav-next { right: 0; }
+  .story-footer {
+    padding: 12px 16px; display: flex; align-items: center; gap: 10px;
+  }
+  .story-footer-text { color: rgba(255,255,255,0.8); font-size: 13px; font-weight: 700; }
+  .story-view-post-btn {
+    margin-left: auto; background: white; color: var(--bark);
+    border: none; border-radius: 20px; padding: 6px 16px;
+    font-weight: 800; font-size: 13px; cursor: pointer;
+  }
+
+  /* ── CREATE STORY ── */
+  .btn-story { 
+    background: linear-gradient(135deg, var(--paw), #f5a623);
+    color: white; border: none; border-radius: 20px;
+    padding: 6px 14px; font-size: 13px; font-weight: 800;
+    cursor: pointer; white-space: nowrap;
+  }
   .post-img {
     width: 100%;
     aspect-ratio: 4/3;
@@ -1714,7 +1827,18 @@
               <input type="file" accept="image/*" style="display:none" id="post-image-input" onchange="handlePostImage(this)">
               <div class="btn-photo-upload">📷 Zdjęcie</div>
             </label>
+            <button class="btn-story" onclick="openCreateStoryModal()">✨ Story</button>
             <button class="btn-post" onclick="submitPost()">Opublikuj 🐾</button>
+          </div>
+        </div>
+
+        <!-- 📖 STORIES BAR -->
+        <div id="stories-bar-wrap" style="background:white;border-radius:16px;margin-bottom:12px;padding:0 12px">
+          <div class="stories-bar" id="stories-bar">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+              <div class="story-add-btn" onclick="openCreateStoryModal()" title="Dodaj story">＋</div>
+              <div class="story-label">Twoje</div>
+            </div>
           </div>
         </div>
 
@@ -2113,6 +2237,55 @@
   </div>
 </div>
 
+<!-- STORY VIEWER -->
+<div class="story-viewer" id="story-viewer">
+  <div class="story-viewer-inner">
+    <div class="story-progress-bar" id="story-progress-bar"></div>
+    <div class="story-header">
+      <div class="story-header-avatar" id="story-header-avatar"></div>
+      <div>
+        <div class="story-header-name" id="story-header-name"></div>
+        <div class="story-header-time" id="story-header-time"></div>
+      </div>
+      <button class="story-close-btn" onclick="closeStoryViewer()">✕</button>
+    </div>
+    <div class="story-content" id="story-content">
+      <div class="story-nav-area story-nav-prev" onclick="storyNavPrev()"></div>
+      <div class="story-nav-area story-nav-next" onclick="storyNavNext()"></div>
+    </div>
+    <div class="story-footer">
+      <span class="story-footer-text" id="story-footer-text"></span>
+      <button class="story-view-post-btn" id="story-view-post-btn" onclick="storyViewFullPost()">Zobacz post</button>
+    </div>
+  </div>
+</div>
+
+<!-- CREATE STORY MODAL -->
+<div class="modal-overlay" id="create-story-modal">
+  <div class="modal-box">
+    <div class="modal-title">📖 Nowe Story</div>
+    <div class="form-group">
+      <label class="form-label">Zwierzę</label>
+      <select class="post-select" id="story-pet-select" style="width:100%">
+        <option value="">Wybierz zwierzę...</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Treść (opcjonalnie)</label>
+      <textarea class="edit-post-textarea" id="story-text" rows="3" placeholder="Co słychać? ✨"></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Zdjęcie (opcjonalnie)</label>
+      <input type="file" id="story-image-input" accept="image/*" onchange="handleStoryImage(this)">
+      <img id="story-image-preview" style="max-width:100%;border-radius:12px;margin-top:8px;display:none">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('create-story-modal')">Anuluj</button>
+      <button class="btn-save" id="story-publish-btn" onclick="publishStory()">Opublikuj Story ✨</button>
+    </div>
+  </div>
+</div>
+
 <!-- GALLERY LIGHTBOX -->
 <div class="gallery-lightbox" id="gallery-lightbox" onclick="closeGalleryLightbox()">
   <button class="gallery-lightbox-close" onclick="closeGalleryLightbox()">✕</button>
@@ -2371,6 +2544,7 @@ async function initApp() {
   loadSuggestions();
   loadFollows();
   listenNotifications();
+  listenStories();
   initOnlineStatus();
   loadSettings();
 
@@ -2732,7 +2906,10 @@ function loadFeed() {
   onValue(ref(db, 'posts'), snap => {
     allFeedPosts = [];
     if (snap.exists()) {
-      snap.forEach(c => { allFeedPosts.push({ id: c.key, ...c.val() }); });
+      snap.forEach(c => {
+        const p = { id: c.key, ...c.val() };
+        if (!p.isStory) allFeedPosts.push(p); // stories nie w feedzie
+      });
       allFeedPosts.sort((a, b) => b.createdAt - a.createdAt);
     }
     applyFeedFilters();
@@ -5259,6 +5436,263 @@ function initPWA() {
     navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(err => console.warn('SW:', err));
   }
 }
+
+
+// ═══════════════════════════════════
+//  📖  STORIES
+// ═══════════════════════════════════
+let _storyImageFile = null;
+let _storyGroups = []; // [{petId, petName, avatarUrl, stories:[post,...]}, ...]
+let _storyGroupIdx = 0;
+let _storyIdx = 0;
+let _storyTimer = null;
+const STORY_DURATION = 5000; // ms na jeden story
+
+// Nasłuchuj stories (posty z isStory:true) - uruchamiane z loadFeed
+function listenStories() {
+  if (!currentUser || isDemoMode) return;
+  onValue(ref(db, 'posts'), snap => {
+    if (!snap.exists()) { renderStoriesBar([]); return; }
+    const stories = [];
+    snap.forEach(c => {
+      const p = { id: c.key, ...c.val() };
+      if (p.isStory) stories.push(p);
+    });
+    stories.sort((a, b) => b.createdAt - a.createdAt);
+    // Grupuj po petId
+    const groups = {};
+    stories.forEach(s => {
+      if (!groups[s.petId]) groups[s.petId] = { petId: s.petId, petName: s.petName, avatarUrl: s.petAvatarUrl, ownerId: s.ownerId, stories: [] };
+      groups[s.petId].stories.push(s);
+    });
+    // Moje stories na początku
+    const arr = Object.values(groups);
+    arr.sort((a, b) => {
+      const aMe = Object.keys(myPets).includes(a.petId) ? 0 : 1;
+      const bMe = Object.keys(myPets).includes(b.petId) ? 0 : 1;
+      return aMe - bMe;
+    });
+    _storyGroups = arr;
+    renderStoriesBar(arr);
+  }, () => {});
+}
+
+function getSeenStories() {
+  try { return JSON.parse(localStorage.getItem('seenStories') || '{}'); } catch(e) { return {}; }
+}
+function markStorySeen(postId) {
+  try {
+    const seen = getSeenStories();
+    seen[postId] = Date.now();
+    localStorage.setItem('seenStories', JSON.stringify(seen));
+  } catch(e) {}
+}
+
+function renderStoriesBar(groups) {
+  const bar = document.getElementById('stories-bar');
+  if (!bar) return;
+  const seen = getSeenStories();
+
+  let html = '<div style="display:flex;flex-direction:column;align-items:center;gap:6px">'
+    + '<div class="story-add-btn" onclick="openCreateStoryModal()" title="Dodaj story">＋</div>'
+    + '<div class="story-label">Twoje</div></div>';
+
+  groups.forEach((g, gi) => {
+    const allSeen = g.stories.every(s => seen[s.id]);
+    const emoji = speciesEmoji(g.stories[0]?.petSpecies || 'Inne');
+    const avatarInner = g.avatarUrl
+      ? '<img src="' + g.avatarUrl + '" referrerpolicy="no-referrer" onerror="this.style.display='none'">'
+      : '<div class="story-ring-inner">' + emoji + '</div>';
+    html += '<div class="story-bubble" onclick="openStoryViewer(' + gi + ')">'
+      + '<div class="story-ring' + (allSeen ? ' seen' : '') + '">' + avatarInner + '</div>'
+      + '<div class="story-label">' + escapeHtml(g.petName) + '</div>'
+      + '</div>';
+  });
+
+  bar.innerHTML = html;
+}
+
+window.openStoryViewer = (groupIdx) => {
+  _storyGroupIdx = groupIdx;
+  _storyIdx = 0;
+  document.getElementById('story-viewer').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  renderCurrentStory();
+};
+
+window.closeStoryViewer = () => {
+  clearTimeout(_storyTimer);
+  document.getElementById('story-viewer').classList.remove('open');
+  document.body.style.overflow = '';
+  renderStoriesBar(_storyGroups);
+};
+
+function renderCurrentStory() {
+  clearTimeout(_storyTimer);
+  const group = _storyGroups[_storyGroupIdx];
+  if (!group) { closeStoryViewer(); return; }
+  const story = group.stories[_storyIdx];
+  if (!story) { closeStoryViewer(); return; }
+
+  markStorySeen(story.id);
+
+  // Progress bars
+  const total = group.stories.length;
+  const pbEl = document.getElementById('story-progress-bar');
+  pbEl.innerHTML = group.stories.map((_, i) => '<div class="story-progress-seg"><div class="story-progress-fill" id="spf-' + i + '"></div></div>').join('');
+  // Fill past segments
+  for (let i = 0; i < _storyIdx; i++) {
+    const fill = document.getElementById('spf-' + i);
+    if (fill) fill.style.width = '100%';
+  }
+  // Animate current
+  setTimeout(() => {
+    const fill = document.getElementById('spf-' + _storyIdx);
+    if (fill) { fill.style.transition = 'width ' + STORY_DURATION + 'ms linear'; fill.style.width = '100%'; }
+  }, 50);
+
+  // Header
+  const emoji = speciesEmoji(story.petSpecies || 'Inne');
+  const avatarEl = document.getElementById('story-header-avatar');
+  avatarEl.innerHTML = group.avatarUrl
+    ? '<img src="' + group.avatarUrl + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover" referrerpolicy="no-referrer">'
+    : emoji;
+  document.getElementById('story-header-name').textContent = group.petName;
+  document.getElementById('story-header-time').textContent = timeAgo(story.createdAt);
+
+  // Content
+  const contentEl = document.getElementById('story-content');
+  let innerHTML = '<div class="story-nav-area story-nav-prev" onclick="storyNavPrev()"></div>'
+    + '<div class="story-nav-area story-nav-next" onclick="storyNavNext()"></div>';
+  if (story.imageUrl) {
+    innerHTML += '<img src="' + story.imageUrl + '" referrerpolicy="no-referrer">';
+  } else {
+    // Brak zdjęcia - tło z gradientem i tekst na środku
+    innerHTML += '<div style="width:100%;height:100%;background:linear-gradient(135deg,var(--paw),#f5a623);display:flex;align-items:center;justify-content:center;padding:32px;box-sizing:border-box">'
+      + '<div style="color:white;font-size:22px;font-weight:800;text-align:center;line-height:1.4;text-shadow:0 2px 8px rgba(0,0,0,0.3)">' + escapeHtml(story.text || '') + '</div></div>';
+  }
+  if (story.imageUrl && story.text) {
+    innerHTML += '<div class="story-text-overlay">' + renderTextWithHashtags(story.text) + '</div>';
+  }
+  contentEl.innerHTML = innerHTML;
+
+  // Footer
+  document.getElementById('story-footer-text').textContent = '✨ Story · ' + (currentUser && story.ownerId === currentUser.uid ? 'Twój post' : group.petName);
+  document.getElementById('story-view-post-btn').dataset.postId = story.id;
+
+  // Auto-advance
+  _storyTimer = setTimeout(() => storyNavNext(), STORY_DURATION);
+}
+
+window.storyNavNext = () => {
+  const group = _storyGroups[_storyGroupIdx];
+  if (!group) { closeStoryViewer(); return; }
+  if (_storyIdx < group.stories.length - 1) {
+    _storyIdx++;
+    renderCurrentStory();
+  } else if (_storyGroupIdx < _storyGroups.length - 1) {
+    _storyGroupIdx++;
+    _storyIdx = 0;
+    renderCurrentStory();
+  } else {
+    closeStoryViewer();
+  }
+};
+
+window.storyNavPrev = () => {
+  if (_storyIdx > 0) {
+    _storyIdx--;
+    renderCurrentStory();
+  } else if (_storyGroupIdx > 0) {
+    _storyGroupIdx--;
+    const group = _storyGroups[_storyGroupIdx];
+    _storyIdx = group ? group.stories.length - 1 : 0;
+    renderCurrentStory();
+  }
+};
+
+window.storyViewFullPost = () => {
+  closeStoryViewer();
+  // Scroll do posta w feedzie
+  const btn = document.getElementById('story-view-post-btn');
+  const postId = btn ? btn.dataset.postId : null;
+  if (postId) {
+    showPage('feed');
+    setTimeout(() => {
+      const el = document.getElementById('post-' + postId);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 300);
+  }
+};
+
+// Utwórz story
+window.openCreateStoryModal = () => {
+  _storyImageFile = null;
+  document.getElementById('story-text').value = '';
+  document.getElementById('story-image-preview').style.display = 'none';
+  document.getElementById('story-image-input').value = '';
+  // Wypełnij select zwierząt
+  const sel = document.getElementById('story-pet-select');
+  sel.innerHTML = '<option value="">Wybierz zwierzę...</option>';
+  Object.entries(myPets).forEach(([id, p]) => {
+    sel.innerHTML += '<option value="' + id + '">' + speciesEmoji(p.species) + ' ' + escapeHtml(p.name) + '</option>';
+  });
+  openModal('create-story-modal');
+};
+
+window.handleStoryImage = (input) => {
+  const file = input.files[0];
+  if (!file) return;
+  _storyImageFile = file;
+  const prev = document.getElementById('story-image-preview');
+  prev.src = URL.createObjectURL(file);
+  prev.style.display = 'block';
+};
+
+window.publishStory = async () => {
+  const petId = document.getElementById('story-pet-select').value;
+  const text = document.getElementById('story-text').value.trim();
+  if (!petId) { showToast('Wybierz zwierzę!'); return; }
+  if (!text && !_storyImageFile) { showToast('Dodaj tekst lub zdjęcie!'); return; }
+  const pet = myPets[petId];
+  if (!pet) return;
+
+  const btn = document.getElementById('story-publish-btn');
+  btn.disabled = true; btn.textContent = '⏳ Publikuję...';
+
+  try {
+    const storyData = {
+      text,
+      petId,
+      petName: pet.name,
+      petSpecies: pet.species,
+      petAvatarUrl: pet.avatarUrl || null,
+      ownerName: currentUser.displayName || 'Właściciel',
+      ownerId: currentUser.uid,
+      createdAt: Date.now(),
+      isStory: true  // jedyna różnica vs normalny post
+    };
+    if (pet.lat && pet.lng) { storyData.petLat = pet.lat; storyData.petLng = pet.lng; }
+    if (_storyImageFile) {
+      storyData.imageUrl = await uploadToCloudinary(_storyImageFile);
+    }
+    await push(ref(db, 'posts'), storyData);
+    closeModal('create-story-modal');
+    showToast('Story opublikowane! ✨');
+  } catch(e) {
+    showToast('Błąd: ' + e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Opublikuj Story ✨';
+  }
+};
+
+document.addEventListener('keydown', e => {
+  if (document.getElementById('story-viewer')?.classList.contains('open')) {
+    if (e.key === 'ArrowRight') storyNavNext();
+    else if (e.key === 'ArrowLeft') storyNavPrev();
+    else if (e.key === 'Escape') closeStoryViewer();
+  }
+});
 
 initPWA();
 </script>
