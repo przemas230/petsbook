@@ -609,15 +609,12 @@
   .post-text { padding: 0 20px 14px; font-size: 15px; line-height: 1.6; font-weight: 600; }
   .post-img {
     width: 100%;
-    max-height: 480px;
-    min-height: 180px;
+    aspect-ratio: 4/3;
     object-fit: cover;
     object-position: center;
     display: block;
     border-radius: 0;
-  }
-  @media (max-width: 390px) {
-    .post-img { max-height: 300px; min-height: 140px; }
+    cursor: zoom-in;
   }
   .post-actions {
     display: flex;
@@ -2697,15 +2694,12 @@ window.toggleFollow = async (petId, ownerUid) => {
 //  FEED / POSTS
 // ═══════════════════════════════════
 function loadFeed() {
-  console.log('LOADFEED START, user:', currentUser && currentUser.uid);
   onValue(ref(db, 'posts'), snap => {
-    console.log('POSTS SNAP exists:', snap.exists(), 'size:', snap.size);
     allFeedPosts = [];
     if (snap.exists()) {
       snap.forEach(c => { allFeedPosts.push({ id: c.key, ...c.val() }); });
       allFeedPosts.sort((a, b) => b.createdAt - a.createdAt);
     }
-    console.log('allFeedPosts count:', allFeedPosts.length);
     applyFeedFilters();
     loadSuggestions();
   }, err => {
@@ -2743,7 +2737,6 @@ window.applyFeedFilters = () => {
   if (newSpecies !== feedSpeciesFilter) feedDisplayLimit = 20;
   feedSpeciesFilter = newSpecies;
   let posts = [...allFeedPosts];
-  console.log('APPLYFEEDFILTERS: allFeedPosts='+allFeedPosts.length+' tab='+feedTab+' species='+feedSpeciesFilter+' radius='+feedRadiusKm);
 
   // Tab filter
   if (feedTab === 'following') {
@@ -2805,7 +2798,7 @@ function renderPostCard(p) {
         </div>` : ''}
       </div>
       ${p.text ? `<div class="post-text">${escapeHtml(p.text)}</div>` : ''}
-      ${p.imageUrl ? `<img src="${p.imageUrl}" class="post-img" loading="lazy" referrerpolicy="no-referrer">` : ''}
+      ${p.imageUrl ? `<img src="${p.imageUrl}" class="post-img" loading="lazy" referrerpolicy="no-referrer" onclick="openGalleryLightbox('${p.imageUrl}')" style="cursor:zoom-in">` : ''}
       <div class="reactions-bar">
         ${['❤️','😂','😲','😢','🐾'].map(em => {
           const key = {'❤️':'heart','😂':'laugh','😲':'wow','😢':'sad','🐾':'paw'}[em] || 'heart';
@@ -3075,11 +3068,23 @@ const REACTION_KEY_TO_EMOJI = Object.fromEntries(Object.entries(REACTION_KEYS).m
 window.toggleReaction = async (postId, emoji, postOwnerId) => {
   const key = REACTION_KEYS[emoji] || 'heart';
   const reactionRef = ref(db, `posts/${postId}/reactions/${key}/${currentUser.uid}`);
+  const metaRef = ref(db, `posts/${postId}/likesMeta/${currentUser.uid}`);
   const snap = await get(reactionRef);
   if (snap.exists()) {
     await set(reactionRef, null);
+    // Usuń meta tylko jeśli brak innych reakcji tego usera
+    const allReactSnap = await get(ref(db, `posts/${postId}/reactions`));
+    let hasOther = false;
+    if (allReactSnap.exists()) {
+      allReactSnap.forEach(kSnap => { if (kSnap.child(currentUser.uid).exists()) hasOther = true; });
+    }
+    if (!hasOther) await set(metaRef, null);
   } else {
     await set(reactionRef, true);
+    await set(metaRef, {
+      ownerName: currentUser.displayName || 'Użytkownik',
+      photoURL: currentUser.photoURL || null
+    });
     if (postOwnerId && postOwnerId !== currentUser.uid) {
       await sendNotification(postOwnerId, {
         type: 'like',
@@ -3294,9 +3299,15 @@ window.showReactWho = async (postId) => {
   const keys = Object.keys(reactWhoData).filter(k => Object.keys(reactWhoData[k]).length > 0);
   if (!keys.length) { showToast('Brak reakcji na tym poście'); return; }
 
-  // Pobierz nazwy z userStatus (jeden zbiorczy snap)
-  const statusSnap = await get(ref(db, 'userStatus'));
-  reactWhoUserNames = statusSnap.exists() ? statusSnap.val() : {};
+  // Pobierz nazwy z likesMeta (bezpieczne - w ramach posta)
+  const metaSnap = await get(ref(db, `posts/${postId}/likesMeta`));
+  const likesMeta = metaSnap.exists() ? metaSnap.val() : {};
+  // Zbuduj reactWhoUserNames z likesMeta + currentUser
+  reactWhoUserNames = {};
+  Object.entries(likesMeta).forEach(([uid, meta]) => {
+    reactWhoUserNames[uid] = { displayName: meta.ownerName || 'Użytkownik', photoURL: meta.photoURL || null };
+  });
+  if (currentUser) reactWhoUserNames[currentUser.uid] = { displayName: currentUser.displayName || 'Ty', photoURL: currentUser.photoURL || null };
 
   const tabsEl = document.getElementById('react-who-tabs');
   const totalCount = keys.reduce((acc, k) => acc + Object.keys(reactWhoData[k]).length, 0);
@@ -3435,7 +3446,6 @@ function getDemoPostsForFeed() {
 //  NADPISANIE renderFeed — mieszanie demo + real
 // ═══════════════════════════════════
 function renderFeed(posts) {
-  console.log('RENDERFEED: real posts='+posts.length+' demoFeed='+appSettings.demoFeed);
   let merged = [...posts]; // real posty już przefiltrowane przez applyFeedFilters
 
   if (appSettings.demoFeed) {
