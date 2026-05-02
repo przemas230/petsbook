@@ -1566,6 +1566,10 @@
   }
   .chat-msg-time { font-size: 10px; opacity: 0.7; margin-top: 3px; }
   .chat-msg-status { font-size: 10px; opacity: 0.6; text-align: right; margin-top: 2px; }
+  .chat-img { max-width: 220px; border-radius: 12px; display: block; margin-bottom: 4px; cursor: zoom-in; }
+  .btn-chat-img { background: none; border: none; font-size: 20px; cursor: pointer; padding: 4px 8px; opacity: 0.7; flex-shrink: 0; }
+  .btn-chat-img:hover { opacity: 1; }
+  .chat-img-preview { max-height: 60px; border-radius: 8px; margin: 4px 0 0 0; display: none; }
   .chat-input-row {
     padding: 12px 16px; border-top: 2px solid var(--cream);
     display: flex; gap: 10px; align-items: center;
@@ -2071,11 +2075,19 @@
     <div class="modal-title">✏️ Edytuj post</div>
     <div class="form-group">
       <label class="form-label">Treść posta</label>
-      <textarea class="edit-post-textarea" id="edit-post-text" rows="4"></textarea>
+      <textarea class="edit-post-textarea" id="edit-post-text" rows="4" placeholder="Napisz coś o swoim zwierzęciu..."></textarea>
+      <div id="edit-post-text-error" style="color:var(--paw);font-size:12px;font-weight:700;margin-top:4px;display:none">⚠️ Treść lub zdjęcie jest wymagane</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Zdjęcie (opcjonalnie — zostaw puste aby zachować obecne)</label>
+      <img id="edit-post-current-img" style="max-width:100%;border-radius:12px;margin-bottom:8px;display:none">
+      <input type="file" id="edit-post-image-input" accept="image/*" onchange="handleEditPostImage(this)" style="font-size:13px">
+      <img id="edit-post-new-preview" style="max-width:100%;border-radius:12px;margin-top:8px;display:none">
+      <button id="edit-post-remove-img-btn" style="display:none;margin-top:6px;background:none;border:1px solid #ddd;border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer;color:#e53935" onclick="removeEditPostImage()">🗑️ Usuń zdjęcie</button>
     </div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal('edit-post-modal')">Anuluj</button>
-      <button class="btn-save" onclick="confirmEditPost()">Zapisz zmiany</button>
+      <button class="btn-save" id="edit-post-save-btn" onclick="confirmEditPost()">Zapisz zmiany</button>
     </div>
   </div>
 </div>
@@ -2884,8 +2896,23 @@ window.handlePostImage = (input) => {
 window.submitPost = async () => {
   const text = document.getElementById('post-text').value.trim();
   const petId = document.getElementById('post-pet-select').value;
-  if (!petId) { showToast('Wybierz zwierzę!'); return; }
-  if (!text && !postImageFile) { showToast('Napisz coś lub dodaj zdjęcie!'); return; }
+
+  // Walidacja inline
+  const petSelect = document.getElementById('post-pet-select');
+  const textArea = document.getElementById('post-text');
+  if (!petId) {
+    petSelect.style.borderColor = 'var(--paw)';
+    petSelect.focus();
+    setTimeout(() => { petSelect.style.borderColor = ''; }, 2000);
+    return;
+  }
+  if (!text && !postImageFile) {
+    textArea.style.borderColor = 'var(--paw)';
+    textArea.placeholder = '⚠️ Napisz coś lub dodaj zdjęcie!';
+    textArea.focus();
+    setTimeout(() => { textArea.style.borderColor = ''; textArea.placeholder = 'Co słychać u Twojego zwierzęcia?'; }, 2000);
+    return;
+  }
 
   const pet = myPets[petId];
   if (!pet) { showToast('Błąd: zwierzę nie znalezione'); return; }
@@ -3035,30 +3062,90 @@ window.confirmDeletePost = async () => {
 
 // ── Edit post ──
 let editingPostId = null;
+let editPostNewImageFile = null;
+let editPostRemoveImage = false;
+
 window.openEditPostModal = (postId) => {
   editingPostId = postId;
+  editPostNewImageFile = null;
+  editPostRemoveImage = false;
   document.getElementById(`post-menu-${postId}`)?.classList.remove('open');
-  // Get current text from DOM
+
+  // Tekst
   const textEl = document.getElementById(`post-${postId}`)?.querySelector('.post-text');
-  const currentText = textEl ? textEl.textContent : '';
-  document.getElementById('edit-post-text').value = currentText;
+  document.getElementById('edit-post-text').value = textEl ? textEl.textContent.replace(' (edytowano)', '') : '';
+  document.getElementById('edit-post-text-error').style.display = 'none';
+
+  // Obecne zdjęcie
+  const imgEl = document.getElementById(`post-${postId}`)?.querySelector('.post-img');
+  const currentImgPreview = document.getElementById('edit-post-current-img');
+  const removeBtn = document.getElementById('edit-post-remove-img-btn');
+  if (imgEl && imgEl.src) {
+    currentImgPreview.src = imgEl.src;
+    currentImgPreview.style.display = 'block';
+    removeBtn.style.display = 'inline-block';
+  } else {
+    currentImgPreview.style.display = 'none';
+    removeBtn.style.display = 'none';
+  }
+  document.getElementById('edit-post-new-preview').style.display = 'none';
+  document.getElementById('edit-post-image-input').value = '';
   openModal('edit-post-modal');
+};
+
+window.handleEditPostImage = (input) => {
+  const file = input.files[0];
+  if (!file) return;
+  editPostNewImageFile = file;
+  editPostRemoveImage = false;
+  const prev = document.getElementById('edit-post-new-preview');
+  prev.src = URL.createObjectURL(file);
+  prev.style.display = 'block';
+  document.getElementById('edit-post-current-img').style.display = 'none';
+};
+
+window.removeEditPostImage = () => {
+  editPostRemoveImage = true;
+  editPostNewImageFile = null;
+  document.getElementById('edit-post-current-img').style.display = 'none';
+  document.getElementById('edit-post-new-preview').style.display = 'none';
+  document.getElementById('edit-post-remove-img-btn').style.display = 'none';
+  document.getElementById('edit-post-image-input').value = '';
 };
 
 window.confirmEditPost = async () => {
   if (!editingPostId) return;
   const newText = document.getElementById('edit-post-text').value.trim();
-  if (!newText) { showToast('Treść posta nie może być pusta!'); return; }
-  showToast('Zapisuję...');
+
+  // Walidacja inline
+  const errEl = document.getElementById('edit-post-text-error');
+  const currentImg = document.getElementById('edit-post-current-img');
+  const hasCurrentImg = currentImg.style.display !== 'none' && currentImg.src;
+  if (!newText && !editPostNewImageFile && (editPostRemoveImage || !hasCurrentImg)) {
+    errEl.style.display = 'block';
+    document.getElementById('edit-post-text').focus();
+    return;
+  }
+  errEl.style.display = 'none';
+
+  const saveBtn = document.getElementById('edit-post-save-btn');
+  saveBtn.disabled = true; saveBtn.textContent = '⏳ Zapisuję...';
   try {
-    await update(ref(db, `posts/${editingPostId}`), { text: newText, edited: true });
+    const updates = { text: newText, edited: true };
+    if (editPostNewImageFile) {
+      updates.imageUrl = await uploadToCloudinary(editPostNewImageFile);
+    } else if (editPostRemoveImage) {
+      updates.imageUrl = null;
+    }
+    await update(ref(db, `posts/${editingPostId}`), updates);
     closeModal('edit-post-modal');
-    // Update DOM directly without full re-render
-    const textEl = document.getElementById(`post-${editingPostId}`)?.querySelector('.post-text');
-    if (textEl) textEl.innerHTML = escapeHtml(newText) + ' <span style="font-size:11px;color:#aaa">(edytowano)</span>';
     showToast('Post zaktualizowany ✏️');
     editingPostId = null;
-  } catch(e) { showToast('Błąd: ' + e.message); }
+  } catch(e) {
+    showToast('Błąd: ' + e.message);
+  } finally {
+    saveBtn.disabled = false; saveBtn.textContent = 'Zapisz zmiany';
+  }
 };
 
 // ── Reactions ──
@@ -4550,7 +4637,12 @@ window.openChatV1 = (chatId, otherId, otherName, otherPhoto) => {
     </div>
     <div class="chat-messages" id="chat-messages-area"></div>
     <div class="chat-input-row">
-      <input class="chat-input" id="chat-input-field" placeholder="Napisz wiadomość..." onkeydown="if(event.key==='Enter')sendChatMessageV1()">
+      <button class="btn-chat-img" onclick="document.getElementById('chat-img-input').click()" title="Wyślij zdjęcie">📷</button>
+      <input type="file" id="chat-img-input" accept="image/*" style="display:none" onchange="handleChatImage(this)">
+      <div style="flex:1;display:flex;flex-direction:column;gap:4px">
+        <img id="chat-img-preview" class="chat-img-preview">
+        <input class="chat-input" id="chat-input-field" placeholder="Napisz wiadomość..." onkeydown="if(event.key==='Enter')sendChatMessageV1()">
+      </div>
       <button class="btn-chat-send" onclick="sendChatMessageV1()">Wyślij</button>
     </div>`;
 
@@ -4577,8 +4669,12 @@ window.openChatV1 = (chatId, otherId, otherName, otherPhoto) => {
           ? `<div class="chat-msg-status">✓✓ przeczytano</div>`
           : `<div class="chat-msg-status">✓ wysłano</div>`;
       }
+      const imgHTML = m.imageUrl
+        ? `<img src="${m.imageUrl}" class="chat-img" referrerpolicy="no-referrer" onclick="openGalleryLightbox('${m.imageUrl}')" loading="lazy">`
+        : '';
+      const textHTML = m.text ? `<div>${escapeHtml(m.text)}</div>` : '';
       return `<div class="chat-msg ${mine ? 'mine' : 'theirs'}">
-        ${escapeHtml(m.text)}
+        ${imgHTML}${textHTML}
         <div class="chat-msg-time">${timeAgo(m.createdAt)}</div>
         ${status}
       </div>`;
@@ -4587,17 +4683,54 @@ window.openChatV1 = (chatId, otherId, otherName, otherPhoto) => {
   });
 };
 
+let chatImageFile = null;
+
+window.handleChatImage = (input) => {
+  const file = input.files[0];
+  if (!file) return;
+  chatImageFile = file;
+  const prev = document.getElementById('chat-img-preview');
+  if (prev) { prev.src = URL.createObjectURL(file); prev.style.display = 'block'; }
+};
+
 window.sendChatMessageV1 = async () => {
   const input = document.getElementById('chat-input-field');
   const text = input.value.trim();
-  if (!text || !activeChatId) return;
-  input.value = '';
-  await push(ref(db, `chats/${activeChatId}/messages`), {
-    text,
-    senderId: currentUser.uid,
-    senderName: currentUser.displayName || 'Użytkownik',
-    createdAt: Date.now()
-  });
+  if (!text && !chatImageFile) return;
+  if (!activeChatId) return;
+
+  // Walidacja inline - shake jeśli brak tekstu i obrazka
+  if (!text && !chatImageFile) {
+    input.style.borderColor = 'var(--paw)';
+    setTimeout(() => { input.style.borderColor = ''; }, 1500);
+    return;
+  }
+
+  const btn = document.querySelector('.btn-chat-send');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
+
+  try {
+    const msgData = {
+      senderId: currentUser.uid,
+      senderName: currentUser.displayName || 'Użytkownik',
+      createdAt: Date.now()
+    };
+    if (text) msgData.text = text;
+    if (chatImageFile) {
+      msgData.imageUrl = await uploadToCloudinary(chatImageFile);
+      chatImageFile = null;
+      const prev = document.getElementById('chat-img-preview');
+      if (prev) { prev.src = ''; prev.style.display = 'none'; }
+      const imgInput = document.getElementById('chat-img-input');
+      if (imgInput) imgInput.value = '';
+    }
+    input.value = '';
+    await push(ref(db, `chats/${activeChatId}/messages`), msgData);
+  } catch(e) {
+    showToast('Błąd wysyłania: ' + e.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Wyślij'; }
+  }
 };
 
 window.openNewChatModal = async () => {
