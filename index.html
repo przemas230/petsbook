@@ -609,6 +609,34 @@
   .post-text { padding: 0 20px 14px; font-size: 15px; line-height: 1.6; font-weight: 600; }
   .post-hashtag { color: var(--paw); cursor: pointer; font-weight: 800; }
   .post-hashtag:hover { text-decoration: underline; }
+
+  /* ── STATYSTYKI ── */
+  .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+  .stat-card { background: white; border-radius: 16px; padding: 16px; text-align: center; }
+  .stat-number { font-family: 'Fraunces', serif; font-size: 28px; font-weight: 900; color: var(--paw); }
+  .stat-label { font-size: 12px; font-weight: 800; color: var(--bark-light); margin-top: 4px; }
+  .stats-chart-wrap { background: white; border-radius: 16px; padding: 16px; margin-bottom: 16px; }
+  .stats-chart-title { font-size: 14px; font-weight: 800; color: var(--bark); margin-bottom: 12px; }
+  .chart-bars { display: flex; align-items: flex-end; gap: 6px; height: 80px; }
+  .chart-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .chart-bar { width: 100%; background: var(--paw); border-radius: 4px 4px 0 0; min-height: 3px; transition: height 0.4s; }
+  .chart-bar.empty { background: var(--cream); }
+  .chart-day { font-size: 10px; font-weight: 800; color: var(--bark-light); }
+  .chart-val { font-size: 10px; font-weight: 800; color: var(--paw); }
+
+  /* ── RANKING ── */
+  .ranking-list { display: flex; flex-direction: column; gap: 10px; }
+  .ranking-item { background: white; border-radius: 14px; padding: 12px 16px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: transform 0.15s; }
+  .ranking-item:hover { transform: translateX(4px); }
+  .ranking-pos { font-family: 'Fraunces', serif; font-size: 22px; font-weight: 900; color: var(--bark-light); min-width: 32px; text-align: center; }
+  .ranking-pos.gold { color: #F5A623; }
+  .ranking-pos.silver { color: #aaa; }
+  .ranking-pos.bronze { color: #cd7f32; }
+  .ranking-avatar { width: 44px; height: 44px; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 22px; background: var(--cream); flex-shrink: 0; }
+  .ranking-info { flex: 1; }
+  .ranking-name { font-weight: 800; font-size: 15px; color: var(--bark); }
+  .ranking-sub { font-size: 12px; color: var(--bark-light); font-weight: 700; }
+  .ranking-score { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 900; color: var(--paw); }
   .search-results-bar { background: white; border-radius: 16px; padding: 14px 20px; margin-bottom: 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
   .search-tag-chip { background: var(--paw); color: white; border-radius: 20px; padding: 4px 14px; font-size: 13px; font-weight: 800; display: flex; align-items: center; gap: 6px; }
   .search-tag-chip button { background: none; border: none; color: white; cursor: pointer; font-size: 16px; line-height: 1; padding: 0; }
@@ -1974,6 +2002,14 @@
       </div>
       <div id="explore-map-container"><div id="map-explore"></div></div>
       <div id="explore-results" class="pets-grid"></div>
+
+      <!-- RANKING -->
+      <div style="margin-top:32px">
+        <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:900;margin-bottom:16px">🏆 Ranking tygodnia</div>
+        <div id="ranking-list" class="ranking-list">
+          <div class="loading-spinner">🐾</div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -4212,6 +4248,10 @@ window.showPetProfile = async (petId) => {
     ${canEdit ? `<input type="file" accept="image/*" id="edit-avatar-input" style="display:none" onchange="updatePetAvatar(this,'${petId}')">` : ''}
     <h3 style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;margin-bottom:16px">Posty</h3>`;
 
+  // Usuń stare statystyki przy ponownym wejściu w profil
+  const oldStats = document.getElementById('pet-stats-block');
+  if (oldStats) oldStats.remove();
+
   currentProfilePetId = petId;
 
   if (p.breedInfo && p.breedInfo.text) {
@@ -4230,7 +4270,16 @@ async function loadProfilePosts(petId) {
   el.innerHTML = '<div class="loading-spinner">🐾</div>';
   const snap = await get(ref(db, 'posts'));
   const posts = [];
-  if (snap.exists()) snap.forEach(c => { if (c.val().petId === petId) posts.unshift({ id: c.key, ...c.val() }); });
+  if (snap.exists()) snap.forEach(c => {
+    const p = c.val();
+    if (p.petId === petId && !p.isStory) posts.unshift({ id: c.key, ...p });
+  });
+
+  // Statystyki — tylko dla właściciela/opiekuna
+  const isOwnerOrCo = myPets[petId] != null;
+  if (isOwnerOrCo) {
+    renderPetStats(petId, posts);
+  }
 
   // Photo gallery
   const photoPosts = posts.filter(p => p.imageUrl);
@@ -4360,6 +4409,7 @@ window.handleSearch = (val) => {
 window.initExplore = async () => {
   document.getElementById('filter-species').value = '';
   document.getElementById('filter-location').value = '';
+  loadRanking();
   document.getElementById('filter-breed').value = '';
   await runExploreSearch();
   if (!isDemoMode) {
@@ -5437,6 +5487,114 @@ function initPWA() {
   }
 }
 
+
+
+// ═══════════════════════════════════
+//  📊  STATYSTYKI ZWIERZĘCIA
+// ═══════════════════════════════════
+async function renderPetStats(petId, posts) {
+  // Policz łączne reakcje i komentarze
+  let totalReactions = 0, totalComments = 0;
+  posts.forEach(p => {
+    if (p.reactions) {
+      Object.values(p.reactions).forEach(r => {
+        totalReactions += Object.keys(r).length;
+      });
+    }
+    if (p.comments) totalComments += Object.keys(p.comments).length;
+  });
+  const followersCount = await getPetFollowersCount(petId);
+
+  // Aktywność w ostatnich 7 dniach
+  const days = ['Pn','Wt','Śr','Cz','Pt','Sb','Nd'];
+  const now = Date.now();
+  const dayCounts = Array(7).fill(0);
+  posts.forEach(p => {
+    const age = (now - p.createdAt) / (1000 * 60 * 60 * 24);
+    if (age < 7) {
+      const dayIdx = Math.floor(age);
+      if (dayIdx >= 0 && dayIdx < 7) dayCounts[6 - dayIdx]++;
+    }
+  });
+  const maxDay = Math.max(...dayCounts, 1);
+
+  // Dni tygodnia - dzisiaj jest ostatni
+  const today = new Date().getDay(); // 0=nd,1=pn,...
+  const orderedDays = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = (today - i + 7) % 7;
+    orderedDays.push(days[d === 0 ? 6 : d - 1]);
+  }
+
+  const statsEl = document.createElement('div');
+  statsEl.id = 'pet-stats-block';
+  statsEl.innerHTML =
+    '<div class="stats-grid">' +
+      '<div class="stat-card"><div class="stat-number">' + posts.length + '</div><div class="stat-label">📝 Posty</div></div>' +
+      '<div class="stat-card"><div class="stat-number">' + totalReactions + '</div><div class="stat-label">❤️ Reakcje</div></div>' +
+      '<div class="stat-card"><div class="stat-number">' + followersCount + '</div><div class="stat-label">👥 Obserwujący</div></div>' +
+    '</div>' +
+    '<div class="stats-chart-wrap">' +
+      '<div class="stats-chart-title">📈 Posty w ostatnich 7 dniach</div>' +
+      '<div class="chart-bars">' +
+        dayCounts.map((cnt, i) => {
+          const h = Math.round((cnt / maxDay) * 72);
+          return '<div class="chart-bar-col">' +
+            (cnt > 0 ? '<div class="chart-val">' + cnt + '</div>' : '<div class="chart-val" style="opacity:0">0</div>') +
+            '<div class="chart-bar' + (cnt === 0 ? ' empty' : '') + '" style="height:' + (cnt === 0 ? 6 : h) + 'px"></div>' +
+            '<div class="chart-day">' + orderedDays[i] + '</div>' +
+          '</div>';
+        }).join('') +
+      '</div>' +
+    '</div>';
+
+  const profilePosts = document.getElementById('profile-posts');
+  if (profilePosts) profilePosts.insertAdjacentElement('beforebegin', statsEl);
+}
+
+// ═══════════════════════════════════
+//  🏆  RANKING TYGODNIA
+// ═══════════════════════════════════
+async function loadRanking() {
+  const el = document.getElementById('ranking-list');
+  if (!el) return;
+
+  const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const snap = await get(ref(db, 'posts'));
+  if (!snap.exists()) { el.innerHTML = '<div class="empty-state"><div class="emoji">🏆</div><p>Brak danych</p></div>'; return; }
+
+  // Policz punkty per zwierzę (post=2pkt, reakcja=1pkt, komentarz=1pkt)
+  const scores = {};
+  snap.forEach(c => {
+    const p = c.val();
+    if (p.isStory || p.createdAt < weekAgo) return;
+    if (!scores[p.petId]) scores[p.petId] = { petId: p.petId, petName: p.petName, petSpecies: p.petSpecies, avatarUrl: p.petAvatarUrl, pts: 0 };
+    scores[p.petId].pts += 2;
+    if (p.reactions) Object.values(p.reactions).forEach(r => { scores[p.petId].pts += Object.keys(r).length; });
+    if (p.comments) scores[p.petId].pts += Object.keys(p.comments).length;
+  });
+
+  const sorted = Object.values(scores).sort((a, b) => b.pts - a.pts).slice(0, 10);
+  if (!sorted.length) { el.innerHTML = '<div class="empty-state"><div class="emoji">🏆</div><p>Brak aktywności w tym tygodniu</p></div>'; return; }
+
+  const medals = ['gold', 'silver', 'bronze'];
+  el.innerHTML = sorted.map((s, i) => {
+    const emoji = speciesEmoji(s.petSpecies || 'Inne');
+    const posClass = medals[i] || '';
+    const avatarHTML = s.avatarUrl
+      ? '<img src="' + s.avatarUrl + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%" referrerpolicy="no-referrer" onerror="this.style.display=\'none\'">'
+      : emoji;
+    return '<div class="ranking-item" onclick="showPetProfile(\'' + s.petId + '\')">' +
+      '<div class="ranking-pos ' + posClass + '">' + (i < 3 ? ['🥇','🥈','🥉'][i] : i + 1) + '</div>' +
+      '<div class="ranking-avatar">' + avatarHTML + '</div>' +
+      '<div class="ranking-info">' +
+        '<div class="ranking-name">' + escapeHtml(s.petName || 'Zwierzę') + '</div>' +
+        '<div class="ranking-sub">' + escapeHtml(s.petSpecies || '') + '</div>' +
+      '</div>' +
+      '<div class="ranking-score">' + s.pts + ' pkt</div>' +
+    '</div>';
+  }).join('');
+}
 
 // ═══════════════════════════════════
 //  📖  STORIES
