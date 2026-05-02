@@ -1950,7 +1950,7 @@
         <input class="form-input" id="pet-birthdate" type="date">
       </div>
       <div class="form-group" style="flex:1">
-        <label class="form-label">🏠 Dzień adopcji</label>
+        <label class="form-label">🏠 Pierwszy dzień w domu</label>
         <input class="form-input" id="pet-adoptdate" type="date">
       </div>
     </div>
@@ -2798,7 +2798,7 @@ function renderPostCard(p) {
         </div>` : ''}
       </div>
       ${p.text ? `<div class="post-text">${escapeHtml(p.text)}</div>` : ''}
-      ${p.breedImg ? `<img id="bimg-${p.id}" class="post-img" style="display:none" referrerpolicy="no-referrer" onload="this.style.display='block'">` : ''}
+      ${p.imageUrl ? `<img src="${p.imageUrl}" class="post-img" loading="lazy" referrerpolicy="no-referrer">` : ''}
       <div class="reactions-bar">
         ${['❤️','😂','😲','😢','🐾'].map(em => {
           const key = {'❤️':'heart','😂':'laugh','😲':'wow','😢':'sad','🐾':'paw'}[em] || 'heart';
@@ -4129,7 +4129,7 @@ function petAgeTags(p) {
     tags += '<span class="profile-tag">🎂 ' + p.age + ' lat</span>';
   }
   if (p.birthdate) tags += '<span class="profile-tag" style="opacity:0.7;font-size:11px">ur. ' + p.birthdate + '</span>';
-  if (p.adoptdate) tags += '<span class="profile-tag" style="background:#FFF0E8;color:var(--paw)">🏠 adopcja ' + p.adoptdate + '</span>';
+  if (p.adoptdate) tags += '<span class="profile-tag" style="background:#FFF0E8;color:var(--paw)">🏠 w domu od ' + p.adoptdate + '</span>';
   return tags;
 }
 
@@ -4817,11 +4817,13 @@ function lazyLoadBreedImg(el, breedName) {
 }
 
 function loadDemoBreedImages(posts) {
-  posts.forEach(p => {
-    if (!p.breedImg) return;
-    const el = document.getElementById('bimg-' + p.id);
-    if (el) lazyLoadBreedImg(el, p.breedImg);
-  });
+  setTimeout(() => {
+    posts.forEach(p => {
+      if (!p.breedImg) return;
+      const el = document.getElementById('bimg-' + p.id);
+      if (el) lazyLoadBreedImg(el, p.breedImg);
+    });
+  }, 50);
 }
 
 window.showDemoPetProfile = (petId) => {
