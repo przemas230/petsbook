@@ -2697,19 +2697,21 @@ window.toggleFollow = async (petId, ownerUid) => {
 //  FEED / POSTS
 // ═══════════════════════════════════
 function loadFeed() {
-  // Nasłuchuj WSZYSTKICH postów - aktualizuje feed w czasie rzeczywistym
+  console.log('LOADFEED START, user:', currentUser && currentUser.uid);
   onValue(ref(db, 'posts'), snap => {
+    console.log('POSTS SNAP exists:', snap.exists(), 'size:', snap.size);
     allFeedPosts = [];
     if (snap.exists()) {
       snap.forEach(c => allFeedPosts.push({ id: c.key, ...c.val() }));
       allFeedPosts.sort((a, b) => b.createdAt - a.createdAt);
     }
+    console.log('allFeedPosts count:', allFeedPosts.length);
     applyFeedFilters();
     loadSuggestions();
   }, err => {
-    console.error('❌ loadFeed Firebase error:', err.code, err.message);
+    console.error('LOADFEED ERROR:', err.code, err.message);
     document.getElementById('feed-posts').innerHTML =
-      '<div class="empty-state"><div class="emoji">⚠️</div><p>Błąd ładowania feedu: ' + err.message + '</p></div>';
+      '<div class="empty-state"><div class="emoji">!</div><p>Blad feedu: ' + err.message + '</p></div>';
   });
 }
 
@@ -2741,6 +2743,7 @@ window.applyFeedFilters = () => {
   if (newSpecies !== feedSpeciesFilter) feedDisplayLimit = 20;
   feedSpeciesFilter = newSpecies;
   let posts = [...allFeedPosts];
+  console.log('APPLYFEEDFILTERS: allFeedPosts='+allFeedPosts.length+' tab='+feedTab+' species='+feedSpeciesFilter+' radius='+feedRadiusKm);
 
   // Tab filter
   if (feedTab === 'following') {
@@ -3432,6 +3435,7 @@ function getDemoPostsForFeed() {
 //  NADPISANIE renderFeed — mieszanie demo + real
 // ═══════════════════════════════════
 function renderFeed(posts) {
+  console.log('RENDERFEED: real posts='+posts.length+' demoFeed='+appSettings.demoFeed);
   let merged = [...posts]; // real posty już przefiltrowane przez applyFeedFilters
 
   if (appSettings.demoFeed) {
