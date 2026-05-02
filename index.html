@@ -2013,15 +2013,15 @@
   <div class="modal-box">
     <div class="modal-title">👥 Opiekunowie</div>
     <div id="coowners-list-content"></div>
-    <div style="margin-top:20px">
+    <div id="coowners-invite-section" style="margin-top:20px">
       <div class="form-label">Zaproś nowego opiekuna</div>
       <p style="font-size:13px;font-weight:600;color:var(--bark-light);margin-bottom:10px">Podaj ten kod innemu użytkownikowi PetsBook. Po wpisaniu go w sekcji "Dołącz do zwierzęcia" na stronie Moje zwierzęta, uzyska dostęp do edycji.</p>
       <div class="invite-code-box" id="invite-code-display" onclick="copyInviteCode()" title="Kliknij aby skopiować"></div>
       <div class="map-location-info">🔁 Kliknij kod aby skopiować • Generuj nowy poniżej</div>
-      <div style="display:flex;gap:8px;margin-top:10px">
-        <button class="btn-save" style="flex:1" onclick="generateNewInviteCode()">🔄 Nowy kod</button>
-        <button class="btn-cancel" onclick="closeModal('coowners-modal')">Zamknij</button>
-      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="btn-save" id="coowners-new-code-btn" style="flex:1;display:none" onclick="generateNewInviteCode()">🔄 Nowy kod</button>
+      <button class="btn-cancel" onclick="closeModal('coowners-modal')">Zamknij</button>
     </div>
   </div>
 </div>
@@ -3841,7 +3841,7 @@ window.showPetProfile = async (petId) => {
             ${petAgeTags(p)}
             ${p.location ? `<span class="profile-tag location">📍 ${p.location}</span>` : ''}
             <span class="profile-tag followers" id="followers-count-${petId}">👥 ${followersCount} obserwujących</span>
-            <span class="profile-tag" style="cursor:pointer" onclick="openCoOwnersModal('${petId}')">🤝 ${1 + coOwnersCount} opiekun${coOwnersCount >= 1 ? 'ów' : ''}</span>
+            <span class="profile-tag" ${canEdit ? `style="cursor:pointer" onclick="openCoOwnersModal('${petId}')"` : ''}>🤝 ${1 + coOwnersCount} opiekun${coOwnersCount >= 1 ? 'ów' : ''}</span>
           </div>
         </div>
         <div style="display:flex;gap:8px;align-self:flex-start;margin-top:54px;flex-wrap:wrap">
@@ -4186,10 +4186,13 @@ function isCoOwner(petData) {
 }
 
 window.openCoOwnersModal = async (petId) => {
+  if (!currentUser) { showToast('Zaloguj się aby zobaczyć opiekunów'); return; }
   const snap = await get(ref(db, `pets/${petId}`));
   if (!snap.exists()) return;
   const p = snap.val();
   const isMainOwner = p.ownerId === currentUser.uid;
+  const isCoOwner = p.coOwners && p.coOwners[currentUser.uid];
+  const canSeeCode = isMainOwner || isCoOwner;
 
   let html = '<div class="coowners-list">';
   html += `<div class="coowner-item"><div class="coowner-avatar">👑</div><div class="coowner-name">${p.ownerName || 'Właściciel'}</div><span class="coowner-badge">Właściciel</span></div>`;
@@ -4207,14 +4210,23 @@ window.openCoOwnersModal = async (petId) => {
   html += '</div>';
   document.getElementById('coowners-list-content').innerHTML = html;
 
-  if (!p.inviteCode) {
-    const code = generateCode();
-    await update(ref(db, `pets/${petId}`), { inviteCode: code });
-    document.getElementById('invite-code-display').textContent = code;
+  // Sekcja z kodem - tylko dla właściciela/opiekuna
+  const codeSection = document.getElementById('coowners-invite-section');
+  const newCodeBtn = document.getElementById('coowners-new-code-btn');
+  if (newCodeBtn) newCodeBtn.style.display = isMainOwner ? 'flex' : 'none';
+  if (canSeeCode) {
+    codeSection.style.display = 'block';
+    if (!p.inviteCode) {
+      const code = generateCode();
+      await update(ref(db, `pets/${petId}`), { inviteCode: code });
+      document.getElementById('invite-code-display').textContent = code;
+    } else {
+      document.getElementById('invite-code-display').textContent = p.inviteCode;
+    }
+    document.getElementById('invite-code-display').setAttribute('data-petid', petId);
   } else {
-    document.getElementById('invite-code-display').textContent = p.inviteCode;
+    codeSection.style.display = 'none';
   }
-  document.getElementById('invite-code-display').setAttribute('data-petid', petId);
   openModal('coowners-modal');
 };
 
