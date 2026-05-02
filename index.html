@@ -607,6 +607,11 @@
   .post-owner { font-size: 12px; color: var(--bark-light); font-weight: 600; }
   .post-time { font-size: 12px; color: #aaa; margin-left: auto; font-weight: 600; }
   .post-text { padding: 0 20px 14px; font-size: 15px; line-height: 1.6; font-weight: 600; }
+  .post-hashtag { color: var(--paw); cursor: pointer; font-weight: 800; }
+  .post-hashtag:hover { text-decoration: underline; }
+  .search-results-bar { background: white; border-radius: 16px; padding: 14px 20px; margin-bottom: 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .search-tag-chip { background: var(--paw); color: white; border-radius: 20px; padding: 4px 14px; font-size: 13px; font-weight: 800; display: flex; align-items: center; gap: 6px; }
+  .search-tag-chip button { background: none; border: none; color: white; cursor: pointer; font-size: 16px; line-height: 1; padding: 0; }
   .post-img {
     width: 100%;
     aspect-ratio: 4/3;
@@ -1719,6 +1724,13 @@
             <button class="feed-tab active" id="ftab-all" onclick="setFeedTab('all')">🌍 Wszyscy</button>
             <button class="feed-tab" id="ftab-following" onclick="setFeedTab('following')">⭐ Obserwowani</button>
           </div>
+          <div style="display:flex;gap:8px;padding:8px 0 0">
+            <input type="search" id="feed-search-input" placeholder="🔍 Szukaj postów, #hashtagów..." 
+              style="flex:1;background:var(--cream);border:2px solid transparent;border-radius:22px;padding:8px 16px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:600;color:var(--bark);outline:none"
+              oninput="searchFeedByText(this.value)"
+              onfocus="this.style.borderColor='var(--paw-light)'"
+              onblur="this.style.borderColor='transparent'">
+          </div>
           <div class="feed-filter-row">
             <select class="feed-filter-select" id="feed-filter-species" onchange="applyFeedFilters()">
               <option value="">🐾 Wszystkie gatunki</option>
@@ -1742,6 +1754,15 @@
               <input type="range" min="0" max="200" value="0" step="10" id="feed-radius-slider" oninput="onFeedRadiusChange(this.value)">
               <span id="feed-radius-val">wszędzie</span>
             </div>
+          </div>
+        </div>
+
+        <!-- Pasek wyszukiwania postów -->
+        <div id="feed-search-bar" style="display:none" class="search-results-bar">
+          <span style="font-size:13px;font-weight:700;color:var(--bark-light)">Wyniki dla:</span>
+          <div class="search-tag-chip" id="feed-search-chip">
+            <span id="feed-search-chip-label"></span>
+            <button onclick="clearFeedSearch()" title="Wyczyść">✕</button>
           </div>
         </div>
 
@@ -2310,6 +2331,7 @@ let feedRadiusKm = 0;
 let feedDisplayLimit = 20;
 let myFollows = {}; // petId -> true
 let myLocation = null; // { lat, lng }
+let feedSearchQuery = ''; // hashtag lub fraza
 
 // ── Auth ──
 window.signInWithGoogle = async () => {
@@ -2769,6 +2791,16 @@ window.applyFeedFilters = () => {
     });
   }
 
+  // Wyszukiwanie po tekście / hashtagu
+  if (feedSearchQuery) {
+    const q = feedSearchQuery.toLowerCase();
+    posts = posts.filter(p => (p.text || '').toLowerCase().includes(q));
+  }
+
+  // Pokaż/ukryj pasek wyszukiwania
+  const searchBar = document.getElementById('feed-search-bar');
+  if (searchBar) searchBar.style.display = feedSearchQuery ? 'flex' : 'none';
+
   renderFeed(posts);
 };
 
@@ -2810,7 +2842,7 @@ function renderPostCard(p) {
           </div>
         </div>` : ''}
       </div>
-      ${p.text ? `<div class="post-text">${escapeHtml(p.text)}</div>` : ''}
+      ${p.text ? `<div class="post-text">${renderTextWithHashtags(p.text)}</div>` : ''}
       ${p.imageUrl ? `<img src="${p.imageUrl}" class="post-img" loading="lazy" referrerpolicy="no-referrer" onclick="openGalleryLightbox('${p.imageUrl}')" style="cursor:zoom-in">` : ''}
       <div class="reactions-bar">
         ${['❤️','😂','😲','😢','🐾'].map(em => {
@@ -3582,6 +3614,34 @@ window.loadMoreFeedPosts = () => {
   applyFeedFilters();
 };
 
+window.searchByHashtag = (tag) => {
+  feedSearchQuery = '#' + tag;
+  feedDisplayLimit = 20;
+  const chip = document.getElementById('feed-search-chip-label');
+  if (chip) chip.textContent = '#' + tag;
+  showPage('feed');
+  applyFeedFilters();
+  // Scroll do feedu
+  setTimeout(() => {
+    const el = document.getElementById('feed-posts');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 100);
+};
+
+window.clearFeedSearch = () => {
+  feedSearchQuery = '';
+  feedDisplayLimit = 20;
+  applyFeedFilters();
+};
+
+window.searchFeedByText = (q) => {
+  feedSearchQuery = q.trim();
+  feedDisplayLimit = 20;
+  const chip = document.getElementById('feed-search-chip-label');
+  if (chip) chip.textContent = feedSearchQuery;
+  applyFeedFilters();
+};
+
 // Wersja karty demo do normalnego feedu (z odznaczką demo)
 function renderDemoPostCardInFeed(p) {
   const emoji = speciesEmoji(p.petSpecies);
@@ -3607,7 +3667,7 @@ function renderDemoPostCardInFeed(p) {
         </div>
         <div class="post-time">${timeStr}</div>
       </div>
-      ${p.text ? `<div class="post-text">${escapeHtml(p.text)}</div>` : ''}
+      ${p.text ? `<div class="post-text">${renderTextWithHashtags(p.text)}</div>` : ''}
       ${p.breedImg ? '<div class="img-skeleton" style="display:none"></div><img id="bimg-' + p.id + '" class="post-img" style="display:none" referrerpolicy="no-referrer" onload="this.style.display=\'block\'">' : ''}
       <div class="reactions-bar">${reactionsHTML}</div>
       <div class="post-actions">
@@ -4264,6 +4324,13 @@ function escapeHtml(s) {
   return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+function renderTextWithHashtags(text) {
+  if (!text) return '';
+  return escapeHtml(text).replace(/#([\wąćęłńóśźżĄĆĘŁŃÓŚŹŻ]+)/g, (match, tag) =>
+    `<span class="post-hashtag" onclick="searchByHashtag('${tag}')">${match}</span>`
+  );
+}
+
 // ═══════════════════════════════════
 //  🗑️  USUWANIE ZWIERZĘCIA
 // ═══════════════════════════════════
@@ -4846,11 +4913,11 @@ const DEMO_PETS = [
 const _d = (h) => Date.now() - 3600000 * h;
 const DEMO_POSTS = [
   // Burek (demo-1)
-  { id: 'dp-1',  petId:'demo-1',  petName:'Burek',    petSpecies:'Pies', petAvatarUrl:DEMO_PETS[0].avatarUrl,  ownerName:'Marek K.',   ownerId:'demo-owner-1',  text:'Dzisiejszy spacer w Łazienkach był niesamowity! Poznałem 3 nowe psy 🐕🐕🐕', breedImg:'Labrador Retriever', imageUrl:'', createdAt:_d(2),  reactions:{heart:{'u1':true,'u2':true,'u3':true}}, comments:{'c1':{userName:'Anna W.', text:'Mruczek też chciałby... ale wiadomo, kot 😂', createdAt:_d(1.5)}} },
-  { id: 'dp-2',  petId:'demo-1',  petName:'Burek',    petSpecies:'Pies', petAvatarUrl:DEMO_PETS[0].avatarUrl,  ownerName:'Marek K.',   ownerId:'demo-owner-1',  text:'Weekendowa łaźnia. Twarz mówi wszystko. 🛁', breedImg:'Labrador Retriever bathing', imageUrl:'', createdAt:_d(48), reactions:{laugh:{'u2':true,'u4':true}}, comments:{} },
+  { id: 'dp-1',  petId:'demo-1',  petName:'Burek',    petSpecies:'Pies', petAvatarUrl:DEMO_PETS[0].avatarUrl,  ownerName:'Marek K.',   ownerId:'demo-owner-1',  text:'Dzisiejszy spacer w Łazienkach był niesamowity! Poznałem 3 nowe psy 🐕🐕🐕 #spacer #labrador #warszawa', breedImg:'Labrador Retriever', imageUrl:'', createdAt:_d(2),  reactions:{heart:{'u1':true,'u2':true,'u3':true}}, comments:{'c1':{userName:'Anna W.', text:'Mruczek też chciałby... ale wiadomo, kot 😂', createdAt:_d(1.5)}} },
+  { id: 'dp-2',  petId:'demo-1',  petName:'Burek',    petSpecies:'Pies', petAvatarUrl:DEMO_PETS[0].avatarUrl,  ownerName:'Marek K.',   ownerId:'demo-owner-1',  text:'Weekendowa łaźnia. Twarz mówi wszystko. 🛁 #kąpiel #labrador', breedImg:'Labrador Retriever bathing', imageUrl:'', createdAt:_d(48), reactions:{laugh:{'u2':true,'u4':true}}, comments:{} },
   { id: 'dp-3',  petId:'demo-1',  petName:'Burek',    petSpecies:'Pies', petAvatarUrl:DEMO_PETS[0].avatarUrl,  ownerName:'Marek K.',   ownerId:'demo-owner-1',  text:'Znalazłem nowego przyjaciela w parku. Obaj byliśmy zmęczeni 😅', breedImg:'Labrador Retriever puppy', imageUrl:'', createdAt:_d(120), reactions:{heart:{'u1':true}}, comments:{} },
   // Zuzia (demo-2)
-  { id: 'dp-4',  petId:'demo-2',  petName:'Zuzia',    petSpecies:'Pies', petAvatarUrl:DEMO_PETS[1].avatarUrl,  ownerName:'Piotr L.',   ownerId:'demo-owner-3',  text:'Pierwszy raz na plaży w Sopocie!! Woda mokra ale super!! 🌊🐾', breedImg:'Golden Retriever', imageUrl:'', createdAt:_d(10), reactions:{heart:{'u1':true,'u2':true,'u3':true,'u5':true}}, comments:{'c2':{userName:'Marek K.',text:'Burek też uwielbia plażę! 🐕',createdAt:_d(9)},'c3':{userName:'Ewa S.',text:'Jaka słodka! ❤️',createdAt:_d(8)}} },
+  { id: 'dp-4',  petId:'demo-2',  petName:'Zuzia',    petSpecies:'Pies', petAvatarUrl:DEMO_PETS[1].avatarUrl,  ownerName:'Piotr L.',   ownerId:'demo-owner-3',  text:'Pierwszy raz na plaży w Sopocie!! Woda mokra ale super!! 🌊🐾 #plaża #golden #sopot', breedImg:'Golden Retriever', imageUrl:'', createdAt:_d(10), reactions:{heart:{'u1':true,'u2':true,'u3':true,'u5':true}}, comments:{'c2':{userName:'Marek K.',text:'Burek też uwielbia plażę! 🐕',createdAt:_d(9)},'c3':{userName:'Ewa S.',text:'Jaka słodka! ❤️',createdAt:_d(8)}} },
   { id: 'dp-5',  petId:'demo-2',  petName:'Zuzia',    petSpecies:'Pies', petAvatarUrl:DEMO_PETS[1].avatarUrl,  ownerName:'Piotr L.',   ownerId:'demo-owner-3',  text:'Spacer o świcie. Gdańsk jest piękny kiedy jeszcze śpią 🌅', breedImg:'Golden Retriever running', imageUrl:'', createdAt:_d(60), reactions:{paw:{'u3':true}}, comments:{} },
   { id: 'dp-6',  petId:'demo-2',  petName:'Zuzia',    petSpecies:'Pies', petAvatarUrl:DEMO_PETS[1].avatarUrl,  ownerName:'Piotr L.',   ownerId:'demo-owner-3',  text:'Agility po raz pierwszy — upadłam na trzeciej przeszkodzie ale wstałam! 💪', breedImg:'Golden Retriever agility', imageUrl:'', createdAt:_d(200), reactions:{heart:{'u1':true,'u4':true},paw:{'u2':true}}, comments:{} },
   // Reksio (demo-3)
@@ -4873,12 +4940,12 @@ const DEMO_POSTS = [
   { id: 'dp-18', petId:'demo-7',  petName:'Luna',     petSpecies:'Pies', petAvatarUrl:DEMO_PETS[6].avatarUrl,  ownerName:'Ola P.',     ownerId:'demo-owner-10', text:'Śnieg!!! Nareszcie!!! Szczecin biały jak moje futro 🌨️❄️', breedImg:'Siberian Husky', imageUrl:'', createdAt:_d(3),  reactions:{paw:{'u1':true,'u2':true,'u3':true,'u4':true}}, comments:{'c7':{userName:'Bartek J.',text:'Max też by chciał śnieg 🐕',createdAt:_d(2.5)}} },
   { id: 'dp-19', petId:'demo-7',  petName:'Luna',     petSpecies:'Pies', petAvatarUrl:DEMO_PETS[6].avatarUrl,  ownerName:'Ola P.',     ownerId:'demo-owner-10', text:'Latem to ja śpię. Nie pytajcie. 💤', imageUrl:'', createdAt:_d(200), reactions:{laugh:{'u5':true,'u6':true}}, comments:{} },
   // Arabella (demo-25)
-  { id: 'dp-20', petId:'demo-25', petName:'Arabella', petSpecies:'Koń',  petAvatarUrl:DEMO_PETS[24].avatarUrl, ownerName:'Klaudia B.', ownerId:'demo-owner-25', text:'Poranny galop przez łąki. Nie ma nic piękniejszego 🐴🌅', breedImg:'Arabian horse', imageUrl:'', createdAt:_d(8),  reactions:{heart:{'u1':true,'u2':true,'u7':true},paw:{'u3':true}}, comments:{'c8':{userName:'Ola P.',text:'Piękna! ❤️',createdAt:_d(7)}} },
+  { id: 'dp-20', petId:'demo-25', petName:'Arabella', petSpecies:'Koń',  petAvatarUrl:DEMO_PETS[24].avatarUrl, ownerName:'Klaudia B.', ownerId:'demo-owner-25', text:'Poranny galop przez łąki. Nie ma nic piękniejszego 🐴🌅 #koń #galop #poranek', breedImg:'Arabian horse', imageUrl:'', createdAt:_d(8),  reactions:{heart:{'u1':true,'u2':true,'u7':true},paw:{'u3':true}}, comments:{'c8':{userName:'Ola P.',text:'Piękna! ❤️',createdAt:_d(7)}} },
   { id: 'dp-21', petId:'demo-25', petName:'Arabella', petSpecies:'Koń',  petAvatarUrl:DEMO_PETS[24].avatarUrl, ownerName:'Klaudia B.', ownerId:'demo-owner-25', text:'Konkurs ujeżdżania — 3. miejsce! Trenujemy dalej 🏆', breedImg:'Horse dressage', imageUrl:'', createdAt:_d(300), reactions:{heart:{'u1':true,'u4':true}}, comments:{} },
   // Whiskers (demo-21)
-  { id: 'dp-22', petId:'demo-21', petName:'Whiskers', petSpecies:'Królik', petAvatarUrl:DEMO_PETS[20].avatarUrl, ownerName:'Julia M.', ownerId:'demo-owner-6',  text:'Marchewka > wszystko. To nie jest opinia, to fakt. 🥕', breedImg:'Angora rabbit', imageUrl:'', createdAt:_d(18), reactions:{heart:{'u2':true,'u5':true},laugh:{'u3':true}}, comments:{} },
+  { id: 'dp-22', petId:'demo-21', petName:'Whiskers', petSpecies:'Królik', petAvatarUrl:DEMO_PETS[20].avatarUrl, ownerName:'Julia M.', ownerId:'demo-owner-6',  text:'Marchewka > wszystko. To nie jest opinia, to fakt. 🥕 #królik #marchewka #smaczne', breedImg:'Angora rabbit', imageUrl:'', createdAt:_d(18), reactions:{heart:{'u2':true,'u5':true},laugh:{'u3':true}}, comments:{} },
   // Papryk (demo-24)
-  { id: 'dp-23', petId:'demo-24', petName:'Papryk',   petSpecies:'Papuga', petAvatarUrl:DEMO_PETS[23].avatarUrl, ownerName:'Renata L.', ownerId:'demo-owner-24', text:'Nauczyłem się nowego słowa: "obiad". Używam go 80 razy dziennie. 🦜', breedImg:'Budgerigar', imageUrl:'', createdAt:_d(12), reactions:{laugh:{'u1':true,'u2':true,'u3':true,'u4':true,'u5':true}}, comments:{'c9':{userName:'Julia M.',text:'😂😂😂 Klasyk!',createdAt:_d(11)}} },
+  { id: 'dp-23', petId:'demo-24', petName:'Papryk',   petSpecies:'Papuga', petAvatarUrl:DEMO_PETS[23].avatarUrl, ownerName:'Renata L.', ownerId:'demo-owner-24', text:'Nauczyłem się nowego słowa: "obiad". Używam go 80 razy dziennie. 🦜 #papuga #zabawne #ptaki', breedImg:'Budgerigar', imageUrl:'', createdAt:_d(12), reactions:{laugh:{'u1':true,'u2':true,'u3':true,'u4':true,'u5':true}}, comments:{'c9':{userName:'Julia M.',text:'😂😂😂 Klasyk!',createdAt:_d(11)}} },
   // Żółwik (demo-23)
   { id: 'dp-24', petId:'demo-23', petName:'Żółwik',   petSpecies:'Żółw', petAvatarUrl:DEMO_PETS[22].avatarUrl, ownerName:'Dorota K.', ownerId:'demo-owner-23', text:'Dziś przeszedłem cały pokój. Zajęło mi to 40 minut. Jestem zmęczony. 🐢', breedImg:'Testudo horsfieldi', imageUrl:'', createdAt:_d(30), reactions:{laugh:{'u1':true,'u6':true},heart:{'u3':true}}, comments:{} },
   // Bella (demo-5)
