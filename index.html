@@ -5501,7 +5501,7 @@ function renderStoriesBar(groups) {
     const allSeen = g.stories.every(s => seen[s.id]);
     const emoji = speciesEmoji(g.stories[0]?.petSpecies || 'Inne');
     const avatarInner = g.avatarUrl
-      ? '<img src="' + g.avatarUrl + '" referrerpolicy="no-referrer" onerror="this.style.display='none'">'
+      ? '<img src="' + g.avatarUrl + '" referrerpolicy="no-referrer" onerror="this.style.display=\'none\'">'
       : '<div class="story-ring-inner">' + emoji + '</div>';
     html += '<div class="story-bubble" onclick="openStoryViewer(' + gi + ')">'
       + '<div class="story-ring' + (allSeen ? ' seen' : '') + '">' + avatarInner + '</div>'
