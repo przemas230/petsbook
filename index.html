@@ -1565,6 +1565,7 @@
     align-self: flex-start; border-bottom-left-radius: 4px;
   }
   .chat-msg-time { font-size: 10px; opacity: 0.7; margin-top: 3px; }
+  .chat-msg-status { font-size: 10px; opacity: 0.6; text-align: right; margin-top: 2px; }
   .chat-input-row {
     padding: 12px 16px; border-top: 2px solid var(--cream);
     display: flex; gap: 10px; align-items: center;
@@ -2751,7 +2752,7 @@ window.applyFeedFilters = () => {
   // Proximity filter (haversine)
   if (feedRadiusKm > 0 && myLocation) {
     posts = posts.filter(p => {
-      if (!p.petLat || !p.petLng) return false;
+      if (!p.petLat || !p.petLng) return true; // brak lokalizacji = pokazuj zawsze
       return haversine(myLocation.lat, myLocation.lng, p.petLat, p.petLng) <= feedRadiusKm;
     });
   }
@@ -3376,8 +3377,10 @@ function initOnlineStatus() {
   const connectedRef = ref(db, '.info/connected');
   onValue(connectedRef, (snap) => {
     if (!snap.val()) return;
-    set(statusRef, { online: true, lastSeen: Date.now(), displayName: currentUser.displayName || 'Użytkownik', photoURL: currentUser.photoURL || null });
-    onDisconnect(statusRef).update({ online: false, lastSeen: Date.now() });
+    set(statusRef, { online: true, lastSeen: Date.now(), displayName: currentUser.displayName || 'Użytkownik', photoURL: currentUser.photoURL || null })
+      .catch(() => {}); // ignoruj permission_denied - userStatus opcjonalny
+    onDisconnect(statusRef).update({ online: false, lastSeen: Date.now() })
+      .catch(() => {});
   });
 }
 
@@ -3457,7 +3460,7 @@ function renderFeed(posts) {
     // Filtruj demo po odległości jeśli aktywna
     if (feedRadiusKm > 0 && myLocation) {
       toAdd = toAdd.filter(p => {
-        if (!p.petLat || !p.petLng) return false;
+        if (!p.petLat || !p.petLng) return true;
         return haversine(myLocation.lat, myLocation.lng, p.petLat, p.petLng) <= feedRadiusKm;
       });
     }
@@ -4159,12 +4162,15 @@ function petAgeTags(p) {
 
 function timeAgo(ts) {
   const diff = Date.now() - ts;
+  if (diff < 30000) return 'teraz';
   const m = Math.floor(diff / 60000);
-  if (m < 1) return 'teraz';
   if (m < 60) return `${m} min temu`;
   const h = Math.floor(m / 60);
   if (h < 24) return `${h} godz. temu`;
-  return `${Math.floor(h/24)} dni temu`;
+  const d = Math.floor(h / 24);
+  if (d < 7) return `${d} dni temu`;
+  const date = new Date(ts);
+  return date.toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' });
 }
 
 function escapeHtml(s) {
@@ -4555,11 +4561,26 @@ window.openChatV1 = (chatId, otherId, otherName, otherPhoto) => {
     if (!area) return;
     const msgs = [];
     if (snap.exists()) snap.forEach(c => { msgs.push({ id: c.key, ...c.val() }); });
+    // Oznacz wiadomości rozmówcy jako przeczytane
+    msgs.forEach(m => {
+      if (m.senderId !== currentUser.uid && !m.readAt) {
+        set(ref(db, `chats/${activeChatId}/messages/${m.id}/readAt`), Date.now()).catch(() => {});
+      }
+    });
+    const lastMsgId = msgs.length ? msgs[msgs.length - 1].id : null;
     area.innerHTML = msgs.map(m => {
       const mine = m.senderId === currentUser.uid;
+      const isLast = m.id === lastMsgId;
+      let status = '';
+      if (mine && isLast) {
+        status = m.readAt
+          ? `<div class="chat-msg-status">✓✓ przeczytano</div>`
+          : `<div class="chat-msg-status">✓ wysłano</div>`;
+      }
       return `<div class="chat-msg ${mine ? 'mine' : 'theirs'}">
         ${escapeHtml(m.text)}
         <div class="chat-msg-time">${timeAgo(m.createdAt)}</div>
+        ${status}
       </div>`;
     }).join('');
     area.scrollTop = area.scrollHeight;
@@ -4925,6 +4946,45 @@ window.showDemoPetProfile = (petId) => {
       ? `<h3 style="font-family:'Fraunces',serif;font-size:20px;font-weight:700;margin-bottom:16px">Posty</h3>` + petPosts.map(x => renderDemoPostCard(x)).join('')
       : `<div class="empty-state"><div class="emoji">📸</div><p>Brak postów</p></div>`);
   loadDemoBreedImages(petPosts);
+
+  // "O rasie" dla demo - pobierz opis przez Anthropic API
+  if (p.breed) {
+    const biId = 'demo-breed-info-' + petId;
+    const existing = document.getElementById(biId);
+    if (!existing) {
+      const biContainer = document.createElement('div');
+      biContainer.id = biId;
+      biContainer.style.cssText = 'background:white;border-radius:16px;padding:16px;margin-bottom:16px';
+      biContainer.innerHTML = '<div style="font-size:13px;color:#aaa;font-weight:600">⏳ Ładowanie opisu rasy...</div>';
+      document.getElementById('profile-posts').insertAdjacentElement('beforebegin', biContainer);
+      // Cache w sessionStorage
+      const cacheKey = 'breedDesc_' + p.breed;
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) {
+        biContainer.innerHTML = '<details open><summary style="cursor:pointer;font-weight:700;font-size:15px">ℹ️ O rasie ' + escapeHtml(p.breed) + '</summary>'
+          + '<p style="margin-top:12px;font-size:14px;line-height:1.6;color:var(--bark)">' + escapeHtml(cached) + '</p></details>';
+      } else {
+        fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: 'claude-haiku-4-5-20251001',
+            max_tokens: 300,
+            messages: [{ role: 'user', content: 'Napisz krótki opis (3-5 zdań) rasy ' + p.breed + ' (' + p.species + ') po polsku. Uwzględnij charakter, potrzeby ruchu i jedną ciekawostkę. Odpowiedz tylko opisem, bez nagłówków.' }]
+          })
+        }).then(r => r.json()).then(data => {
+          const text = data.content && data.content[0] ? data.content[0].text : '';
+          if (text) {
+            try { sessionStorage.setItem(cacheKey, text); } catch(e) {}
+            biContainer.innerHTML = '<details open><summary style="cursor:pointer;font-weight:700;font-size:15px">ℹ️ O rasie ' + escapeHtml(p.breed) + '</summary>'
+              + '<p style="margin-top:12px;font-size:14px;line-height:1.6;color:var(--bark)">' + escapeHtml(text) + '</p></details>';
+          } else {
+            biContainer.remove();
+          }
+        }).catch(() => biContainer.remove());
+      }
+    }
+  }
 };
 
 window.exitDemo = () => {
