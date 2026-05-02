@@ -27,7 +27,54 @@
     --card-shadow: 0 2px 16px rgba(61,43,31,0.08);
     --radius: 18px;
     --radius-sm: 10px;
+    --bg: var(--cream);
+    --surface: #fff;
+    --surface2: var(--cream);
+    --text: var(--bark);
+    --text-light: var(--bark-light);
+    --border: rgba(61,43,31,0.10);
   }
+  body.dark-mode {
+    --cream: #1a1a2e;
+    --warm-white: #16213e;
+    --bark: #e8ddd0;
+    --bark-light: #b8a898;
+    --bg: #0f0f23;
+    --surface: #1e1e3a;
+    --surface2: #16213e;
+    --text: #e8ddd0;
+    --text-light: #b8a898;
+    --border: rgba(255,255,255,0.08);
+    --soft-shadow: 0 4px 24px rgba(0,0,0,0.4);
+    --card-shadow: 0 2px 16px rgba(0,0,0,0.3);
+  }
+  body.dark-mode { background: var(--bg); color: var(--text); }
+  body.dark-mode .post-card,
+  body.dark-mode .card,
+  body.dark-mode .create-post,
+  body.dark-mode .modal-box,
+  body.dark-mode .settings-box,
+  body.dark-mode .notif-panel,
+  body.dark-mode .stat-card,
+  body.dark-mode .stats-chart-wrap,
+  body.dark-mode .ranking-item,
+  body.dark-mode .stories-bar-wrap,
+  body.dark-mode #stories-bar-wrap,
+  body.dark-mode .search-results-bar { background: var(--surface) !important; }
+  body.dark-mode .feed-filter-bar,
+  body.dark-mode .filter-bar { background: var(--surface); }
+  body.dark-mode nav { background: var(--surface); border-bottom: 1px solid var(--border); }
+  body.dark-mode .bottom-nav { background: var(--surface); border-top: 1px solid var(--border); }
+  body.dark-mode .chat-msg.theirs { background: var(--surface2); color: var(--text); }
+  body.dark-mode textarea,
+  body.dark-mode input[type=text],
+  body.dark-mode input[type=search],
+  body.dark-mode input[type=date],
+  body.dark-mode select { background: var(--surface2) !important; color: var(--text) !important; border-color: var(--border) !important; }
+  body.dark-mode .sidebar-left,
+  body.dark-mode .sidebar-right { background: transparent; }
+  body.dark-mode .profile-hero { background: var(--surface); }
+  body.dark-mode .edit-post-textarea { background: var(--surface2) !important; color: var(--text) !important; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: 'Nunito', sans-serif;
@@ -609,6 +656,19 @@
   .post-text { padding: 0 20px 14px; font-size: 15px; line-height: 1.6; font-weight: 600; }
   .post-hashtag { color: var(--paw); cursor: pointer; font-weight: 800; }
   .post-hashtag:hover { text-decoration: underline; }
+
+  /* ── PRZYPOMNIENIA ── */
+  .reminder-banner {
+    background: linear-gradient(135deg, #fff8e1, #fff3cd);
+    border: 2px solid #f5a623;
+    border-radius: 16px; padding: 14px 18px;
+    margin-bottom: 12px; display: flex; align-items: center; gap: 12px;
+  }
+  .reminder-banner-icon { font-size: 28px; flex-shrink: 0; }
+  .reminder-banner-text { flex: 1; }
+  .reminder-banner-title { font-weight: 800; font-size: 14px; color: var(--bark); }
+  .reminder-banner-sub { font-size: 12px; color: var(--bark-light); font-weight: 700; margin-top: 2px; }
+  .reminder-banner-btn { background: var(--paw); color: white; border: none; border-radius: 10px; padding: 6px 14px; font-weight: 800; font-size: 12px; cursor: pointer; white-space: nowrap; }
 
   /* ── STATYSTYKI ── */
   .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
@@ -1835,6 +1895,10 @@
           <div class="section-title">Moje zwierzęta</div>
           <div id="sidebar-my-pets"></div>
           <button class="btn-add-pet" onclick="openAddPetModal()">➕ Dodaj zwierzę</button>
+          <label style="cursor:pointer">
+            <input type="file" accept=".json" style="display:none" id="import-pet-input" onchange="importPetProfile(this)">
+            <div class="btn-add-pet" style="background:var(--grass)">📥 Importuj profil</div>
+          </label>
         </div>
       </aside>
 
@@ -1859,6 +1923,9 @@
             <button class="btn-post" onclick="submitPost()">Opublikuj 🐾</button>
           </div>
         </div>
+
+        <!-- ⏰ REMINDER BANNERS -->
+        <div id="reminder-banners"></div>
 
         <!-- 📖 STORIES BAR -->
         <div id="stories-bar-wrap" style="background:white;border-radius:16px;margin-bottom:12px;padding:0 12px">
@@ -2030,6 +2097,9 @@
   <!-- PET PROFILE PAGE -->
   <div id="page-profile" style="display:none">
     <div style="max-width:800px;margin:0 auto;padding:24px 20px">
+      <button onclick="goBack()" style="background:none;border:none;font-size:14px;font-weight:800;color:var(--bark-light);cursor:pointer;margin-bottom:16px;display:flex;align-items:center;gap:6px;padding:6px 0">
+        ← Wróć
+      </button>
       <div id="profile-content"></div>
       <div id="profile-posts"></div>
     </div>
@@ -2363,6 +2433,23 @@
       </div>
       <button class="toggle-switch on" id="toggle-online" onclick="toggleSetting('online',this)"></button>
     </div>
+    <div class="settings-row">
+      <div>
+        <div class="settings-label">🌙 Ciemny motyw</div>
+        <div class="settings-desc">Ciemne tło — wygodniejsze wieczorem</div>
+      </div>
+      <button class="toggle-switch" id="toggle-dark-mode" onclick="toggleDarkMode(this)"></button>
+    </div>
+    <div class="settings-row">
+      <div>
+        <div class="settings-label">🌐 Język / Language</div>
+        <div class="settings-desc">Zmień język interfejsu</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="feed-tab active" id="lang-pl" onclick="setLanguage('pl',this)">🇵🇱 PL</button>
+        <button class="feed-tab" id="lang-en" onclick="setLanguage('en',this)">🇬🇧 EN</button>
+      </div>
+    </div>
     <div class="modal-actions">
       <button class="btn-save" onclick="closeSettings()">Gotowe</button>
     </div>
@@ -2583,6 +2670,7 @@ async function initApp() {
   listenStories();
   initOnlineStatus();
   loadSettings();
+  setTimeout(checkReminders, 2000); // sprawdź po załadowaniu danych
 
   // Try get geolocation for proximity filter
   if (navigator.geolocation) {
@@ -4239,6 +4327,7 @@ window.showPetProfile = async (petId) => {
           ${canEdit ? `<button class="btn-save" style="background:var(--grass)" onclick="openCoOwnersModal('${petId}')">👥 Opiekunowie</button>` : ''}
           ${canEdit ? `<button class="btn-save" style="background:#9B59B6;color:white" onclick="openVaccineModal('${petId}','${p.name}')">💉 Szczepienia</button>` : ''}
           ${canEdit ? `<button class="btn-save" style="background:var(--sky);color:white" onclick="openWalkModal('${petId}','${p.name}')">🦮 Spacery</button>` : ''}
+          ${isOwner ? `<button class="btn-save" style="background:#27AE60;color:white" onclick="exportPetProfile('${petId}')">📤 Eksportuj</button>` : ''}
           ${isOwner ? `<button class="btn-danger" onclick="openDeletePetModal('${petId}')">🗑️ Usuń</button>` : ''}
           <button class="btn-save" style="background:#aaa;color:white" onclick="sharePetProfile('${petId}')">🔗 Udostępnij</button>
         </div>
@@ -5489,6 +5578,184 @@ function initPWA() {
 
 
 
+
+// ═══════════════════════════════════
+//  ⏰  PRZYPOMNIENIA
+// ═══════════════════════════════════
+window.reminderBtnClick = (btn) => {
+  const petId = btn.dataset.pid;
+  const petName = btn.dataset.vname;
+  showPetProfile(petId);
+  setTimeout(() => openVaccineModal(petId, petName), 400);
+};
+
+async function checkReminders() {
+  if (!currentUser || isDemoMode) return;
+  const bannerEl = document.getElementById('reminder-banners');
+  if (!bannerEl) return;
+
+  const today = new Date().toISOString().slice(0, 10);
+  const soon = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const reminders = [];
+
+  // Sprawdź szczepienia dla wszystkich moich zwierząt
+  for (const [petId, pet] of Object.entries(myPets)) {
+    const snap = await get(ref(db, 'vaccines/' + petId));
+    if (!snap.exists()) continue;
+    snap.forEach(c => {
+      const v = c.val();
+      if (!v.nextDate) return;
+      const diff = Math.round((new Date(v.nextDate) - new Date(today)) / 86400000);
+      if (diff < 0) {
+        reminders.push({ petName: pet.name, petId, text: v.name + ' — zaległe od ' + Math.abs(diff) + ' dni!', urgent: true, vaccinePetId: petId });
+      } else if (v.nextDate <= soon) {
+        reminders.push({ petName: pet.name, petId, text: v.name + ' — za ' + diff + ' dni (' + v.nextDate + ')', urgent: false, vaccinePetId: petId });
+      }
+    });
+  }
+
+  if (!reminders.length) { bannerEl.innerHTML = ''; return; }
+
+  // Pokaż bannery (max 3)
+  bannerEl.innerHTML = reminders.slice(0, 3).map(r => {
+    return '<div class="reminder-banner">'
+      + '<div class="reminder-banner-icon">' + (r.urgent ? '🚨' : '⏰') + '</div>'
+      + '<div class="reminder-banner-text">'
+        + '<div class="reminder-banner-title">' + escapeHtml(r.petName) + ': ' + escapeHtml(r.text) + '</div>'
+        + '<div class="reminder-banner-sub">' + (r.urgent ? 'Szczepienie zaległe!' : 'Zbliżający się termin szczepienia') + '</div>'
+      + '</div>'
+      + '<button class="reminder-banner-btn" data-pid="' + r.petId + '" data-vname="' + escapeHtml(r.petName) + '" onclick="reminderBtnClick(this)">Zobacz</button>'
+    + '</div>';
+  }).join('');
+
+  // Browser notification (jeśli użytkownik dał zgodę)
+  if ('Notification' in window && Notification.permission === 'granted') {
+    reminders.slice(0, 2).forEach(r => {
+      new Notification('PetsBook — przypomnienie 🐾', {
+        body: r.petName + ': ' + r.text,
+        icon: '/favicon.ico'
+      });
+    });
+  } else if ('Notification' in window && Notification.permission === 'default' && reminders.length > 0) {
+    Notification.requestPermission();
+  }
+}
+
+// ═══════════════════════════════════
+//  📤  EKSPORT / 📥 IMPORT PROFILU
+// ═══════════════════════════════════
+window.exportPetProfile = async (petId) => {
+  showToast('Przygotowuję eksport...');
+  try {
+    const petSnap = await get(ref(db, 'pets/' + petId));
+    if (!petSnap.exists()) { showToast('Błąd: nie znaleziono zwierzęcia'); return; }
+    const pet = petSnap.val();
+
+    const postsSnap = await get(ref(db, 'posts'));
+    const posts = [];
+    if (postsSnap.exists()) {
+      postsSnap.forEach(c => {
+        const p = c.val();
+        if (p.petId === petId && !p.isStory) posts.push({ id: c.key, ...p });
+      });
+    }
+
+    const vaccinesSnap = await get(ref(db, 'vaccines/' + petId));
+    const vaccines = [];
+    if (vaccinesSnap.exists()) vaccinesSnap.forEach(c => { vaccines.push({ id: c.key, ...c.val() }); });
+
+    const exportData = {
+      exportedAt: new Date().toISOString(),
+      exportedBy: currentUser.displayName || currentUser.uid,
+      version: '1.0',
+      pet: { ...pet, id: petId },
+      posts,
+      vaccines
+    };
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'petsbook-' + (pet.name || 'zwierze').replace(/\s+/g, '-').toLowerCase() + '-' + new Date().toISOString().slice(0,10) + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Eksport gotowy! 📤');
+  } catch(e) {
+    showToast('Błąd eksportu: ' + e.message);
+  }
+};
+
+window.importPetProfile = async (input) => {
+  const file = input.files[0];
+  if (!file) return;
+  input.value = '';
+
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+
+    if (!data.pet || !data.version) { showToast('Nieprawidłowy plik eksportu'); return; }
+
+    const pet = data.pet;
+    const msg = "Importujesz: " + (pet.name||"?") + "\nRasa: " + (pet.breed||"—") + "\nPosty: " + (data.posts?.length||0) + "\nSzczepienia: " + (data.vaccines?.length||0) + "\n\nCzy kontynuować?";
+    const confirmed = confirm(msg);
+    if (!confirmed) return;
+
+    showToast('Importuję profil...');
+
+    // Utwórz zwierzę (bez starego ID - nowe w Firebase)
+    const newPetData = {
+      name: pet.name || 'Importowane',
+      species: pet.species || 'Inne',
+      breed: pet.breed || '',
+      age: pet.age || '',
+      bio: pet.bio || '',
+      location: pet.location || '',
+      avatarUrl: pet.avatarUrl || null,
+      ownerId: currentUser.uid,
+      ownerName: currentUser.displayName || 'Właściciel',
+      createdAt: Date.now(),
+      importedFrom: data.exportedBy || '?',
+      importedAt: new Date().toISOString()
+    };
+    if (pet.lat) newPetData.lat = pet.lat;
+    if (pet.lng) newPetData.lng = pet.lng;
+
+    const newPetRef = await push(ref(db, 'pets'), newPetData);
+    const newPetId = newPetRef.key;
+
+    // Importuj szczepienia
+    if (data.vaccines && data.vaccines.length) {
+      for (const v of data.vaccines) {
+        const { id: _id, ...vData } = v;
+        await push(ref(db, 'vaccines/' + newPetId), vData);
+      }
+    }
+
+    // Importuj posty (jako nowe, przypisane do nowego zwierzęcia)
+    if (data.posts && data.posts.length) {
+      for (const p of data.posts) {
+        const { id: _id, petId: _pid, ...pData } = p;
+        await push(ref(db, 'posts'), {
+          ...pData,
+          petId: newPetId,
+          petName: newPetData.name,
+          petAvatarUrl: newPetData.avatarUrl,
+          ownerId: currentUser.uid,
+          ownerName: newPetData.ownerName,
+          importedAt: new Date().toISOString()
+        });
+      }
+    }
+
+    showToast('Import zakończony! 🎉 Dodano: ' + newPetData.name);
+    showPetProfile(newPetId);
+  } catch(e) {
+    showToast('Błąd importu: ' + e.message);
+  }
+};
+
 // ═══════════════════════════════════
 //  📊  STATYSTYKI ZWIERZĘCIA
 // ═══════════════════════════════════
@@ -5852,7 +6119,123 @@ document.addEventListener('keydown', e => {
   }
 });
 
+
+// ═══════════════════════════════════
+//  🌙  DARK MODE
+// ═══════════════════════════════════
+function applyDarkMode(on) {
+  document.body.classList.toggle('dark-mode', on);
+  const btn = document.getElementById('toggle-dark-mode');
+  if (btn) btn.classList.toggle('on', on);
+  try { localStorage.setItem('petsbook_dark', on ? '1' : '0'); } catch(e) {}
+}
+
+window.toggleDarkMode = (btn) => {
+  const on = !document.body.classList.contains('dark-mode');
+  applyDarkMode(on);
+};
+
+function initDarkMode() {
+  const saved = localStorage.getItem('petsbook_dark');
+  const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  applyDarkMode(saved !== null ? saved === '1' : prefersDark);
+}
+
+// ═══════════════════════════════════
+//  🌐  JĘZYK
+// ═══════════════════════════════════
+const TRANSLATIONS = {
+  pl: {
+    feed: '🏠 Tablica', explore: '🔍 Odkryj', mypets: '🐾 Moje zwierzęta', chat: '💬 Czat',
+    publish: 'Opublikuj 🐾', story: '✨ Story', follow: '⭐ Obserwuj', following: '✅ Obserwujesz',
+    edit: '✏️ Edytuj', delete: '🗑️ Usuń', share: '🔗 Udostępnij', back: '← Wróć',
+    writePost: 'Co słychać u Twoich zwierząt?', searchPosts: '🔍 Szukaj postów, #hashtagów...',
+    allPets: '🌍 Wszyscy', following_tab: '⭐ Obserwowani', send: 'Wyślij', close: 'Zamknij',
+    save: 'Zapisz 🐾', cancel: 'Anuluj', done: 'Gotowe', settings: '⚙️ Ustawienia',
+    notifications: 'Brak powiadomień 🔔', rankingTitle: '🏆 Ranking tygodnia',
+    addPet: '➕ Dodaj zwierzę', importProfile: '📥 Importuj profil', exportProfile: '📤 Eksportuj',
+  },
+  en: {
+    feed: '🏠 Feed', explore: '🔍 Explore', mypets: '🐾 My Pets', chat: '💬 Chat',
+    publish: 'Publish 🐾', story: '✨ Story', follow: '⭐ Follow', following: '✅ Following',
+    edit: '✏️ Edit', delete: '🗑️ Delete', share: '🔗 Share', back: '← Back',
+    writePost: "What's new with your pet?", searchPosts: '🔍 Search posts, #hashtags...',
+    allPets: '🌍 Everyone', following_tab: '⭐ Following', send: 'Send', close: 'Close',
+    save: 'Save 🐾', cancel: 'Cancel', done: 'Done', settings: '⚙️ Settings',
+    notifications: 'No notifications 🔔', rankingTitle: '🏆 Weekly Ranking',
+    addPet: '➕ Add Pet', importProfile: '📥 Import Profile', exportProfile: '📤 Export',
+  }
+};
+let currentLang = 'pl';
+
+function applyLanguage(lang) {
+  currentLang = lang;
+  try { localStorage.setItem('petsbook_lang', lang); } catch(e) {}
+  const t = TRANSLATIONS[lang] || TRANSLATIONS.pl;
+  // Nav tabs
+  const tabMap = { 'tab-feed': 'feed', 'tab-explore': 'explore', 'tab-mypets': 'mypets', 'tab-chat': 'chat',
+                   'btab-feed': 'feed', 'btab-explore': 'explore', 'btab-mypets': 'mypets', 'btab-chat': 'chat' };
+  Object.entries(tabMap).forEach(([id, key]) => {
+    const el = document.getElementById(id);
+    if (el && t[key]) el.textContent = t[key];
+  });
+  // Przyciski
+  const btnMap = {
+    'btn-post-submit': 'publish', 'ftab-all': 'allPets', 'ftab-following': 'following_tab'
+  };
+  Object.entries(btnMap).forEach(([id, key]) => {
+    const el = document.getElementById(id);
+    if (el && t[key]) el.textContent = t[key];
+  });
+  // Placeholdery
+  const postText = document.getElementById('post-text');
+  if (postText) postText.placeholder = t.writePost;
+  const searchInput = document.getElementById('feed-search-input');
+  if (searchInput) searchInput.placeholder = t.searchPosts;
+  // Przyciski języka
+  document.getElementById('lang-pl')?.classList.toggle('active', lang === 'pl');
+  document.getElementById('lang-en')?.classList.toggle('active', lang === 'en');
+  // Ranking tytuł
+  document.querySelectorAll('.ranking-title').forEach(el => { el.textContent = t.rankingTitle; });
+}
+
+window.setLanguage = (lang, btn) => {
+  applyLanguage(lang);
+};
+
+window.t = (key) => (TRANSLATIONS[currentLang] || TRANSLATIONS.pl)[key] || key;
+
+function initLanguage() {
+  const saved = localStorage.getItem('petsbook_lang') || 'pl';
+  applyLanguage(saved);
+}
+
+// ═══════════════════════════════════
+//  🔙  NAWIGACJA / HISTORIA
+// ═══════════════════════════════════
+let _pageHistory = ['feed'];
+
+const _origShowPageNav = window.showPage;
+window.showPage = (page) => {
+  const current = _pageHistory[_pageHistory.length - 1];
+  if (current !== page) _pageHistory.push(page);
+  if (_pageHistory.length > 20) _pageHistory.shift();
+  _origShowPageNav(page);
+};
+
+window.goBack = () => {
+  if (_pageHistory.length > 1) {
+    _pageHistory.pop();
+    const prev = _pageHistory[_pageHistory.length - 1];
+    _origShowPageNav(prev);
+  } else {
+    _origShowPageNav('feed');
+  }
+};
+
 initPWA();
+initDarkMode();
+initLanguage();
 </script>
 </body>
 </html>
