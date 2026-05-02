@@ -255,6 +255,19 @@
     border: 2px solid white;
     display: none;
   }
+  .img-skeleton {
+    width: 100%;
+    aspect-ratio: 4/3;
+    background: linear-gradient(90deg, #f0e8e0 25%, #ede0d4 50%, #f0e8e0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+    border-radius: 12px;
+    display: block;
+  }
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
   .notif-panel {
     position: absolute;
     right: 0;
@@ -2908,6 +2921,11 @@ window.submitPost = async () => {
   postImageFile = null;
   document.getElementById('post-image-input').value = '';
   showToast('Opublikowano! 🎉');
+  // Scroll do góry feedu żeby zobaczyć nowy post
+  setTimeout(() => {
+    const feedEl = document.getElementById('feed-list');
+    if (feedEl) feedEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 600);
 };
 
 window.toggleLike = async (postId, postOwnerId) => {
@@ -3482,7 +3500,7 @@ function renderDemoPostCardInFeed(p) {
         <div class="post-time">${timeStr}</div>
       </div>
       ${p.text ? `<div class="post-text">${escapeHtml(p.text)}</div>` : ''}
-      ${p.breedImg ? `<img id="bimg-${p.id}" class="post-img" style="display:none" referrerpolicy="no-referrer" onload="this.style.display='block'">` : ''}
+      ${p.breedImg ? '<div class="img-skeleton" style="display:none"></div><img id="bimg-' + p.id + '" class="post-img" style="display:none" referrerpolicy="no-referrer" onload="this.style.display=\'block\'">' : ''}
       <div class="reactions-bar">${reactionsHTML}</div>
       <div class="post-actions">
         <button class="action-btn" onclick="toggleDemoComments('${p.id}')">💬 <span>${comments}</span></button>
@@ -4773,7 +4791,7 @@ function renderDemoPostCard(p) {
         <div class="post-time">${timeStr}</div>
       </div>
       ${p.text ? `<div class="post-text">${escapeHtml(p.text)}</div>` : ''}
-      ${p.breedImg ? `<img id="bimg-${p.id}" class="post-img" style="display:none" referrerpolicy="no-referrer" onload="this.style.display='block'">` : ''}
+      ${p.breedImg ? '<div class="img-skeleton" style="display:none"></div><img id="bimg-' + p.id + '" class="post-img" style="display:none" referrerpolicy="no-referrer" onload="this.style.display=\'block\'">' : ''}
       <div class="reactions-bar">${reactionsHTML}</div>
       <div class="post-actions">
         <button class="action-btn" onclick="toggleDemoComments('${p.id}')">💬 <span>${comments}</span></button>
@@ -4800,6 +4818,9 @@ window.demoActionBlock = () => {
 const _breedImgCache = {};
 async function fetchBreedImageUrl(breedName) {
   if (_breedImgCache[breedName]) return _breedImgCache[breedName];
+  const ssKey = 'breedImg_' + breedName;
+  const cached = sessionStorage.getItem(ssKey);
+  if (cached) { _breedImgCache[breedName] = cached; return cached; }
   try {
     // Wikipedia pageimages API - zwraca oryginalny plik bez ograniczeń rozmiaru
     const q = new URLSearchParams({
@@ -4811,13 +4832,17 @@ async function fetchBreedImageUrl(breedName) {
     const d = await r.json();
     const pages = d.query && d.query.pages ? Object.values(d.query.pages) : [];
     const url = pages[0] && pages[0].original ? pages[0].original.source : null;
-    if (url) _breedImgCache[breedName] = url;
+    if (url) { _breedImgCache[breedName] = url; try { sessionStorage.setItem(ssKey, url); } catch(e){} }
     return url;
   } catch(e) { return null; }
 }
 
 function lazyLoadBreedImg(el, breedName) {
+  // Pokaż skeleton podczas ładowania
+  const skeleton = el.previousElementSibling;
+  if (skeleton && skeleton.classList.contains('img-skeleton')) skeleton.style.display = 'block';
   fetchBreedImageUrl(breedName).then(url => {
+    if (skeleton && skeleton.classList.contains('img-skeleton')) skeleton.style.display = 'none';
     if (url && el && el.isConnected) {
       el.src = url;
       el.style.display = 'block';
