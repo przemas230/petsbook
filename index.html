@@ -2366,7 +2366,7 @@ function listenNotifications() {
   onValue(notifsRef, snap => {
     const notifs = [];
     if (snap.exists()) {
-      snap.forEach(c => notifs.unshift({ id: c.key, ...c.val() }));
+      snap.forEach(c => { notifs.unshift({ id: c.key, ...c.val() }); });
     }
     renderNotifPanel(notifs);
     updateNotifBadge(notifs.filter(n => !n.read).length);
@@ -2702,7 +2702,7 @@ function loadFeed() {
     console.log('POSTS SNAP exists:', snap.exists(), 'size:', snap.size);
     allFeedPosts = [];
     if (snap.exists()) {
-      snap.forEach(c => allFeedPosts.push({ id: c.key, ...c.val() }));
+      snap.forEach(c => { allFeedPosts.push({ id: c.key, ...c.val() }); });
       allFeedPosts.sort((a, b) => b.createdAt - a.createdAt);
     }
     console.log('allFeedPosts count:', allFeedPosts.length);
@@ -3546,7 +3546,7 @@ async function renderVaccineList(petId) {
     return;
   }
   const vaccines = [];
-  snap.forEach(c => vaccines.push({ id: c.key, ...c.val() }));
+  snap.forEach(c => { vaccines.push({ id: c.key, ...c.val() }); });
   vaccines.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
   const today = new Date().toISOString().slice(0, 10);
@@ -3640,7 +3640,7 @@ async function renderWalkList(petId) {
     return;
   }
   const walks = [];
-  snap.forEach(c => walks.push({ id: c.key, ...c.val() }));
+  snap.forEach(c => { walks.push({ id: c.key, ...c.val() }); });
   walks.sort((a, b) => (a.datetime || '').localeCompare(b.datetime || ''));
   const now = new Date().toISOString();
 
@@ -3672,7 +3672,7 @@ async function renderWeeklyWalkList(petId) {
     return;
   }
   const entries = [];
-  snap.forEach(c => entries.push({ id: c.key, ...c.val() }));
+  snap.forEach(c => { entries.push({ id: c.key, ...c.val() }); });
   entries.sort((a, b) => (a.time || '').localeCompare(b.time || ''));
 
   listEl.innerHTML = entries.map(w => {
@@ -4544,7 +4544,7 @@ window.openChatV1 = (chatId, otherId, otherName, otherPhoto) => {
     const area = document.getElementById('chat-messages-area');
     if (!area) return;
     const msgs = [];
-    if (snap.exists()) snap.forEach(c => msgs.push({ id: c.key, ...c.val() }));
+    if (snap.exists()) snap.forEach(c => { msgs.push({ id: c.key, ...c.val() }); });
     area.innerHTML = msgs.map(m => {
       const mine = m.senderId === currentUser.uid;
       return `<div class="chat-msg ${mine ? 'mine' : 'theirs'}">
