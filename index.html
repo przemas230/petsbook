@@ -123,6 +123,31 @@
   body.dark-mode .topic-card { background: var(--surface); }
   body.dark-mode .topic-card-name { color: var(--text); }
 
+  /* ── EVENTS ── */
+  .event-card { background: white; border-radius: 16px; padding: 18px 20px; margin-bottom: 12px; box-shadow: var(--card-shadow); display: flex; gap: 16px; position: relative; transition: transform 0.15s; }
+  .event-card:hover { transform: translateY(-2px); }
+  .event-card-left { display: flex; flex-direction: column; align-items: center; min-width: 52px; }
+  .event-card-date { background: var(--paw); color: white; border-radius: 12px; padding: 6px 10px; text-align: center; font-weight: 900; line-height: 1.2; }
+  .event-card-date-day { font-size: 22px; }
+  .event-card-date-month { font-size: 11px; text-transform: uppercase; letter-spacing: .5px; }
+  .event-card-type-icon { font-size: 22px; margin-top: 8px; }
+  .event-card-body { flex: 1; min-width: 0; }
+  .event-card-title { font-size: 16px; font-weight: 900; color: var(--bark); margin-bottom: 4px; }
+  .event-card-meta { font-size: 12px; color: var(--bark-light); display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+  .event-card-desc { font-size: 13px; color: var(--bark); margin-bottom: 10px; }
+  .event-rsvp { display: flex; gap: 6px; flex-wrap: wrap; }
+  .rsvp-btn { border: 2px solid var(--border); background: white; border-radius: 20px; padding: 4px 12px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 4px; }
+  .rsvp-btn:hover { border-color: var(--paw); color: var(--paw); }
+  .rsvp-btn.active-yes { background: #48bb78; border-color: #48bb78; color: white; }
+  .rsvp-btn.active-maybe { background: #ed8936; border-color: #ed8936; color: white; }
+  .rsvp-btn.active-no { background: #e53e3e; border-color: #e53e3e; color: white; }
+  .event-card-actions { position: absolute; top: 14px; right: 16px; display: flex; gap: 6px; }
+  .event-link-btn { background: var(--sky); color: white; border: none; border-radius: 8px; padding: 4px 10px; font-size: 11px; font-weight: 700; cursor: pointer; text-decoration: none; }
+  .event-delete-btn { background: none; border: 1px solid #e53e3e; color: #e53e3e; border-radius: 8px; padding: 4px 8px; font-size: 11px; cursor: pointer; }
+  .event-type-badge { display: inline-block; background: var(--paw-light); color: var(--bark); border-radius: 20px; padding: 2px 10px; font-size: 11px; font-weight: 800; }
+  body.dark-mode .event-card { background: var(--surface); }
+  body.dark-mode .rsvp-btn { background: var(--surface2); border-color: var(--border); color: var(--text); }
+
   /* ── SEARCH PAGE ── */
   .search-pets-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
   .search-pet-card { background: white; border-radius: 16px; padding: 16px; text-align: center; cursor: pointer; box-shadow: var(--card-shadow); transition: transform 0.15s; }
@@ -2159,6 +2184,26 @@
           <div class="loading-spinner">🐾</div>
         </div>
       </div>
+
+      <!-- EVENTY -->
+      <div style="margin-top:40px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+          <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:900">📅 Nadchodzące eventy</div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <select id="event-filter-type" class="filter-select" style="min-width:140px" onchange="renderEventsList()">
+              <option value="">Wszystkie typy</option>
+              <option value="wystawa">🏆 Wystawa</option>
+              <option value="spacer">🦮 Spacer grupowy</option>
+              <option value="weterynarz">🏥 Akcja wet.</option>
+              <option value="spotkanie">🎉 Spotkanie</option>
+              <option value="agility">🏃 Agility/Sport</option>
+              <option value="inne">🐾 Inne</option>
+            </select>
+            <button class="btn-post" onclick="openCreateEventModal()">➕ Dodaj event</button>
+          </div>
+        </div>
+        <div id="events-list"></div>
+      </div>
     </div>
   </div>
 
@@ -2842,6 +2887,66 @@
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal('create-topic-modal')">Anuluj</button>
       <button class="btn-save" onclick="createTopic()">Utwórz temat 💬</button>
+    </div>
+  </div>
+</div>
+
+<!-- CREATE EVENT MODAL -->
+<div class="modal-overlay" id="create-event-modal">
+  <div class="modal-box" style="max-width:520px">
+    <div class="modal-title">📅 Nowy event</div>
+    <div class="form-group">
+      <label class="form-label">Typ eventu *</label>
+      <select class="form-input" id="event-type-input">
+        <option value="wystawa">🏆 Wystawa</option>
+        <option value="spacer">🦮 Spacer grupowy</option>
+        <option value="weterynarz">🏥 Akcja weterynaryjna</option>
+        <option value="spotkanie">🎉 Spotkanie</option>
+        <option value="agility">🏃 Agility / Sport</option>
+        <option value="inne">🐾 Inne</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nazwa eventu *</label>
+      <input type="text" class="form-input" id="event-name-input" placeholder="np. Wystawa psów rasowych Warszawa" maxlength="80">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Opis</label>
+      <textarea class="form-input" id="event-desc-input" rows="2" placeholder="Szczegóły, wymagania, kontakt..." maxlength="300" style="resize:vertical"></textarea>
+    </div>
+    <div style="display:flex;gap:10px">
+      <div class="form-group" style="flex:1">
+        <label class="form-label">Data i godzina *</label>
+        <input type="datetime-local" class="form-input" id="event-datetime-input">
+      </div>
+      <div class="form-group" style="flex:1">
+        <label class="form-label">Gatunek (opcjonalnie)</label>
+        <select class="form-input" id="event-species-input">
+          <option value="">Wszystkie zwierzęta</option>
+          <option value="Pies">🐕 Psy</option>
+          <option value="Kot">🐈 Koty</option>
+          <option value="Królik">🐇 Króliki</option>
+          <option value="Inne">🐾 Inne</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Lokalizacja *</label>
+      <input type="text" class="form-input" id="event-location-input" placeholder="np. Łazienki Królewskie, Warszawa">
+    </div>
+    <div style="display:flex;gap:10px">
+      <div class="form-group" style="flex:1">
+        <label class="form-label">Link (opcjonalnie)</label>
+        <input type="url" class="form-input" id="event-link-input" placeholder="https://...">
+      </div>
+      <div class="form-group" style="flex:1">
+        <label class="form-label">Maks. uczestników</label>
+        <input type="number" class="form-input" id="event-maxatt-input" min="0" value="0" placeholder="0 = bez limitu">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('create-event-modal')">Anuluj</button>
+      <button class="btn-save" onclick="createEvent()">Dodaj event 📅</button>
     </div>
   </div>
 </div>
@@ -5047,6 +5152,7 @@ window.initExplore = async () => {
   document.getElementById('filter-species').value = '';
   document.getElementById('filter-location').value = '';
   loadRanking();
+  loadEvents();
   document.getElementById('filter-breed').value = '';
   await runExploreSearch();
   if (!isDemoMode) {
@@ -7511,6 +7617,218 @@ window.createGroup = async () => {
 };
 
 // Demo dane dla grup
+// ═══════════════════════════════════
+//  📅  EVENTY
+// ═══════════════════════════════════
+
+const EVENT_TYPES = {
+  wystawa:     { label: 'Wystawa',          icon: '🏆' },
+  spacer:      { label: 'Spacer grupowy',   icon: '🦮' },
+  weterynarz:  { label: 'Akcja wet.',       icon: '🏥' },
+  spotkanie:   { label: 'Spotkanie',        icon: '🎉' },
+  agility:     { label: 'Agility/Sport',    icon: '🏃' },
+  inne:        { label: 'Inne',             icon: '🐾' },
+};
+
+const DEMO_EVENTS = [
+  { id: 'dev-1', type: 'wystawa', name: 'IX Krajowa Wystawa Psów Rasowych', description: 'Coroczna wystawa FCI. Klasy: szczenięca, otwarta, championów. Rejestracja przez stronę ZKwP.', datetime: Date.now() + 86400000*8, location: 'Hala EXPO, Warszawa', species: 'Pies', link: '', maxAttendees: 0, creatorId: 'demo-owner-1', creatorName: 'Marek K.', createdAt: Date.now() - 86400000*5, rsvp: { 'u1': 'yes', 'u2': 'yes', 'u3': 'maybe' } },
+  { id: 'dev-2', type: 'spacer', name: 'Sobotni spacer Labradorowców – Łazienki', description: 'Zbiórka przy wejściu od ul. Agrykoli o 10:00. Przynosimy smakołyki i wodę!', datetime: Date.now() + 86400000*3, location: 'Łazienki Królewskie, Warszawa', species: 'Pies', link: '', maxAttendees: 20, creatorId: 'demo-owner-2', creatorName: 'Anna W.', createdAt: Date.now() - 86400000*2, rsvp: { 'u1': 'yes', 'u4': 'yes', 'u5': 'maybe', 'u6': 'no' } },
+  { id: 'dev-3', type: 'weterynarz', name: 'Bezpłatne chipowanie i szczepienie', description: 'Akcja profilaktyczna we współpracy z kliniką VetCare. Rejestracja na miejscu.', datetime: Date.now() + 86400000*12, location: 'Park Skaryszewski, Warszawa', species: '', link: '', maxAttendees: 50, creatorId: 'demo-owner-3', creatorName: 'Piotr L.', createdAt: Date.now() - 86400000*3, rsvp: { 'u2': 'yes', 'u7': 'maybe' } },
+  { id: 'dev-4', type: 'agility', name: 'Zawody Agility – Puchar Mazowsza', description: 'Klasy: A1, A2, A3. Tor przeszkód klasy A. Zapisy przez serwis zwinpies.pl', datetime: Date.now() + 86400000*21, location: 'Klub Sportowy Zwinny Pies, Pruszków', species: 'Pies', link: 'https://example.com', maxAttendees: 0, creatorId: 'demo-owner-4', creatorName: 'Sandra K.', createdAt: Date.now() - 86400000*7, rsvp: { 'u3': 'yes', 'u8': 'yes', 'u9': 'yes', 'u10': 'maybe' } },
+  { id: 'dev-5', type: 'spotkanie', name: 'Koci meetup – Maine Coon i przyjaciele', description: 'Nieformalne spotkanie miłośników kotów. Każdy przynosi smaczek dla swojego pupila 🐱', datetime: Date.now() + 86400000*6, location: 'Kawiarnia Kocia Łapa, ul. Nowy Świat 15, Warszawa', species: 'Kot', link: '', maxAttendees: 15, creatorId: 'demo-owner-5', creatorName: 'Ola P.', createdAt: Date.now() - 86400000*1, rsvp: { 'u2': 'yes', 'u11': 'maybe' } },
+];
+
+let _allEvents = [];
+let _myRsvp = {}; // { eventId: 'yes'|'maybe'|'no' }
+
+window.openCreateEventModal = () => {
+  if (isDemoMode) { showToast('Zaloguj się aby dodać event 🔒'); return; }
+  if (!currentUser) return;
+  // Ustaw domyślną datę: jutro 10:00
+  const d = new Date(Date.now() + 86400000);
+  d.setHours(10, 0, 0, 0);
+  document.getElementById('event-datetime-input').value = d.toISOString().slice(0, 16);
+  document.getElementById('event-name-input').value = '';
+  document.getElementById('event-desc-input').value = '';
+  document.getElementById('event-location-input').value = '';
+  document.getElementById('event-link-input').value = '';
+  document.getElementById('event-maxatt-input').value = '0';
+  openModal('create-event-modal');
+};
+
+window.createEvent = async () => {
+  const name = document.getElementById('event-name-input').value.trim();
+  const datetime = document.getElementById('event-datetime-input').value;
+  const location = document.getElementById('event-location-input').value.trim();
+  if (!name) { showToast('Podaj nazwę eventu!'); return; }
+  if (!datetime) { showToast('Podaj datę i godzinę!'); return; }
+  if (!location) { showToast('Podaj lokalizację!'); return; }
+  const ev = {
+    type: document.getElementById('event-type-input').value,
+    name, datetime: new Date(datetime).getTime(),
+    description: document.getElementById('event-desc-input').value.trim(),
+    location,
+    species: document.getElementById('event-species-input').value,
+    link: document.getElementById('event-link-input').value.trim(),
+    maxAttendees: parseInt(document.getElementById('event-maxatt-input').value) || 0,
+    creatorId: currentUser.uid,
+    creatorName: currentUser.displayName || 'Właściciel',
+    createdAt: Date.now(), rsvp: {}
+  };
+  try {
+    await push(ref(db, 'events'), ev);
+    closeModal('create-event-modal');
+    showToast('Event dodany! 📅');
+    await loadEvents();
+  } catch(e) { showToast('Błąd: ' + e.message); }
+};
+
+async function loadEvents() {
+  const el = document.getElementById('events-list');
+  if (!el) return;
+  el.innerHTML = '<div class="loading-spinner">🐾</div>';
+  const now = Date.now();
+
+  if (isDemoMode) {
+    _allEvents = DEMO_EVENTS.filter(e => e.datetime > now - 3600000);
+    _myRsvp = {};
+    renderEventsList();
+    return;
+  }
+  try {
+    // Załaduj moje RSVP
+    if (currentUser) {
+      const rsnap = await get(ref(db, 'userMeta/' + currentUser.uid + '/eventRsvp'));
+      _myRsvp = rsnap.exists() ? rsnap.val() : {};
+    }
+    const snap = await get(ref(db, 'events'));
+    _allEvents = [];
+    if (snap.exists()) snap.forEach(c => { _allEvents.push({ id: c.key, ...c.val() }); });
+    // Domieszaj demo eventy jeśli baza pusta
+    if (_allEvents.length === 0) {
+      _allEvents = DEMO_EVENTS.filter(e => e.datetime > now - 3600000);
+    } else {
+      _allEvents = _allEvents.filter(e => e.datetime > now - 3600000);
+    }
+    _allEvents.sort((a, b) => a.datetime - b.datetime);
+    renderEventsList();
+  } catch(e) {
+    _allEvents = DEMO_EVENTS.filter(ev => ev.datetime > now - 3600000);
+    renderEventsList();
+  }
+}
+
+window.renderEventsList = () => {
+  const el = document.getElementById('events-list');
+  if (!el) return;
+  const typeFilter = document.getElementById('event-filter-type')?.value || '';
+  let events = typeFilter ? _allEvents.filter(e => e.type === typeFilter) : _allEvents;
+
+  if (!events.length) {
+    el.innerHTML = '<div class="empty-state"><div class="emoji">📅</div><p>Brak nadchodzących eventów' + (typeFilter ? ' w tej kategorii' : '') + '.<br>Bądź pierwszy i dodaj!</p></div>';
+    return;
+  }
+  el.innerHTML = events.map(ev => renderEventCard(ev)).join('');
+};
+
+function renderEventCard(ev) {
+  const d = new Date(ev.datetime);
+  const day = d.getDate();
+  const month = d.toLocaleString('pl-PL', { month: 'short' });
+  const time = d.toLocaleString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+  const typeInfo = EVENT_TYPES[ev.type] || EVENT_TYPES.inne;
+  const isOwner = currentUser && ev.creatorId === currentUser.uid && !isDemoMode;
+
+  const rsvpData = ev.rsvp || {};
+  const yesCount   = Object.values(rsvpData).filter(v => v === 'yes').length;
+  const maybeCount = Object.values(rsvpData).filter(v => v === 'maybe').length;
+  const myRsvpVal  = _myRsvp[ev.id] || '';
+
+  const maxLabel = ev.maxAttendees > 0
+    ? ' · max ' + ev.maxAttendees + ' os.'
+    : '';
+
+  const rsvpBtns = isDemoMode ? '' :
+    '<div class="event-rsvp">' +
+    '<button class="rsvp-btn ' + (myRsvpVal === 'yes' ? 'active-yes' : '') + '" onclick="setRsvp(\''  + ev.id + '\',\'yes\')">✅ Wezmę udział <span>' + yesCount + '</span></button>' +
+    '<button class="rsvp-btn ' + (myRsvpVal === 'maybe' ? 'active-maybe' : '') + '" onclick="setRsvp(\''  + ev.id + '\',\'maybe\')">❓ Może <span>' + maybeCount + '</span></button>' +
+    '<button class="rsvp-btn ' + (myRsvpVal === 'no' ? 'active-no' : '') + '" onclick="setRsvp(\''  + ev.id + '\',\'no\')">❌ Nie</button>' +
+    '</div>';
+
+  const linkBtn = ev.link
+    ? '<a href="' + ev.link + '" target="_blank" rel="noopener" class="event-link-btn">🔗 Więcej info</a>'
+    : '';
+  const delBtn = isOwner
+    ? '<button class="event-delete-btn" onclick="deleteEvent(\'' + ev.id + '\')">🗑️</button>'
+    : '';
+
+  return '<div class="event-card">' +
+    '<div class="event-card-left">' +
+      '<div class="event-card-date">' +
+        '<div class="event-card-date-day">' + day + '</div>' +
+        '<div class="event-card-date-month">' + month + '</div>' +
+      '</div>' +
+      '<div class="event-card-type-icon">' + typeInfo.icon + '</div>' +
+    '</div>' +
+    '<div class="event-card-body">' +
+      '<div class="event-card-title">' + escapeHtml(ev.name) + '</div>' +
+      '<div class="event-card-meta">' +
+        '<span>⏰ ' + time + '</span>' +
+        '<span>📍 ' + escapeHtml(ev.location) + '</span>' +
+        (ev.species ? '<span>' + speciesEmoji(ev.species) + ' ' + ev.species + '</span>' : '') +
+        '<span class="event-type-badge">' + typeInfo.label + '</span>' +
+        (ev.maxAttendees > 0 ? '<span>👥 max ' + ev.maxAttendees + '</span>' : '') +
+      '</div>' +
+      (ev.description ? '<div class="event-card-desc">' + escapeHtml(ev.description) + '</div>' : '') +
+      rsvpBtns +
+    '</div>' +
+    '<div class="event-card-actions">' + linkBtn + delBtn + '</div>' +
+  '</div>';
+}
+
+window.setRsvp = async (eventId, status) => {
+  if (!currentUser) { showToast('Zaloguj się aby odpowiedzieć!'); return; }
+  const prev = _myRsvp[eventId];
+  // Toggle — kliknięcie tego samego usuwa RSVP
+  const newStatus = prev === status ? null : status;
+
+  _myRsvp[eventId] = newStatus;
+
+  // Aktualizuj lokalnie rsvp na evencie
+  const evIdx = _allEvents.findIndex(e => e.id === eventId);
+  if (evIdx >= 0) {
+    if (!_allEvents[evIdx].rsvp) _allEvents[evIdx].rsvp = {};
+    if (newStatus) {
+      _allEvents[evIdx].rsvp[currentUser.uid] = newStatus;
+    } else {
+      delete _allEvents[evIdx].rsvp[currentUser.uid];
+    }
+  }
+  renderEventsList();
+
+  try {
+    const rsvpRef = ref(db, 'events/' + eventId + '/rsvp/' + currentUser.uid);
+    const myRef   = ref(db, 'userMeta/' + currentUser.uid + '/eventRsvp/' + eventId);
+    if (newStatus) {
+      await set(rsvpRef, newStatus);
+      await set(myRef, newStatus);
+    } else {
+      await remove(rsvpRef);
+      await remove(myRef);
+    }
+  } catch(e) { showToast('Błąd zapisu RSVP: ' + e.message); }
+};
+
+window.deleteEvent = async (eventId) => {
+  if (!confirm('Usunąć ten event? Tej akcji nie można cofnąć.')) return;
+  try {
+    await remove(ref(db, 'events/' + eventId));
+    _allEvents = _allEvents.filter(e => e.id !== eventId);
+    renderEventsList();
+    showToast('Event usunięty 🗑️');
+  } catch(e) { showToast('Błąd: ' + e.message); }
+};
+
 const DEMO_GROUP_TOPICS = {
   'dg-1': [
     { id: 'dgt-1-1', emoji: '📢', name: 'Ogłoszenia i spacery', description: 'Wspólne wyjścia, eventy, spotkania', postCount: 3, createdAt: Date.now() - 86400000*28 },
