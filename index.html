@@ -4388,7 +4388,8 @@ window.deleteVaccine = async (petId, vaccineId) => {
 //  ETAP 5: 🦮 KALENDARZ SPACERÓW
 // ═══════════════════════════════════
 let walkModalPetId = null;
-let _editWalkId = null; // null = nowy spacer, string = edycja istniejącego
+let _editWalkId = null;       // null = nowy, string = edycja jednorazowego
+let _editWeeklyWalkId = null;  // null = nowy, string = edycja tygodniowego
 const DAY_NAMES = { 0:'Nd', 1:'Pn', 2:'Wt', 3:'Śr', 4:'Cz', 5:'Pt', 6:'Sb' };
 const DAY_FULL  = { 0:'Niedziela', 1:'Poniedziałek', 2:'Wtorek', 3:'Środa', 4:'Czwartek', 5:'Piątek', 6:'Sobota' };
 
@@ -4408,6 +4409,13 @@ window.openWalkModal = async (petId, petName) => {
   document.getElementById('weekly-time-input').value = '07:30';
   document.getElementById('weekly-duration-input').value = '30';
   document.querySelectorAll('.walk-day-btn').forEach(b => b.classList.remove('active'));
+  // Reset trybu edycji
+  _editWalkId = null;
+  _editWeeklyWalkId = null;
+  const onceBtn = document.querySelector('#walk-tab-once .btn-save');
+  if (onceBtn) { onceBtn.textContent = 'Zaplanuj 📅'; onceBtn.style.background = ''; }
+  const weeklyBtn = document.querySelector('#walk-tab-weekly .btn-save');
+  if (weeklyBtn) { weeklyBtn.textContent = 'Dodaj harmonogram 🔁'; weeklyBtn.style.background = ''; }
   // Pokaż zakładkę jednorazową
   switchWalkTab('once');
   await renderWalkList(petId);
@@ -4487,7 +4495,10 @@ async function renderWeeklyWalkList(petId) {
         </div>
         <div class="walk-weekly-days" style="margin-top:6px">${days}</div>
       </div>
-      ${isWalkOwner ? `<button class="vaccine-btn-delete" onclick="deleteWeeklyWalk('${petId}','${w.id}')">✕</button>` : ''}
+      ${isWalkOwner ? `
+        <button class="vaccine-btn-delete" style="background:var(--sky);color:white;margin-right:4px" onclick="startEditWeeklyWalk('${petId}','${w.id}')" title="Edytuj">✏️</button>
+        <button class="vaccine-btn-delete" data-petid="${petId}" data-walkid="${w.id}" data-title="${escapeHtml(w.title)}" onclick="confirmDeleteWeeklyWalk(this.dataset.petid,this.dataset.walkid,this.dataset.title)">✕</button>
+      ` : ''}
     </div>`;
   }).join('');
 }
@@ -4505,6 +4516,36 @@ window.startEditWalk = async (petId, walkId) => {
   const btn = document.querySelector('#walk-tab-once .btn-save');
   if (btn) { btn.textContent = '💾 Zapisz zmiany'; btn.style.background = 'var(--sky)'; }
   showToast('Edytujesz spacer — zmień dane i zapisz ✏️');
+};
+
+// Edycja harmonogramu tygodniowego
+window.startEditWeeklyWalk = async (petId, walkId) => {
+  const snap = await get(ref(db, 'walks/' + petId + '/weekly/' + walkId));
+  if (!snap.exists()) return;
+  const w = snap.val();
+  _editWeeklyWalkId = walkId;
+  // Przełącz na zakładkę tygodniową
+  switchWalkTab('weekly');
+  // Wypełnij formularz
+  document.getElementById('weekly-title-input').value = w.title || '';
+  document.getElementById('weekly-time-input').value = w.time || '07:30';
+  document.getElementById('weekly-duration-input').value = w.duration || 30;
+  document.getElementById('weekly-place-input').value = w.place || '';
+  // Zaznacz dni
+  document.querySelectorAll('.walk-day-btn').forEach(b => {
+    const day = parseInt(b.dataset.day);
+    b.classList.toggle('active', (w.days || []).includes(day));
+  });
+  // Zmień przycisk
+  const btn = document.querySelector('#walk-tab-weekly .btn-save');
+  if (btn) { btn.textContent = '💾 Zapisz zmiany'; btn.style.background = 'var(--sky)'; }
+  showToast('Edytujesz harmonogram — zmień dane i zapisz ✏️');
+};
+
+// Potwierdzenie usunięcia z harmonogramu
+window.confirmDeleteWeeklyWalk = (petId, walkId, title) => {
+  if (!confirm('Usunąć "'  + title + '" z harmonogramu tygodniowego? Tej akcji nie można cofnąć.')) return;
+  deleteWeeklyWalk(petId, walkId);
 };
 
 window.addWalk = async () => {
@@ -4545,16 +4586,30 @@ window.addWeeklyWalk = async () => {
   if (!days.length) { showToast('Wybierz co najmniej jeden dzień!'); return; }
   const place = document.getElementById('weekly-place-input').value.trim();
   const duration = parseInt(document.getElementById('weekly-duration-input').value) || 30;
-  await push(ref(db, `walks/${walkModalPetId}/weekly`), {
-    title, time, days, place, duration,
-    ownerId: currentUser.uid,
-    ownerName: currentUser.displayName || 'Właściciel',
-    createdAt: Date.now()
-  });
+
+  if (_editWeeklyWalkId) {
+    // Tryb edycji — aktualizuj istniejący wpis
+    await update(ref(db, 'walks/' + walkModalPetId + '/weekly/' + _editWeeklyWalkId), {
+      title, time, days, place, duration
+    });
+    _editWeeklyWalkId = null;
+    const btn = document.querySelector('#walk-tab-weekly .btn-save');
+    if (btn) { btn.textContent = 'Dodaj harmonogram 🔁'; btn.style.background = ''; }
+    showToast('Harmonogram zaktualizowany! ✏️');
+  } else {
+    // Nowy wpis
+    await push(ref(db, 'walks/' + walkModalPetId + '/weekly'), {
+      title, time, days, place, duration,
+      ownerId: currentUser.uid,
+      ownerName: currentUser.displayName || 'Właściciel',
+      createdAt: Date.now()
+    });
+    showToast('Harmonogram dodany! 🔁');
+  }
   document.getElementById('weekly-title-input').value = '';
+  document.getElementById('weekly-place-input').value = '';
   document.querySelectorAll('.walk-day-btn').forEach(b => b.classList.remove('active'));
   await renderWeeklyWalkList(walkModalPetId);
-  showToast('Harmonogram dodany! 🔁');
 };
 
 window.joinWalk = async (petId, walkId, alreadyJoined) => {
@@ -4570,6 +4625,7 @@ window.joinWalk = async (petId, walkId, alreadyJoined) => {
 };
 
 window.deleteWalk = async (petId, walkId) => {
+  if (!confirm('Na pewno usunąć ten spacer?')) return;
   await remove(ref(db, `walks/${petId}/oneTime/${walkId}`));
   await renderWalkList(petId);
   showToast('Spacer usunięty');
