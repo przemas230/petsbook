@@ -3230,6 +3230,8 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signO
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getDatabase, ref, push, set, get, update, remove, onValue, query, orderByChild, equalTo, limitToLast, onDisconnect }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getMessaging, getToken, onMessage }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyA0v4InL2jZ-ApajyqBFRTgD_G1P6QpkJI",
@@ -3245,7 +3247,10 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getDatabase(app);
+const messaging = getMessaging(app);
 const provider = new GoogleAuthProvider();
+
+const VAPID_KEY = 'BPhBaaCbad3bEO41v3EEP0j6N3xoyc2Kot3Wpwu1J3SzEeGin5luNuAlHBMYs4rQeTjgigtR_iH19jIUNmNjSWg';
 
 const CLOUDINARY_CLOUD = 'dw1p2pqmn';
 const CLOUDINARY_PRESET = 'petsbook_unsigned';
@@ -3320,6 +3325,7 @@ async function initApp() {
   listenNotifications();
   listenStories();
   initOnlineStatus();
+  initPushNotifications();
   loadSettings();
   setTimeout(checkReminders, 2000); // sprawdź po załadowaniu danych
 
@@ -3419,6 +3425,30 @@ window.markAllNotifsRead = async () => {
   await update(ref(db), updates);
   showToast('Wszystkie oznaczone jako przeczytane ✅');
 };
+
+async function initPushNotifications() {
+  if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
+  try {
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') return;
+    const reg = await navigator.serviceWorker.ready;
+    const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: reg });
+    if (token && currentUser) {
+      await set(ref(db, 'users/' + currentUser.uid + '/fcmToken'), token);
+    }
+    onMessage(messaging, payload => {
+      const notif = payload.notification || {};
+      if (Notification.permission === 'granted') {
+        new Notification(notif.title || 'PetsBook', {
+          body: notif.body || '',
+          icon: '/icon-192.png'
+        });
+      }
+    });
+  } catch(e) {
+    console.warn('FCM init error:', e);
+  }
+}
 
 async function sendNotification(toUid, payload) {
   if (!toUid || toUid === currentUser.uid) return; // no self-notifs
