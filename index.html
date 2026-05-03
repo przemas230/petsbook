@@ -1274,13 +1274,13 @@
     right: 0;
     background: white;
     border-top: 2px solid var(--cream);
-    padding: 8px 0 env(safe-area-inset-bottom, 8px);
+    padding: 4px 0 env(safe-area-inset-bottom, 4px);
     z-index: 100;
   }
   @media (max-width: 900px) {
     .bottom-nav { display: flex; }
     .nav-tabs { display: none; }
-    body { padding-bottom: 70px; }
+    body { padding-bottom: 58px; }
   }
   .bottom-tab {
     flex: 1;
@@ -1288,7 +1288,7 @@
     flex-direction: column;
     align-items: center;
     gap: 1px;
-    padding: 5px 2px;
+    padding: 4px 2px;
     border: none;
     background: none;
     font-family: 'Nunito', sans-serif;
@@ -1299,7 +1299,7 @@
     transition: color 0.15s;
   }
   .bottom-tab.active { color: var(--paw); }
-  .bottom-tab-icon { font-size: 20px; }
+  .bottom-tab-icon { font-size: 19px; line-height: 1.2; }
 
   /* ── RESPONSIVE: małe ekrany ≤ 390px (iPhone SE, starsze Androidy) ── */
   @media (max-width: 390px) {
@@ -1332,8 +1332,8 @@
   /* ── RESPONSIVE: iPhone z Dynamic Island / notch (górne safe-area) ── */
   @supports (padding-top: env(safe-area-inset-top)) {
     .topnav { padding-top: env(safe-area-inset-top, 0px); }
-    .bottom-nav { padding-bottom: max(8px, env(safe-area-inset-bottom)); }
-    body { padding-bottom: max(70px, calc(60px + env(safe-area-inset-bottom))); }
+    .bottom-nav { padding-bottom: max(4px, env(safe-area-inset-bottom)); }
+    body { padding-bottom: max(58px, calc(54px + env(safe-area-inset-bottom))); }
   }
 
   /* ── POST MENU ── */
@@ -3141,9 +3141,26 @@ async function fetchAndSaveBreedInfo(petId, breed, species) {
 function loadFollows() {
   if (!currentUser || isDemoMode) return;
   const followRef = ref(db, `follows/${currentUser.uid}`);
-  onValue(followRef, snap => {
+  onValue(followRef, async snap => {
     myFollows = snap.exists() ? snap.val() : {};
+    // Nowy użytkownik bez żadnych obserwowań — zasiej przykładowe zwierzęta demo
+    if (!snap.exists() || Object.keys(myFollows).length === 0) {
+      await seedDemoFollows();
+    }
   });
+}
+
+async function seedDemoFollows() {
+  if (!currentUser) return;
+  // Sprawdź czy już seedowano (flaga w bazie)
+  const flagSnap = await get(ref(db, `userMeta/${currentUser.uid}/followsSeeded`));
+  if (flagSnap.exists()) return;
+  // Obserwuj pierwsze demo-zwierzęta żeby feed nie był pusty
+  const seeds = ['demo-1','demo-2','demo-11','demo-7','demo-4'];
+  const updates = {};
+  seeds.forEach(id => { updates[`follows/${currentUser.uid}/${id}`] = true; });
+  updates[`userMeta/${currentUser.uid}/followsSeeded`] = true;
+  try { await update(ref(db), updates); } catch(e) {}
 }
 
 async function isFollowing(petId) {
@@ -6675,29 +6692,18 @@ async function loadGroupsList() {
     if (snap.exists()) {
       snap.forEach(c => { _allGroups.push({ id: c.key, ...c.val() }); });
     }
-    // Jeśli brak grup w Firebase — zasiej przykładowe
+    // Gdy brak grup w Firebase — pokaż przykładowe (tylko lokalnie, nie zapisuj)
     if (_allGroups.length === 0) {
-      await seedDefaultGroups();
-      const snap2 = await get(ref(db, 'groups'));
-      if (snap2.exists()) snap2.forEach(c => { _allGroups.push({ id: c.key, ...c.val() }); });
+      _allGroups = DEMO_GROUPS.map(g => ({ ...g }));
     }
     _allGroups.sort((a, b) => (b.memberCount || 0) - (a.memberCount || 0));
     renderGroupsList(_allGroups);
     renderGroupsPopular(_allGroups.slice(0, 4));
-  } catch(e) { listEl.innerHTML = '<div class="empty-state"><p>Błąd ładowania grup</p></div>'; }
-}
-
-async function seedDefaultGroups() {
-  const seeds = [
-    { emoji: '🐾', name: 'Zwierzaki PL – Ogólna', description: 'Ogólna społeczność dla wszystkich właścicieli zwierząt', species: '', memberCount: 0 },
-    { emoji: '🐕', name: 'Labradorowcy Polska', description: 'Dla właścicieli labradorów z całej Polski', species: 'Pies', memberCount: 0 },
-    { emoji: '🐈', name: 'Koty Maine Coon Polska', description: 'Najlepsze koty świata i ich opiekunowie 🐱', species: 'Kot', memberCount: 0 },
-    { emoji: '🏆', name: 'Agility Polska', description: 'Treningi, zawody, wyniki — wszystko o agility', species: 'Pies', memberCount: 0 },
-    { emoji: '🦮', name: 'Golden Retriever Fan Club', description: 'Bo złote retrievery to szczęście na czterech łapach 🌟', species: 'Pies', memberCount: 0 },
-    { emoji: '🐇', name: 'Królikarnia', description: 'Wszystko o królikach — dieta, zdrowie, zabawy', species: 'Królik', memberCount: 0 },
-  ];
-  for (const g of seeds) {
-    await push(ref(db, 'groups'), { ...g, creatorId: 'system', createdAt: Date.now() });
+  } catch(e) {
+    // Błąd Firebase — pokaż demo grupy jako fallback
+    _allGroups = DEMO_GROUPS.map(g => ({ ...g }));
+    renderGroupsList(_allGroups);
+    renderGroupsPopular(_allGroups.slice(0, 4));
   }
 }
 
