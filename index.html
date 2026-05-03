@@ -83,6 +83,24 @@
   body.dark-mode .walk-modal-tabs { background: var(--surface2); }
   body.dark-mode .likes-popup-overlay { background: rgba(0,0,0,0.7); }
 
+  /* ── GROUPS ── */
+  .group-card { background: white; border-radius: 16px; padding: 18px 20px; margin-bottom: 12px; cursor: pointer; box-shadow: var(--card-shadow); display: flex; align-items: center; gap: 16px; transition: transform 0.15s; }
+  .group-card:hover { transform: translateY(-2px); }
+  .group-card-emoji { font-size: 40px; line-height: 1; flex-shrink: 0; }
+  .group-card-info { flex: 1; min-width: 0; }
+  .group-card-name { font-weight: 900; font-size: 16px; color: var(--bark); }
+  .group-card-desc { font-size: 13px; color: var(--bark-light); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .group-card-meta { font-size: 12px; color: var(--bark-light); margin-top: 6px; display: flex; gap: 12px; }
+  .group-card-badge { background: var(--paw-light); color: var(--bark); border-radius: 20px; padding: 2px 10px; font-size: 12px; font-weight: 800; }
+  .group-card-badge.member { background: var(--paw); color: white; }
+  .group-sidebar-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); cursor: pointer; }
+  .group-sidebar-item:last-child { border-bottom: none; }
+  .group-sidebar-item:hover .group-card-name { color: var(--paw); }
+  #group-emoji-picker span { padding: 4px; border-radius: 8px; transition: background 0.1s; }
+  #group-emoji-picker span:hover, #group-emoji-picker span.selected { background: var(--paw-light); }
+  body.dark-mode .group-card { background: var(--surface); }
+  body.dark-mode .group-card-name { color: var(--text); }
+
   /* ── SEARCH PAGE ── */
   .search-pets-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
   .search-pet-card { background: white; border-radius: 16px; padding: 16px; text-align: center; cursor: pointer; box-shadow: var(--card-shadow); transition: transform 0.15s; }
@@ -1879,6 +1897,7 @@
         <button class="nav-tab active" id="tab-feed" onclick="showPage('feed')">🏠 Tablica</button>
         <button class="nav-tab" id="tab-explore" onclick="showPage('explore')">🔍 Odkryj</button>
         <button class="nav-tab" id="tab-mypets" onclick="showPage('mypets')">🐾 Moje zwierzęta</button>
+        <button class="nav-tab" id="tab-groups" onclick="showPage('groups')">👥 Grupy</button>
         <button class="nav-tab" id="tab-chat" onclick="showPage('chat')">💬 Czat</button>
       </div>
       <div class="nav-user">
@@ -2070,7 +2089,7 @@
               autocomplete="off">
             <div class="breed-dropdown" id="breed-dropdown-explore"></div>
           </div>
-          <button class="btn-search-filter" onclick="runExploreSearch()">Szukaj</button>
+          <button class="btn-search-filter" id="btn-explore-search" onclick="runExploreSearch()">Szukaj</button>
         </div>
         <div id="explore-location-hint" style="display:none;padding:6px 0 0;font-size:12px;font-weight:700;color:var(--paw);cursor:pointer" onclick="useMyLocationExplore()">
           📍 Użyj mojej lokalizacji aby sortować po odległości
@@ -2154,6 +2173,9 @@
     </button>
     <button class="bottom-tab" id="btab-mypets" onclick="showPage('mypets')">
       <span class="bottom-tab-icon">🐾</span>Moje
+    </button>
+    <button class="bottom-tab" id="btab-groups" onclick="showPage('groups')">
+      <span class="bottom-tab-icon">👥</span>Grupy
     </button>
     <button class="bottom-tab" id="btab-chat" onclick="showPage('chat')">
       <span class="bottom-tab-icon">💬</span>Czat
@@ -2270,8 +2292,8 @@
 <!-- DELETE POST MODAL -->
 <div class="modal-overlay" id="delete-post-modal">
   <div class="modal-box">
-    <div class="modal-title">🗑️ Usuń post</div>
-    <p style="font-size:15px;font-weight:600;line-height:1.6;margin-bottom:8px">Czy na pewno chcesz usunąć ten post?</p>
+    <div class="modal-title" id="delete-post-modal-title">🗑️ Usuń post</div>
+    <p id="delete-post-modal-text" style="font-size:15px;font-weight:600;line-height:1.6;margin-bottom:8px">Czy na pewno chcesz usunąć ten post?</p>
     <p style="font-size:13px;color:#e53935;font-weight:700">⚠️ Tej operacji nie można cofnąć.</p>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal('delete-post-modal')">Anuluj</button>
@@ -2283,8 +2305,8 @@
 <!-- DELETE PET MODAL -->
 <div class="modal-overlay" id="delete-pet-modal">
   <div class="modal-box">
-    <div class="modal-title">🗑️ Usuń zwierzę</div>
-    <p style="font-size:15px;font-weight:600;line-height:1.6;margin-bottom:8px">Czy na pewno chcesz usunąć profil <strong id="delete-pet-name-label"></strong>?</p>
+    <div class="modal-title" id="delete-pet-modal-title">🗑️ Usuń zwierzę</div>
+    <p id="delete-pet-modal-text" style="font-size:15px;font-weight:600;line-height:1.6;margin-bottom:8px">Czy na pewno chcesz usunąć profil <strong id="delete-pet-name-label"></strong>?</p>
     <p style="font-size:13px;color:#e53935;font-weight:700">⚠️ Tej operacji nie można cofnąć. Wszystkie posty zostaną zachowane.</p>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal('delete-pet-modal')">Anuluj</button>
@@ -2430,39 +2452,39 @@
 <!-- SETTINGS MODAL -->
 <div class="settings-overlay" id="settings-modal" onclick="if(event.target===this)closeSettings()">
   <div class="settings-box">
-    <div class="modal-title">⚙️ Ustawienia</div>
+    <div class="modal-title" id="settings-title">⚙️ Ustawienia</div>
     <div class="settings-row">
       <div>
-        <div class="settings-label">🎭 Profile demo w feedzie</div>
-        <div class="settings-desc">Pokazuje przykładowe zwierzęta kiedy feed jest pusty lub zawsze</div>
+        <div class="settings-label" id="setting-demo-label">🎭 Profile demo w feedzie</div>
+        <div class="settings-desc" id="setting-demo-desc">Pokazuje przykładowe zwierzęta kiedy feed jest pusty lub zawsze</div>
       </div>
       <button class="toggle-switch on" id="toggle-demo-feed" onclick="toggleSetting('demoFeed',this)"></button>
     </div>
     <div class="settings-row">
       <div>
-        <div class="settings-label">🔔 Powiadomienia</div>
-        <div class="settings-desc">Otrzymuj powiadomienia o reakcjach i komentarzach</div>
+        <div class="settings-label" id="setting-notifs-label">🔔 Powiadomienia</div>
+        <div class="settings-desc" id="setting-notifs-desc">Otrzymuj powiadomienia o reakcjach i komentarzach</div>
       </div>
       <button class="toggle-switch on" id="toggle-notifs" onclick="toggleSetting('notifs',this)"></button>
     </div>
     <div class="settings-row">
       <div>
-        <div class="settings-label">🟢 Status online</div>
-        <div class="settings-desc">Pokaż innym kiedy jesteś aktywny</div>
+        <div class="settings-label" id="setting-online-label">🟢 Status online</div>
+        <div class="settings-desc" id="setting-online-desc">Pokaż innym kiedy jesteś aktywny</div>
       </div>
       <button class="toggle-switch on" id="toggle-online" onclick="toggleSetting('online',this)"></button>
     </div>
     <div class="settings-row">
       <div>
-        <div class="settings-label">🌙 Ciemny motyw</div>
-        <div class="settings-desc">Ciemne tło — wygodniejsze wieczorem</div>
+        <div class="settings-label" id="setting-dark-label">🌙 Ciemny motyw</div>
+        <div class="settings-desc" id="setting-dark-desc">Ciemne tło — wygodniejsze wieczorem</div>
       </div>
       <button class="toggle-switch" id="toggle-dark-mode" onclick="toggleDarkMode(this)"></button>
     </div>
     <div class="settings-row">
       <div>
-        <div class="settings-label">🌐 Język / Language</div>
-        <div class="settings-desc">Zmień język interfejsu</div>
+        <div class="settings-label" id="setting-lang-label">🌐 Język / Language</div>
+        <div class="settings-desc" id="setting-lang-desc">Zmień język interfejsu</div>
       </div>
       <div style="display:flex;gap:8px">
         <button class="feed-tab active" id="lang-pl" onclick="setLanguage('pl',this)">🇵🇱 PL</button>
@@ -2470,7 +2492,7 @@
       </div>
     </div>
     <div class="modal-actions">
-      <button class="btn-save" onclick="closeSettings()">Gotowe</button>
+      <button class="btn-save" id="settings-done-btn" onclick="closeSettings()">Gotowe</button>
     </div>
   </div>
 </div>
@@ -2588,6 +2610,65 @@
   </div>
 </div>
 
+  <!-- GROUPS PAGE -->
+  <div id="page-groups" style="display:none">
+    <div class="main-layout">
+      <aside class="sidebar-left">
+        <div class="card card-pad">
+          <div class="section-title">👥 Moje grupy</div>
+          <div id="groups-my-list" style="margin-bottom:12px"><div class="loading-spinner" style="font-size:20px">🐾</div></div>
+          <button class="btn-add-pet" onclick="openCreateGroupModal()">➕ Utwórz grupę</button>
+        </div>
+      </aside>
+      <main>
+        <!-- Widok: lista grup -->
+        <div id="groups-browse-view">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+            <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:900;color:var(--bark)">👥 Społeczności</div>
+            <button class="btn-add-pet" style="margin:0" onclick="openCreateGroupModal()">➕ Utwórz grupę</button>
+          </div>
+          <div class="feed-filter-bar" style="margin-bottom:16px">
+            <input type="text" id="groups-search-input" placeholder="🔍 Szukaj grup..." style="flex:1;background:transparent;border:none;font-family:'Nunito',sans-serif;font-size:14px;font-weight:600;color:var(--bark);outline:none" oninput="filterGroupsList(this.value)">
+          </div>
+          <div id="groups-list"></div>
+        </div>
+        <!-- Widok: wnętrze grupy -->
+        <div id="groups-inner-view" style="display:none">
+          <button onclick="showGroupsBrowse()" style="background:none;border:none;font-size:14px;font-weight:800;color:var(--bark-light);cursor:pointer;display:flex;align-items:center;gap:6px;padding:6px 0;margin-bottom:12px">← Wszystkie grupy</button>
+          <div class="card" id="group-header-card" style="margin-bottom:16px;padding:20px 24px">
+            <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+              <div id="group-header-emoji" style="font-size:48px;line-height:1"></div>
+              <div style="flex:1">
+                <div id="group-header-name" style="font-size:22px;font-weight:900;color:var(--bark)"></div>
+                <div id="group-header-desc" style="font-size:14px;color:var(--bark-light);margin-top:4px"></div>
+                <div id="group-header-meta" style="font-size:13px;color:var(--bark-light);margin-top:6px"></div>
+              </div>
+              <button id="group-join-btn" class="btn-follow" onclick="toggleGroupMembership()" style="min-width:120px"></button>
+            </div>
+          </div>
+          <!-- Post w grupie -->
+          <div class="create-post" id="group-create-post" style="display:none;margin-bottom:16px">
+            <div class="create-post-top">
+              <div id="group-post-avatar" class="pet-avatar" style="font-size:22px">👤</div>
+              <textarea id="group-post-text" placeholder="Napisz coś do grupy..."></textarea>
+            </div>
+            <div class="create-post-actions" style="justify-content:flex-end">
+              <select class="post-select" id="group-post-pet-select"><option value="">Wybierz zwierzę...</option></select>
+              <button class="btn-post" onclick="submitGroupPost()">Opublikuj 🐾</button>
+            </div>
+          </div>
+          <div id="group-posts-list"><div class="loading-spinner">🐾</div></div>
+        </div>
+      </main>
+      <aside class="sidebar-right">
+        <div class="card card-pad" id="groups-sidebar-popular">
+          <div class="section-title">🔥 Popularne grupy</div>
+          <div id="groups-popular-list"></div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
   <!-- SEARCH PAGE -->
   <div id="page-search" style="display:none">
     <div class="main-layout">
@@ -2619,6 +2700,53 @@
       <aside class="sidebar-right"></aside>
     </div>
   </div>
+
+<!-- CREATE GROUP MODAL -->
+<div class="modal-overlay" id="create-group-modal">
+  <div class="modal-box">
+    <div class="modal-title">👥 Utwórz grupę</div>
+    <div class="form-group">
+      <label class="form-label">Emoji grupy *</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px" id="group-emoji-picker">
+        <span style="cursor:pointer;font-size:28px" onclick="selectGroupEmoji(this,'🐕')">🐕</span>
+        <span style="cursor:pointer;font-size:28px" onclick="selectGroupEmoji(this,'🐈')">🐈</span>
+        <span style="cursor:pointer;font-size:28px" onclick="selectGroupEmoji(this,'🐇')">🐇</span>
+        <span style="cursor:pointer;font-size:28px" onclick="selectGroupEmoji(this,'🐴')">🐴</span>
+        <span style="cursor:pointer;font-size:28px" onclick="selectGroupEmoji(this,'🦜')">🦜</span>
+        <span style="cursor:pointer;font-size:28px" onclick="selectGroupEmoji(this,'🐠')">🐠</span>
+        <span style="cursor:pointer;font-size:28px" onclick="selectGroupEmoji(this,'🌿')">🌿</span>
+        <span style="cursor:pointer;font-size:28px" onclick="selectGroupEmoji(this,'🏆')">🏆</span>
+        <span style="cursor:pointer;font-size:28px" onclick="selectGroupEmoji(this,'🦮')">🦮</span>
+        <span style="cursor:pointer;font-size:28px" onclick="selectGroupEmoji(this,'🐾')">🐾</span>
+      </div>
+      <input type="hidden" id="group-emoji-val" value="🐾">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nazwa grupy *</label>
+      <input type="text" class="form-input" id="group-name-input" placeholder="np. Labradorowcy Warszawy" maxlength="60">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Opis</label>
+      <textarea class="form-input" id="group-desc-input" placeholder="O czym jest ta grupa?" rows="2" maxlength="200" style="resize:vertical"></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Temat / gatunek</label>
+      <select class="form-input" id="group-species-input">
+        <option value="">Wszystkie zwierzęta</option>
+        <option value="Pies">🐕 Psy</option>
+        <option value="Kot">🐈 Koty</option>
+        <option value="Królik">🐇 Króliki</option>
+        <option value="Papuga">🦜 Ptaki</option>
+        <option value="Koń">🐴 Konie</option>
+        <option value="Inne">🐾 Inne</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('create-group-modal')">Anuluj</button>
+      <button class="btn-save" onclick="createGroup()">Utwórz 👥</button>
+    </div>
+  </div>
+</div>
 
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
@@ -4691,14 +4819,15 @@ window.initExplore = async () => {
 //  PAGE NAVIGATION
 // ═══════════════════════════════════
 window.showPage = (page) => {
-  ['feed','explore','mypets','profile','chat','search'].forEach(p => {
+  ['feed','explore','mypets','profile','chat','search','groups'].forEach(p => {
     document.getElementById(`page-${p}`).style.display = p === page ? 'block' : 'none';
   });
-  ['feed','explore','mypets','chat'].forEach(t => {
+  ['feed','explore','mypets','chat','groups'].forEach(t => {
     document.getElementById(`tab-${t}`)?.classList.toggle('active', t === page);
     document.getElementById(`btab-${t}`)?.classList.toggle('active', t === page);
   });
   if (page === 'explore') initExplore();
+  if (page === 'groups') initGroupsPage();
   if (page === 'chat' && !isDemoMode) initChatPage();
   if (page !== 'chat' && _chatListListener) { _chatListListener(); _chatListListener = null; }
 };
@@ -6332,24 +6461,88 @@ function initDarkMode() {
 // ═══════════════════════════════════
 const TRANSLATIONS = {
   pl: {
+    // Nawigacja
     feed: '🏠 Tablica', explore: '🔍 Odkryj', mypets: '🐾 Moje zwierzęta', chat: '💬 Czat',
+    // Przyciski akcji
     publish: 'Opublikuj 🐾', story: '✨ Story', follow: '⭐ Obserwuj', following: '✅ Obserwujesz',
     edit: '✏️ Edytuj', delete: '🗑️ Usuń', share: '🔗 Udostępnij', back: '← Wróć',
+    send: 'Wyślij', close: 'Zamknij', save: 'Zapisz 🐾', cancel: 'Anuluj', done: 'Gotowe',
+    search: 'Szukaj',
+    // Placeholdery
     writePost: 'Co słychać u Twoich zwierząt?', searchPosts: '🔍 Szukaj postów, #hashtagów...',
-    allPets: '🌍 Wszyscy', following_tab: '⭐ Obserwowani', send: 'Wyślij', close: 'Zamknij',
-    save: 'Zapisz 🐾', cancel: 'Anuluj', done: 'Gotowe', settings: '⚙️ Ustawienia',
-    notifications: 'Brak powiadomień 🔔', rankingTitle: '🏆 Ranking tygodnia',
+    searchPets: 'Szukaj zwierząt...',
+    // Zakładki feedu
+    allPets: '🌍 Wszyscy', following_tab: '⭐ Obserwowani',
+    // Ustawienia
+    settings: '⚙️ Ustawienia', notifications: 'Brak powiadomień 🔔',
+    rankingTitle: '🏆 Ranking tygodnia',
+    settingDemoLabel: '🎭 Profile demo w feedzie',
+    settingDemoDesc: 'Pokazuje przykładowe zwierzęta kiedy feed jest pusty lub zawsze',
+    settingNotifsLabel: '🔔 Powiadomienia',
+    settingNotifsDesc: 'Otrzymuj powiadomienia o reakcjach i komentarzach',
+    settingOnlineLabel: '🟢 Status online',
+    settingOnlineDesc: 'Pokaż innym kiedy jesteś aktywny',
+    settingDarkLabel: '🌙 Ciemny motyw',
+    settingDarkDesc: 'Ciemne tło — wygodniejsze wieczorem',
+    settingLangLabel: '🌐 Język / Language',
+    settingLangDesc: 'Zmień język interfejsu',
+    // Profil / zwierzęta
     addPet: '➕ Dodaj zwierzę', importProfile: '📥 Importuj profil', exportProfile: '📤 Eksportuj',
+    editPet: '✏️ Edytuj zwierzę', deletePet: '🗑️ Usuń zwierzę',
+    mySections: 'Moje zwierzęta', noFollowing: 'Nie obserwujesz jeszcze żadnych zwierząt.',
+    noFollowingHint: 'Przejdź na profil zwierzęcia i kliknij "Obserwuj"!',
+    // Modalne
+    deletePostTitle: '🗑️ Usuń post', deletePostConfirm: 'Na pewno chcesz usunąć ten post? Tej operacji nie można cofnąć.',
+    deletePetTitle: '🗑️ Usuń zwierzę', deletePetConfirm: 'Na pewno chcesz usunąć tego zwierzęcia? Wszystkie posty zostaną usunięte.',
+    // Czat
+    chatEmpty: 'Zaloguj się aby używać czatu', chatLogin: 'Zaloguj się aby pisać wiadomości',
+    mutualOnly: 'Obserwujcie się wzajemnie aby móc pisać!',
+    // Wybiegi
+    dogParks: '🐕 Wybiegi',
+    // Explore
+    exploreSearch: 'Szukaj',
   },
   en: {
+    // Nav
     feed: '🏠 Feed', explore: '🔍 Explore', mypets: '🐾 My Pets', chat: '💬 Chat',
+    // Buttons
     publish: 'Publish 🐾', story: '✨ Story', follow: '⭐ Follow', following: '✅ Following',
     edit: '✏️ Edit', delete: '🗑️ Delete', share: '🔗 Share', back: '← Back',
+    send: 'Send', close: 'Close', save: 'Save 🐾', cancel: 'Cancel', done: 'Done',
+    search: 'Search',
+    // Placeholders
     writePost: "What's new with your pet?", searchPosts: '🔍 Search posts, #hashtags...',
-    allPets: '🌍 Everyone', following_tab: '⭐ Following', send: 'Send', close: 'Close',
-    save: 'Save 🐾', cancel: 'Cancel', done: 'Done', settings: '⚙️ Settings',
-    notifications: 'No notifications 🔔', rankingTitle: '🏆 Weekly Ranking',
+    searchPets: 'Search animals...',
+    // Feed tabs
+    allPets: '🌍 Everyone', following_tab: '⭐ Following',
+    // Settings
+    settings: '⚙️ Settings', notifications: 'No notifications 🔔',
+    rankingTitle: '🏆 Weekly Ranking',
+    settingDemoLabel: '🎭 Demo profiles in feed',
+    settingDemoDesc: 'Show sample animals when feed is empty or always',
+    settingNotifsLabel: '🔔 Notifications',
+    settingNotifsDesc: 'Receive notifications about reactions and comments',
+    settingOnlineLabel: '🟢 Online status',
+    settingOnlineDesc: 'Show others when you are active',
+    settingDarkLabel: '🌙 Dark mode',
+    settingDarkDesc: 'Dark background — easier on the eyes at night',
+    settingLangLabel: '🌐 Language / Język',
+    settingLangDesc: 'Change interface language',
+    // Profile / pets
     addPet: '➕ Add Pet', importProfile: '📥 Import Profile', exportProfile: '📤 Export',
+    editPet: '✏️ Edit Animal', deletePet: '🗑️ Delete Animal',
+    mySections: 'My Animals', noFollowing: "You're not following any animals yet.",
+    noFollowingHint: 'Visit an animal\'s profile and click "Follow"!',
+    // Modals
+    deletePostTitle: '🗑️ Delete Post', deletePostConfirm: 'Are you sure you want to delete this post? This cannot be undone.',
+    deletePetTitle: '🗑️ Delete Animal', deletePetConfirm: 'Are you sure you want to delete this animal? All posts will be removed.',
+    // Chat
+    chatEmpty: 'Log in to use chat', chatLogin: 'Log in to send messages',
+    mutualOnly: 'Follow each other to start chatting!',
+    // Dog parks
+    dogParks: '🐕 Dog Parks',
+    // Explore
+    exploreSearch: 'Search',
   }
 };
 let currentLang = 'pl';
@@ -6358,31 +6551,74 @@ function applyLanguage(lang) {
   currentLang = lang;
   try { localStorage.setItem('petsbook_lang', lang); } catch(e) {}
   const t = TRANSLATIONS[lang] || TRANSLATIONS.pl;
-  // Nav tabs
+
+  // Nawigacja
   const tabMap = { 'tab-feed': 'feed', 'tab-explore': 'explore', 'tab-mypets': 'mypets', 'tab-chat': 'chat',
                    'btab-feed': 'feed', 'btab-explore': 'explore', 'btab-mypets': 'mypets', 'btab-chat': 'chat' };
   Object.entries(tabMap).forEach(([id, key]) => {
     const el = document.getElementById(id);
     if (el && t[key]) el.textContent = t[key];
   });
-  // Przyciski
-  const btnMap = {
-    'btn-post-submit': 'publish', 'ftab-all': 'allPets', 'ftab-following': 'following_tab'
-  };
+
+  // Przyciski z id
+  const btnMap = { 'ftab-all': 'allPets', 'ftab-following': 'following_tab' };
   Object.entries(btnMap).forEach(([id, key]) => {
     const el = document.getElementById(id);
     if (el && t[key]) el.textContent = t[key];
   });
+
   // Placeholdery
-  const postText = document.getElementById('post-text');
-  if (postText) postText.placeholder = t.writePost;
-  const searchInput = document.getElementById('feed-search-input');
-  if (searchInput) searchInput.placeholder = t.searchPosts;
+  const setPlaceholder = (id, key) => { const el = document.getElementById(id); if (el) el.placeholder = t[key]; };
+  setPlaceholder('post-text', 'writePost');
+  setPlaceholder('feed-search-input', 'searchPosts');
+  setPlaceholder('global-search', 'searchPets');
+
+  // Ustawienia — etykiety i opisy
+  const setText = (id, key) => { const el = document.getElementById(id); if (el) el.textContent = t[key]; };
+  setText('settings-title', 'settings');
+  setText('setting-demo-label', 'settingDemoLabel');
+  setText('setting-demo-desc', 'settingDemoDesc');
+  setText('setting-notifs-label', 'settingNotifsLabel');
+  setText('setting-notifs-desc', 'settingNotifsDesc');
+  setText('setting-online-label', 'settingOnlineLabel');
+  setText('setting-online-desc', 'settingOnlineDesc');
+  setText('setting-dark-label', 'settingDarkLabel');
+  setText('setting-dark-desc', 'settingDarkDesc');
+  setText('setting-lang-label', 'settingLangLabel');
+  setText('setting-lang-desc', 'settingLangDesc');
+  setText('settings-done-btn', 'done');
+
+  // Modalne
+  setText('delete-post-modal-title', 'deletePostTitle');
+  setText('delete-post-modal-text', 'deletePostConfirm');
+  setText('delete-pet-modal-title', 'deletePetTitle');
+  setText('delete-pet-modal-text', 'deletePetConfirm');
+
+  // Explore — przycisk Szukaj
+  setText('btn-explore-search', 'exploreSearch');
+
+  // Dog parks btn
+  const dpBtn = document.getElementById('btn-dog-parks');
+  if (dpBtn) dpBtn.textContent = t.dogParks;
+
+  // Ranking tytuły
+  document.querySelectorAll('.ranking-title').forEach(el => { el.textContent = t.rankingTitle; });
+
   // Przyciski języka
   document.getElementById('lang-pl')?.classList.toggle('active', lang === 'pl');
   document.getElementById('lang-en')?.classList.toggle('active', lang === 'en');
-  // Ranking tytuł
-  document.querySelectorAll('.ranking-title').forEach(el => { el.textContent = t.rankingTitle; });
+
+  // Dynamiczne — przyciski follow na aktualnie widocznym profilu
+  document.querySelectorAll('.btn-follow').forEach(btn => {
+    if (btn.classList.contains('following')) btn.textContent = t.following;
+    else btn.textContent = t.follow;
+  });
+
+  // Sidebar przyciski dodaj/importuj
+  document.querySelectorAll('.btn-add-pet').forEach((btn, i) => {
+    if (btn.getAttribute('onclick')?.includes('openAddPetModal')) btn.textContent = t.addPet;
+  });
+  document.querySelectorAll('[onclick*="importPetProfile"]').forEach(el => { el.textContent = t.importProfile; });
 }
 
 window.setLanguage = (lang, btn) => {
@@ -6397,7 +6633,274 @@ function initLanguage() {
 }
 
 // ═══════════════════════════════════
-//  🔙  NAWIGACJA / HISTORIA
+//  👥  GRUPY / SPOŁECZNOŚCI
+// ═══════════════════════════════════
+let _currentGroupId = null;
+let _currentGroupData = null;
+let _allGroups = [];
+let _myGroupIds = new Set();
+
+window.initGroupsPage = async () => {
+  showGroupsBrowse();
+  await loadGroupsList();
+  if (!isDemoMode) loadMyGroups();
+};
+
+async function loadGroupsList() {
+  const listEl = document.getElementById('groups-list');
+  const popularEl = document.getElementById('groups-popular-list');
+  listEl.innerHTML = '<div class="loading-spinner">🐾</div>';
+
+  if (isDemoMode) {
+    _allGroups = DEMO_GROUPS;
+    renderGroupsList(_allGroups);
+    renderGroupsPopular(_allGroups.slice(0, 4));
+    return;
+  }
+  try {
+    const snap = await get(ref(db, 'groups'));
+    _allGroups = [];
+    if (snap.exists()) {
+      snap.forEach(c => { _allGroups.push({ id: c.key, ...c.val() }); });
+    }
+    _allGroups.sort((a, b) => (b.memberCount || 0) - (a.memberCount || 0));
+    renderGroupsList(_allGroups);
+    renderGroupsPopular(_allGroups.slice(0, 4));
+  } catch(e) { listEl.innerHTML = '<div class="empty-state"><p>Błąd ładowania grup</p></div>'; }
+}
+
+async function loadMyGroups() {
+  if (!currentUser) return;
+  const myEl = document.getElementById('groups-my-list');
+  try {
+    const snap = await get(ref(db, 'groupMembers/' + currentUser.uid));
+    _myGroupIds = new Set();
+    if (snap.exists()) snap.forEach(c => { _myGroupIds.add(c.key); });
+    const myGroups = _allGroups.filter(g => _myGroupIds.has(g.id));
+    myEl.innerHTML = myGroups.length
+      ? myGroups.map(g => '<div class="group-sidebar-item" onclick="openGroup(\'' + g.id + '\')">' +
+          '<span style="font-size:24px">' + (g.emoji || '👥') + '</span>' +
+          '<span class="group-card-name" style="font-size:14px">' + (g.name || '') + '</span>' +
+          '</div>').join('')
+      : '<div style="font-size:13px;color:var(--bark-light)">Nie należysz jeszcze do żadnej grupy.</div>';
+  } catch(e) { myEl.innerHTML = ''; }
+}
+
+function renderGroupsList(groups) {
+  const el = document.getElementById('groups-list');
+  if (!groups.length) {
+    el.innerHTML = '<div class="empty-state"><div class="emoji">👥</div><p>Brak grup. Bądź pierwszy i utwórz społeczność!</p></div>';
+    return;
+  }
+  el.innerHTML = groups.map(g => {
+    const isMember = _myGroupIds.has(g.id);
+    return '<div class="group-card" onclick="openGroup(\'' + g.id + '\')">' +
+      '<div class="group-card-emoji">' + (g.emoji || '👥') + '</div>' +
+      '<div class="group-card-info">' +
+        '<div class="group-card-name">' + (g.name || 'Grupa') + '</div>' +
+        '<div class="group-card-desc">' + (g.description || '') + '</div>' +
+        '<div class="group-card-meta">' +
+          '<span>👥 ' + (g.memberCount || 0) + ' członków</span>' +
+          (g.species ? '<span>· ' + speciesEmoji(g.species) + ' ' + g.species + '</span>' : '') +
+        '</div>' +
+      '</div>' +
+      '<span class="group-card-badge' + (isMember ? ' member' : '') + '">' + (isMember ? '✅ Dołączyłeś' : 'Dołącz') + '</span>' +
+      '</div>';
+  }).join('');
+}
+
+function renderGroupsPopular(groups) {
+  const el = document.getElementById('groups-popular-list');
+  el.innerHTML = groups.map(g =>
+    '<div class="group-sidebar-item" onclick="openGroup(\'' + g.id + '\')">' +
+    '<span style="font-size:24px">' + (g.emoji || '👥') + '</span>' +
+    '<div><div class="group-card-name" style="font-size:14px">' + (g.name || '') + '</div>' +
+    '<div style="font-size:12px;color:var(--bark-light)">👥 ' + (g.memberCount || 0) + '</div></div>' +
+    '</div>'
+  ).join('') || '<div style="font-size:13px;color:var(--bark-light)">Brak grup</div>';
+}
+
+window.filterGroupsList = (q) => {
+  const query = q.toLowerCase();
+  const filtered = query ? _allGroups.filter(g =>
+    (g.name || '').toLowerCase().includes(query) ||
+    (g.description || '').toLowerCase().includes(query) ||
+    (g.species || '').toLowerCase().includes(query)
+  ) : _allGroups;
+  renderGroupsList(filtered);
+};
+
+window.openGroup = async (groupId) => {
+  _currentGroupId = groupId;
+  document.getElementById('groups-browse-view').style.display = 'none';
+  document.getElementById('groups-inner-view').style.display = 'block';
+
+  const group = _allGroups.find(g => g.id === groupId) || {};
+  _currentGroupData = group;
+
+  document.getElementById('group-header-emoji').textContent = group.emoji || '👥';
+  document.getElementById('group-header-name').textContent = group.name || '';
+  document.getElementById('group-header-desc').textContent = group.description || '';
+  document.getElementById('group-header-meta').textContent =
+    '👥 ' + (group.memberCount || 0) + ' członków' + (group.species ? ' · ' + group.species : '') +
+    ' · Założona ' + (group.createdAt ? new Date(group.createdAt).toLocaleDateString('pl-PL') : '?');
+
+  const isMember = _myGroupIds.has(groupId);
+  const joinBtn = document.getElementById('group-join-btn');
+  joinBtn.textContent = isMember ? '✅ Dołączyłeś' : '⭐ Dołącz';
+  joinBtn.className = 'btn-follow' + (isMember ? ' following' : '');
+
+  const createPostEl = document.getElementById('group-create-post');
+  createPostEl.style.display = (isMember && !isDemoMode) ? 'block' : 'none';
+  if (isMember && !isDemoMode) loadMyPetsIntoGroupSelect();
+
+  await loadGroupPosts(groupId);
+};
+
+function loadMyPetsIntoGroupSelect() {
+  const sel = document.getElementById('group-post-pet-select');
+  sel.innerHTML = '<option value="">Wybierz zwierzę...</option>';
+  Object.entries(myPets || {}).forEach(([id, p]) => {
+    sel.innerHTML += '<option value="' + id + '">' + (p.name || '') + '</option>';
+  });
+  const avatar = document.getElementById('group-post-avatar');
+  if (currentUser?.photoURL) avatar.innerHTML = '<img src="' + currentUser.photoURL + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover">';
+}
+
+async function loadGroupPosts(groupId) {
+  const el = document.getElementById('group-posts-list');
+  el.innerHTML = '<div class="loading-spinner">🐾</div>';
+
+  if (isDemoMode) {
+    const demoPosts = DEMO_GROUP_POSTS[groupId] || [];
+    el.innerHTML = demoPosts.length
+      ? demoPosts.map(p => renderPostCard(p)).join('')
+      : '<div class="empty-state"><div class="emoji">📝</div><p>Brak postów w tej grupie. Bądź pierwszy!</p></div>';
+    return;
+  }
+  try {
+    const snap = await get(ref(db, 'groupPosts/' + groupId));
+    const posts = [];
+    if (snap.exists()) snap.forEach(c => { posts.push({ id: c.key, ...c.val() }); });
+    posts.sort((a, b) => b.createdAt - a.createdAt);
+    el.innerHTML = posts.length
+      ? posts.map(p => renderPostCard(p)).join('')
+      : '<div class="empty-state"><div class="emoji">📝</div><p>Brak postów w tej grupie. Bądź pierwszy!</p></div>';
+  } catch(e) { el.innerHTML = '<div class="empty-state"><p>Błąd ładowania postów.</p></div>'; }
+}
+
+window.toggleGroupMembership = async () => {
+  if (isDemoMode) { showToast('Zaloguj się aby dołączyć do grup 🔒'); return; }
+  if (!currentUser || !_currentGroupId) return;
+  const isMember = _myGroupIds.has(_currentGroupId);
+  const btn = document.getElementById('group-join-btn');
+  try {
+    if (isMember) {
+      await remove(ref(db, 'groupMembers/' + currentUser.uid + '/' + _currentGroupId));
+      await update(ref(db, 'groups/' + _currentGroupId), { memberCount: Math.max(0, (_currentGroupData.memberCount || 1) - 1) });
+      _myGroupIds.delete(_currentGroupId);
+      btn.textContent = '⭐ Dołącz'; btn.className = 'btn-follow';
+      document.getElementById('group-create-post').style.display = 'none';
+      showToast('Opuściłeś grupę');
+    } else {
+      await set(ref(db, 'groupMembers/' + currentUser.uid + '/' + _currentGroupId), true);
+      const newCount = (_currentGroupData.memberCount || 0) + 1;
+      await update(ref(db, 'groups/' + _currentGroupId), { memberCount: newCount });
+      _currentGroupData.memberCount = newCount;
+      _myGroupIds.add(_currentGroupId);
+      btn.textContent = '✅ Dołączyłeś'; btn.className = 'btn-follow following';
+      document.getElementById('group-create-post').style.display = 'block';
+      loadMyPetsIntoGroupSelect();
+      showToast('Dołączyłeś do grupy! 👥');
+    }
+    loadMyGroups();
+  } catch(e) { showToast('Błąd: ' + e.message); }
+};
+
+window.submitGroupPost = async () => {
+  if (!currentUser || !_currentGroupId) return;
+  const text = document.getElementById('group-post-text').value.trim();
+  const petId = document.getElementById('group-post-pet-select').value;
+  if (!text) { showToast('Napisz coś do grupy!'); return; }
+  const pet = myPets[petId] || {};
+  try {
+    await push(ref(db, 'groupPosts/' + _currentGroupId), {
+      text, petId: petId || null, petName: pet.name || currentUser.displayName,
+      petSpecies: pet.species || '', petAvatarUrl: pet.avatarUrl || currentUser.photoURL || '',
+      ownerName: currentUser.displayName, ownerId: currentUser.uid,
+      createdAt: Date.now(), reactions: {}, comments: {}, groupId: _currentGroupId
+    });
+    document.getElementById('group-post-text').value = '';
+    showToast('Opublikowano w grupie! 🐾');
+    await loadGroupPosts(_currentGroupId);
+  } catch(e) { showToast('Błąd: ' + e.message); }
+};
+
+window.showGroupsBrowse = () => {
+  document.getElementById('groups-browse-view').style.display = 'block';
+  document.getElementById('groups-inner-view').style.display = 'none';
+  _currentGroupId = null;
+};
+
+let _selectedGroupEmoji = '🐾';
+window.selectGroupEmoji = (el, emoji) => {
+  document.querySelectorAll('#group-emoji-picker span').forEach(s => s.classList.remove('selected'));
+  el.classList.add('selected');
+  _selectedGroupEmoji = emoji;
+  document.getElementById('group-emoji-val').value = emoji;
+};
+
+window.openCreateGroupModal = () => {
+  if (isDemoMode) { showToast('Zaloguj się aby tworzyć grupy 🔒'); return; }
+  if (!currentUser) { showToast('Musisz być zalogowany'); return; }
+  document.getElementById('group-name-input').value = '';
+  document.getElementById('group-desc-input').value = '';
+  document.getElementById('group-species-input').value = '';
+  openModal('create-group-modal');
+};
+
+window.createGroup = async () => {
+  const name = document.getElementById('group-name-input').value.trim();
+  if (!name) { showToast('Podaj nazwę grupy!'); return; }
+  const emoji = _selectedGroupEmoji || '🐾';
+  const desc = document.getElementById('group-desc-input').value.trim();
+  const species = document.getElementById('group-species-input').value;
+  try {
+    const newRef = await push(ref(db, 'groups'), {
+      name, emoji, description: desc, species,
+      creatorId: currentUser.uid, creatorName: currentUser.displayName,
+      memberCount: 1, createdAt: Date.now()
+    });
+    await set(ref(db, 'groupMembers/' + currentUser.uid + '/' + newRef.key), true);
+    closeModal('create-group-modal');
+    showToast('Grupa "' + name + '" utworzona! 👥');
+    await loadGroupsList();
+    await loadMyGroups();
+    openGroup(newRef.key);
+  } catch(e) { showToast('Błąd: ' + e.message); }
+};
+
+// Demo dane dla grup
+const DEMO_GROUPS = [
+  { id: 'dg-1', emoji: '🐕', name: 'Labradorowcy Warszawy', description: 'Dla właścicieli labradorów z Warszawy i okolic', species: 'Pies', memberCount: 47, createdAt: Date.now() - 86400000*30 },
+  { id: 'dg-2', emoji: '🐈', name: 'Koty Maine Coon Polska', description: 'Najlepsze koty świata i ich opiekunowie 🐱', species: 'Kot', memberCount: 132, createdAt: Date.now() - 86400000*60 },
+  { id: 'dg-3', emoji: '🏆', name: 'Agility Polska', description: 'Treningi, zawody, wyniki — wszystko o agility', species: 'Pies', memberCount: 89, createdAt: Date.now() - 86400000*20 },
+  { id: 'dg-4', emoji: '🐾', name: 'Zwierzaki PL - Ogólna', description: 'Ogólna społeczność dla wszystkich właścicieli zwierząt', species: '', memberCount: 312, createdAt: Date.now() - 86400000*90 },
+  { id: 'dg-5', emoji: '🦮', name: 'Goldeny Retriever Fan Club', description: 'Bo złote retrievery to szczęście na czterech łapach 🌟', species: 'Pies', memberCount: 74, createdAt: Date.now() - 86400000*15 },
+  { id: 'dg-6', emoji: '🐇', name: 'Królikarnia', description: 'Wszystko o królikach — dieta, zdrowie, zabawy', species: 'Królik', memberCount: 28, createdAt: Date.now() - 86400000*45 },
+];
+const DEMO_GROUP_POSTS = {
+  'dg-1': [
+    { id: 'dgp-1', petName: 'Burek', petSpecies: 'Pies', petAvatarUrl: DEMO_PETS[0].avatarUrl, ownerName: 'Marek K.', ownerId: 'demo-owner-1', text: 'Organizujemy wspólny spacer w Łazienkach w sobotę o 10:00! Kto dołącza? 🐕🐕🐕 #labradorki #warszawa', createdAt: Date.now() - 3600000*2, reactions: { heart: { u1: true, u2: true } }, comments: { c1: { userName: 'Piotr L.', text: 'Będę!', createdAt: Date.now() - 3600000 } } },
+    { id: 'dgp-2', petName: 'Zuzia', petSpecies: 'Pies', petAvatarUrl: DEMO_PETS[1].avatarUrl, ownerName: 'Piotr L.', ownerId: 'demo-owner-3', text: 'Polecam weterynarza na Mokotowie — super podejście do psów, Zuzia wyszła bez stresu 🏥', createdAt: Date.now() - 3600000*8, reactions: { paw: { u1: true, u3: true } }, comments: {} },
+  ],
+  'dg-4': [
+    { id: 'dgp-3', petName: 'Mruczek', petSpecies: 'Kot', petAvatarUrl: DEMO_PETS[10].avatarUrl, ownerName: 'Anna W.', ownerId: 'demo-owner-2', text: 'Dziś weterynarz powiedział że Mruczek jest w idealnej formie 🎉 Dieta surowa robi swoje!', createdAt: Date.now() - 3600000*5, reactions: { heart: { u1: true, u2: true, u3: true } }, comments: {} },
+    { id: 'dgp-4', petName: 'Reksio', petSpecies: 'Pies', petAvatarUrl: DEMO_PETS[2].avatarUrl, ownerName: 'Tomek B.', ownerId: 'demo-owner-5', text: 'Ktoś poleci dobry sklep z zabawkami dla beagli? Reksio niszczy wszystko w 20 minut 😅', createdAt: Date.now() - 3600000*12, reactions: { laugh: { u1: true, u4: true, u5: true } }, comments: { c2: { userName: 'Julia M.', text: 'Kong klasyczny — przeżył u nas rok!', createdAt: Date.now() - 3600000*10 } } },
+  ],
+};
+
+// ═══════════════════════════════════
 // ═══════════════════════════════════
 let _pageHistory = ['feed'];
 
