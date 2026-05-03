@@ -165,6 +165,25 @@
   body.dark-mode .event-card { background: var(--surface); }
   body.dark-mode .rsvp-btn { background: var(--surface2); border-color: var(--border); color: var(--text); }
 
+  /* ── POI BUTTONS ── */
+  .poi-btn {
+    background: var(--cream);
+    border: 2px solid transparent;
+    border-radius: 20px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: 'Nunito', sans-serif;
+    color: var(--bark);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .poi-btn:hover { background: #EDD5B8; }
+  .poi-btn.active { background: var(--paw); color: white; border-color: var(--paw); }
+  body.dark-mode .poi-btn { background: var(--surface2); color: var(--text); }
+  body.dark-mode .poi-btn.active { background: var(--paw); color: white; }
+
   /* ── STATS DASHBOARD ── */
   .heatmap-grid { display: flex; gap: 3px; }
   .heatmap-col { display: flex; flex-direction: column; gap: 3px; }
@@ -2253,8 +2272,18 @@
         <span id="radius-val">wszędzie</span>
         <span style="font-size:13px;font-weight:600;color:var(--bark-light)">Pokaż w promieniu</span>
       </div>
-      <div style="margin-bottom:8px">
-        <button id="btn-dog-parks" class="btn-search-filter" onclick="toggleDogParks()" style="background:var(--grass);color:white">🐕 Wybiegi</button>
+      <div style="margin-bottom:10px">
+        <div style="font-size:12px;font-weight:800;color:var(--bark-light);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">📍 Szukaj w okolicy</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          <button class="poi-btn" id="poi-btn-wybiegi"     onclick="togglePOI('wybiegi')"    >🐕 Wybiegi</button>
+          <button class="poi-btn" id="poi-btn-weterynarz"  onclick="togglePOI('weterynarz')" >🏥 Weterynarz</button>
+          <button class="poi-btn" id="poi-btn-gromer"      onclick="togglePOI('gromer')"     >✂️ Groomer</button>
+          <button class="poi-btn" id="poi-btn-zoologiczny" onclick="togglePOI('zoologiczny')">🛒 Sklep zoo</button>
+          <button class="poi-btn" id="poi-btn-hotel"       onclick="togglePOI('hotel')"      >🏨 Hotel dla zwierząt</button>
+          <button class="poi-btn" id="poi-btn-tresura"     onclick="togglePOI('tresura')"    >🎓 Tresura</button>
+          <button class="poi-btn" id="poi-btn-park"        onclick="togglePOI('park')"       >🌿 Parki i lasy</button>
+          <button class="poi-btn" id="poi-btn-apteka"      onclick="togglePOI('apteka')"     >💊 Apteka wet.</button>
+        </div>
       </div>
       <div id="explore-map-container"><div id="map-explore"></div></div>
       <div id="explore-results" class="pets-grid"></div>
@@ -3905,7 +3934,9 @@ window.submitPost = async () => {
     petName: pet.name,
     petSpecies: pet.species,
     petAvatarUrl: pet.avatarUrl || null,
+    petPremium: pet.premium || null,
     ownerName: currentUser.displayName || 'Właściciel',
+    ownerPhotoURL: currentUser.photoURL || null,
     ownerId: currentUser.uid,
     createdAt: Date.now()
   };
@@ -5722,7 +5753,6 @@ function initExploreMap() {
 
   exploreMap = L.map('map-explore').setView([52.23, 21.01], 7);
   window._exploreMap = exploreMap;
-  window._dogParkLayer = null;
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap'
   }).addTo(exploreMap);
@@ -5730,35 +5760,95 @@ function initExploreMap() {
   refreshExploreMapPins();
 }
 
-window.toggleDogParks = async () => {
+// ─── POI konfiguracja ──────────────────────────────────────
+const POI_CONFIG = {
+  wybiegi:     { icon: '🐕', label: 'Wybiegi',            defaultName: 'Wybieg dla psów',
+    query: (b) => '[out:json];(node["leisure"="dog_park"]('+b+');way["leisure"="dog_park"]('+b+'););out center;' },
+  weterynarz:  { icon: '🏥', label: 'Weterynarz',         defaultName: 'Gabinet weterynaryjny',
+    query: (b) => '[out:json];(node["amenity"="veterinary"]('+b+');way["amenity"="veterinary"]('+b+'););out center;' },
+  gromer:      { icon: '✂️', label: 'Groomer',             defaultName: 'Salon dla zwierząt',
+    query: (b) => '[out:json];(node["shop"="pet_grooming"]('+b+');node["name"~"groomer|grooming|fryzjer.*pies|psi.*fryzjer",i]('+b+'););out center;' },
+  zoologiczny: { icon: '🛒', label: 'Sklep zoologiczny',  defaultName: 'Sklep zoologiczny',
+    query: (b) => '[out:json];(node["shop"="pet"]('+b+');way["shop"="pet"]('+b+'););out center;' },
+  hotel:       { icon: '🏨', label: 'Hotel dla zwierząt', defaultName: 'Hotel / pensjonat dla zwierząt',
+    query: (b) => '[out:json];(node["amenity"="animal_boarding"]('+b+');node["name"~"hotel.*zwierz|pensjonat.*pies|dog.*hotel",i]('+b+'););out center;' },
+  tresura:     { icon: '🎓', label: 'Szkoła tresury',     defaultName: 'Szkoła tresury',
+    query: (b) => '[out:json];(node["amenity"="dog_training"]('+b+');node["name"~"tresura|szkoła.*pies|dog.*school|agility",i]('+b+'););out center;' },
+  park:        { icon: '🌿', label: 'Park / las',          defaultName: 'Park',
+    query: (b) => '[out:json];(node["leisure"="park"]('+b+');way["leisure"="park"]('+b+');way["landuse"="forest"]('+b+');way["natural"="wood"]('+b+'););out center;' },
+  apteka:      { icon: '💊', label: 'Apteka weterynaryjna', defaultName: 'Apteka',
+    query: (b) => '[out:json];(node["shop"="veterinary"]('+b+');node["name"~"apteka.*wet|weterynaryjna",i]('+b+'););out center;' },
+};
+
+const _poiLayers = {}; // type → L.layerGroup
+
+window.togglePOI = async (type) => {
   if (!window._exploreMap) { showToast('Najpierw otwórz mapę'); return; }
-  const btn = document.getElementById('btn-dog-parks');
-  if (window._dogParkLayer) {
-    window._exploreMap.removeLayer(window._dogParkLayer);
-    window._dogParkLayer = null;
-    if (btn) btn.textContent = '🐕 Wybiegi';
+  const cfg = POI_CONFIG[type];
+  if (!cfg) return;
+  const btn = document.getElementById('poi-btn-' + type);
+
+  // Toggle — jeśli warstwa istnieje, ukryj
+  if (_poiLayers[type]) {
+    window._exploreMap.removeLayer(_poiLayers[type]);
+    delete _poiLayers[type];
+    if (btn) btn.classList.remove('active');
     return;
   }
-  showToast('Szukam wybiegów...');
+
+  showToast('Szukam: ' + cfg.label + '...');
+  if (btn) btn.classList.add('active');
+  btn.textContent = cfg.icon + ' Szukam...';
+
   const b = window._exploreMap.getBounds();
   const bbox = b.getSouth()+','+b.getWest()+','+b.getNorth()+','+b.getEast();
-  const q = '[out:json];(node["leisure"="dog_park"]('+bbox+');way["leisure"="dog_park"]('+bbox+'););out center;';
+
   try {
-    const resp = await fetch('https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(q));
+    const resp = await fetch('https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(cfg.query(bbox)));
     const data = await resp.json();
     const markers = [];
+    const seen = new Set();
+
     data.elements.forEach(el => {
       const lat = el.lat || (el.center && el.center.lat);
       const lng = el.lon || (el.center && el.center.lon);
       if (!lat || !lng) return;
-      const icon = L.divIcon({ html: '🐕', className: '', iconSize: [28, 28] });
-      markers.push(L.marker([lat, lng], { icon }).bindPopup(el.tags && el.tags.name ? el.tags.name : 'Psie wybiegisko'));
+      const key = lat.toFixed(4) + ',' + lng.toFixed(4);
+      if (seen.has(key)) return;
+      seen.add(key);
+
+      const name    = (el.tags && el.tags.name) ? el.tags.name : cfg.defaultName;
+      const phone   = el.tags && el.tags.phone ? '<br>📞 ' + el.tags.phone : '';
+      const website = el.tags && el.tags.website ? '<br><a href="' + el.tags.website + '" target="_blank" style="color:var(--paw)">🌐 Strona</a>' : '';
+      const hours   = el.tags && el.tags.opening_hours ? '<br>🕐 ' + el.tags.opening_hours : '';
+      const popup   = '<div style="font-family:Nunito,sans-serif;min-width:140px">' +
+        '<div style="font-size:16px;margin-bottom:4px">' + cfg.icon + ' ' + name + '</div>' +
+        '<div style="font-size:12px;color:#666">' + cfg.label + phone + hours + website + '</div>' +
+        '</div>';
+
+      const icon = L.divIcon({
+        html: '<div style="font-size:22px;line-height:1;filter:drop-shadow(1px 1px 2px rgba(0,0,0,0.4))">' + cfg.icon + '</div>',
+        className: '', iconSize: [28, 28], iconAnchor: [14, 14]
+      });
+      markers.push(L.marker([lat, lng], { icon }).bindPopup(popup));
     });
-    window._dogParkLayer = L.layerGroup(markers).addTo(window._exploreMap);
-    if (btn) btn.textContent = '🐕 Ukryj wybiegi (' + markers.length + ')';
-    if (!markers.length) showToast('Brak wybiegów w tym obszarze');
-  } catch(e) { showToast('Błąd ładowania wybiegów'); }
+
+    _poiLayers[type] = L.layerGroup(markers).addTo(window._exploreMap);
+    if (btn) btn.textContent = cfg.icon + ' ' + cfg.label + ' (' + markers.length + ')';
+    if (!markers.length) {
+      showToast('Brak wyników dla: ' + cfg.label + ' w tym obszarze');
+      btn.classList.remove('active');
+    } else {
+      showToast('Znaleziono: ' + markers.length + ' · ' + cfg.label);
+    }
+  } catch(e) {
+    showToast('Błąd ładowania: ' + cfg.label);
+    if (btn) { btn.classList.remove('active'); btn.textContent = cfg.icon + ' ' + cfg.label; }
+  }
 };
+
+// Zachowaj stary alias dla kompatybilności
+window.toggleDogParks = () => togglePOI('wybiegi');
 
 async function refreshExploreMapPins(radiusKm = 0) {
   if (!exploreMap) return;
@@ -7352,8 +7442,7 @@ function applyLanguage(lang) {
   setText('btn-explore-search', 'exploreSearch');
 
   // Dog parks btn
-  const dpBtn = document.getElementById('btn-dog-parks');
-  if (dpBtn) dpBtn.textContent = t.dogParks;
+  // POI buttons nie wymagają tłumaczenia - mają stałe etykiety
 
   // Ranking tytuły
   document.querySelectorAll('.ranking-title').forEach(el => { el.textContent = t.rankingTitle; });
@@ -8211,9 +8300,6 @@ function escapeCSV(s) {
   return (s || '').replace(/"/g, '""');
 }
 
-// ─── Podpięcie do strony Moje zwierzęta ─────────────────────
-const _origShowPage = window.showPage;
-
 // ═══════════════════════════════════
 //  🔍  WYSZUKIWANIE ZAAWANSOWANE
 // ═══════════════════════════════════
@@ -8403,7 +8489,6 @@ window.applySearchFilters = () => {
 };
 
 // ─── Inicjalizacja strony search ────────────────────────────
-const _origInitSearch = window.showPage;
 window._initSearchPage = () => {
   renderSearchHistory();
   loadTrendingTags();
@@ -8563,7 +8648,7 @@ function _renderOwnerDemo(ownerId, ownerName) {
   metaEl.textContent = 'Profil demo';
 
   // Znajdź zwierzęta demo powiązane z tym właścicielem
-  const demoPets = Object.values(DEMO_PETS || {}).filter(p => p.ownerName === ownerName);
+  const demoPets = (Array.isArray(DEMO_PETS) ? DEMO_PETS : Object.values(DEMO_PETS || {})).filter(p => p.ownerName === ownerName);
   const petsEl = document.getElementById('owner-pets-list');
   petsEl.innerHTML = demoPets.length
     ? demoPets.map(p => _renderOwnerPetCard(p)).join('')
