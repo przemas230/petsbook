@@ -617,10 +617,9 @@
     flex-wrap: wrap;
   }
   @media (max-width: 500px) {
-    .create-post-actions { gap: 6px; }
-    .create-post-actions .btn-post { margin-left: 0; width: 100%; justify-content: center; margin-top: 2px; }
-    .post-select { font-size: 12px; padding: 7px 8px; }
+    .post-select { font-size: 12px; }
     .btn-photo-upload { font-size: 12px; padding: 7px 10px; }
+    .btn-post { font-size: 13px; padding: 8px 14px; }
   }
   .post-select {
     background: var(--cream);
@@ -2042,6 +2041,7 @@
         </div>
         <div id="nav-avatar-wrap"></div>
         <button class="notif-btn" onclick="openSettings()" title="Ustawienia" style="font-size:16px">⚙️</button>
+        <button id="pwa-install-btn" onclick="triggerPwaInstall()" style="display:none;background:var(--paw);color:white;border:none;border-radius:10px;padding:6px 10px;font-size:12px;font-weight:700;cursor:pointer;align-items:center;gap:4px">📲 Zainstaluj</button>
         <button class="btn-signout" onclick="signOut()">Wyloguj</button>
       </div>
     </div>
@@ -2072,16 +2072,18 @@
             <textarea id="post-text" placeholder="Co słychać u Twoich zwierząt?"></textarea>
           </div>
           <img id="post-image-preview" alt="preview">
-          <div class="create-post-actions">
-            <select class="post-select" id="post-pet-select">
+          <div class="create-post-actions" style="flex-direction:column;align-items:stretch;gap:8px">
+            <select class="post-select" id="post-pet-select" style="width:100%">
               <option value="">Wybierz zwierzę...</option>
             </select>
-            <label style="cursor:pointer">
-              <input type="file" accept="image/*" style="display:none" id="post-image-input" onchange="handlePostImage(this)">
-              <div class="btn-photo-upload">📷 Zdjęcie</div>
-            </label>
-            <button class="btn-story" onclick="openCreateStoryModal()">✨ Story</button>
-            <button class="btn-post" onclick="submitPost()">Opublikuj 🐾</button>
+            <div style="display:flex;gap:8px">
+              <label style="cursor:pointer;flex:1">
+                <input type="file" accept="image/*" style="display:none" id="post-image-input" onchange="handlePostImage(this)">
+                <div class="btn-photo-upload" style="text-align:center;width:100%;box-sizing:border-box">📷 Zdjęcie</div>
+              </label>
+              <button class="btn-story" onclick="openCreateStoryModal()" style="flex:1">✨ Story</button>
+              <button class="btn-post" onclick="submitPost()" style="flex:2;margin-left:0">Opublikuj 🐾</button>
+            </div>
           </div>
         </div>
 
@@ -2111,8 +2113,8 @@
               onfocus="this.style.borderColor='var(--paw-light)'"
               onblur="this.style.borderColor='transparent'">
           </div>
-          <div class="feed-filter-row">
-            <select class="feed-filter-select" id="feed-filter-species" onchange="applyFeedFilters()">
+          <div class="feed-filter-row" style="flex-direction:column;gap:8px">
+            <select class="feed-filter-select" id="feed-filter-species" onchange="applyFeedFilters()" style="width:100%;max-width:100%">
               <option value="">🐾 Wszystkie gatunki</option>
               <option value="Pies">🐕 Pies</option>
               <option value="Kot">🐈 Kot</option>
@@ -2129,10 +2131,10 @@
               <option value="Koń">🐴 Koń</option>
               <option value="Inne">🐾 Inne</option>
             </select>
-            <div class="feed-radius-wrap">
+            <div class="feed-radius-wrap" style="width:100%">
               <label>📍</label>
-              <input type="range" min="0" max="200" value="0" step="10" id="feed-radius-slider" oninput="onFeedRadiusChange(this.value)">
-              <span id="feed-radius-val">wszędzie</span>
+              <input type="range" min="0" max="200" value="0" step="10" id="feed-radius-slider" oninput="onFeedRadiusChange(this.value)" style="flex:1;min-width:0">
+              <span id="feed-radius-val" style="min-width:52px;text-align:right">wszędzie</span>
             </div>
           </div>
         </div>
@@ -6423,30 +6425,86 @@ function renderDemoMyPets() {
 }
 
 // ── PWA ──
+let _pwaInstallPrompt = null;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  _pwaInstallPrompt = e;
+  // Pokaż przycisk instalacji
+  const btn = document.getElementById('pwa-install-btn');
+  if (btn) btn.style.display = 'flex';
+});
+
+window.addEventListener('appinstalled', () => {
+  _pwaInstallPrompt = null;
+  const btn = document.getElementById('pwa-install-btn');
+  if (btn) btn.style.display = 'none';
+  showToast('PetsBook zainstalowany! 🎉');
+});
+
+window.triggerPwaInstall = async () => {
+  if (!_pwaInstallPrompt) {
+    showToast('Użyj menu przeglądarki → "Dodaj do ekranu głównego"');
+    return;
+  }
+  _pwaInstallPrompt.prompt();
+  const { outcome } = await _pwaInstallPrompt.userChoice;
+  if (outcome === 'accepted') showToast('Instalowanie PetsBook... 🐾');
+  _pwaInstallPrompt = null;
+  const btn = document.getElementById('pwa-install-btn');
+  if (btn) btn.style.display = 'none';
+};
+
 function initPWA() {
   const manifest = {
     name: 'PetsBook',
     short_name: 'PetsBook',
     description: 'Sieć społecznościowa dla Twoich zwierząt',
-    start_url: './',
+    start_url: window.location.pathname,
+    scope: window.location.pathname,
     display: 'standalone',
+    orientation: 'portrait',
     background_color: '#FDF6EC',
     theme_color: '#E8734A',
     icons: [
-      { src: 'https://via.placeholder.com/192/E8734A/ffffff?text=🐾', sizes: '192x192', type: 'image/png' },
-      { src: 'https://via.placeholder.com/512/E8734A/ffffff?text=🐾', sizes: '512x512', type: 'image/png' }
+      { src: 'https://via.placeholder.com/192/E8734A/ffffff?text=PB', sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+      { src: 'https://via.placeholder.com/512/E8734A/ffffff?text=PB', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
     ]
   };
   const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
   document.getElementById('pwa-manifest').href = URL.createObjectURL(blob);
 
+  // Service Worker z cache-first dla statycznych zasobów
   if ('serviceWorker' in navigator) {
-    // Używamy data URL zamiast blob URL (blob: nie jest obsługiwany przez SW)
-    const swCode = `self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('activate',e=>e.waitUntil(clients.claim()));self.addEventListener('fetch',e=>{if(e.request.method==='GET')e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));});`;
-    const swDataUrl = 'data:application/javascript;base64,' + btoa(swCode);
-    navigator.serviceWorker.register(swDataUrl, { type: 'module' }).catch(() => {
-      // Niektóre przeglądarki nie obsługują data: dla SW — ignorujemy cicho
-    });
+    const swCode = [
+      'const CACHE = "petsbook-v1";',
+      'const STATIC = ["https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=Nunito:wght@400;600;700;800;900&display=swap"];',
+      'self.addEventListener("install", e => {',
+      '  e.waitUntil(caches.open(CACHE).then(c => c.addAll(STATIC).catch(()=>{})));',
+      '  self.skipWaiting();',
+      '});',
+      'self.addEventListener("activate", e => {',
+      '  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));',
+      '  self.clients.claim();',
+      '});',
+      'self.addEventListener("fetch", e => {',
+      '  if (e.request.method !== "GET") return;',
+      '  const url = e.request.url;',
+      '  // Cache-first dla fontów i statycznych zasobów',
+      '  if (url.includes("fonts.googleapis") || url.includes("fonts.gstatic") || url.includes("cdnjs.cloudflare")) {',
+      '    e.respondWith(caches.match(e.request).then(r => r || fetch(e.request).then(res => {',
+      '      const clone = res.clone();',
+      '      caches.open(CACHE).then(c => c.put(e.request, clone));',
+      '      return res;',
+      '    }).catch(()=>new Response("",{status:408}))));',
+      '    return;',
+      '  }',
+      '  // Network-first dla reszty (Firebase, API)',
+      '  e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));',
+      '});'
+    ].join(String.fromCharCode(10));
+    const swDataUrl = 'data:application/javascript;base64,' + btoa(unescape(encodeURIComponent(swCode)));
+    navigator.serviceWorker.register(swDataUrl, { type: 'module' }).catch(() => {});
   }
 }
 
