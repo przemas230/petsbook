@@ -561,6 +561,7 @@
   @media (max-width: 900px) {
     .main-layout { grid-template-columns: 1fr; padding: 16px 12px; }
     .sidebar-left, .sidebar-right { display: none; }
+    .main-layout > main { min-width: 0; max-width: 100%; overflow-x: hidden; }
   }
 
   /* ── CARDS ── */
@@ -776,6 +777,9 @@
     margin-bottom: 20px;
     overflow: hidden;
     animation: fadeUp 0.3s ease;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
   @keyframes fadeUp {
     from { opacity: 0; transform: translateY(12px); }
@@ -786,6 +790,8 @@
     align-items: center;
     gap: 12px;
     padding: 16px 20px 12px;
+    min-width: 0;
+    max-width: 100%;
   }
   .post-pet-avatar {
     width: 48px;
@@ -802,7 +808,7 @@
     cursor: pointer;
   }
   .post-pet-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
-  .post-meta { flex: 1; }
+  .post-meta { flex: 1; min-width: 0; overflow: hidden; }
   .post-pet-name { font-weight: 800; font-size: 15px; cursor: pointer; }
   .post-pet-name:hover { color: var(--paw); }
   .post-owner { font-size: 12px; color: var(--bark-light); font-weight: 600; }
@@ -1515,6 +1521,8 @@
     padding: 6px 16px 2px;
     gap: 4px;
     flex-wrap: wrap;
+    overflow-x: hidden;
+    max-width: 100%;
   }
   .reaction-btn {
     display: flex;
