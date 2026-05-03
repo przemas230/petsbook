@@ -107,6 +107,22 @@
   body.dark-mode .group-card { background: var(--surface); }
   body.dark-mode .group-card-name { color: var(--text); }
 
+  /* ── GROUP TOPICS ── */
+  .topic-card { background: white; border-radius: 14px; padding: 14px 18px; margin-bottom: 10px; cursor: pointer; box-shadow: var(--card-shadow); display: flex; align-items: center; gap: 14px; transition: transform 0.15s, box-shadow 0.15s; }
+  .topic-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.1); }
+  .topic-card-icon { font-size: 32px; flex-shrink: 0; }
+  .topic-card-info { flex: 1; min-width: 0; }
+  .topic-card-name { font-weight: 900; font-size: 15px; color: var(--bark); }
+  .topic-card-desc { font-size: 12px; color: var(--bark-light); margin-top: 2px; }
+  .topic-card-meta { font-size: 11px; color: var(--bark-light); margin-top: 4px; }
+  .topic-card-arrow { font-size: 18px; color: var(--bark-light); flex-shrink: 0; }
+  .topic-owner-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .topic-delete-btn { background: none; border: 1px solid #e53e3e; color: #e53e3e; border-radius: 8px; padding: 3px 8px; font-size: 11px; cursor: pointer; }
+  #topic-emoji-picker span { padding: 4px; border-radius: 8px; transition: background 0.1s; cursor: pointer; }
+  #topic-emoji-picker span:hover, #topic-emoji-picker span.selected { background: var(--paw-light); border-color: var(--paw) !important; }
+  body.dark-mode .topic-card { background: var(--surface); }
+  body.dark-mode .topic-card-name { color: var(--text); }
+
   /* ── SEARCH PAGE ── */
   .search-pets-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
   .search-pet-card { background: white; border-radius: 16px; padding: 16px; text-align: center; cursor: pointer; box-shadow: var(--card-shadow); transition: transform 0.15s; }
@@ -2232,29 +2248,52 @@
           <div id="groups-list"></div>
         </div>
         <div id="groups-inner-view" style="display:none">
-          <button onclick="showGroupsBrowse()" style="background:none;border:none;font-size:14px;font-weight:800;color:var(--bark-light);cursor:pointer;display:flex;align-items:center;gap:6px;padding:6px 0;margin-bottom:12px">← Wszystkie grupy</button>
-          <div class="card" id="group-header-card" style="margin-bottom:16px;padding:20px 24px">
-            <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
-              <div id="group-header-emoji" style="font-size:48px;line-height:1"></div>
-              <div style="flex:1">
-                <div id="group-header-name" style="font-size:22px;font-weight:900;color:var(--bark)"></div>
-                <div id="group-header-desc" style="font-size:14px;color:var(--bark-light);margin-top:4px"></div>
-                <div id="group-header-meta" style="font-size:13px;color:var(--bark-light);margin-top:6px"></div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+              <button onclick="showGroupsBrowse()" style="background:none;border:none;font-size:14px;font-weight:800;color:var(--bark-light);cursor:pointer;display:flex;align-items:center;gap:4px;padding:6px 0">← Grupy</button>
+              <span id="group-breadcrumb" style="font-size:13px;color:var(--bark-light)"></span>
+            </div>
+            <div class="card" id="group-header-card" style="margin-bottom:16px;padding:18px 20px">
+              <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+                <div id="group-header-emoji" style="font-size:44px;line-height:1"></div>
+                <div style="flex:1;min-width:0">
+                  <div id="group-header-name" style="font-size:20px;font-weight:900;color:var(--bark)"></div>
+                  <div id="group-header-desc" style="font-size:13px;color:var(--bark-light);margin-top:3px"></div>
+                  <div id="group-header-meta" style="font-size:12px;color:var(--bark-light);margin-top:4px"></div>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                  <button id="group-join-btn" class="btn-follow" onclick="toggleGroupMembership()" style="min-width:110px"></button>
+                  <button id="group-delete-btn" onclick="deleteGroup()" style="display:none;background:none;border:1px solid #e53e3e;color:#e53e3e;border-radius:10px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">🗑️ Usuń</button>
+                </div>
               </div>
-              <button id="group-join-btn" class="btn-follow" onclick="toggleGroupMembership()" style="min-width:120px"></button>
             </div>
-          </div>
-          <div class="create-post" id="group-create-post" style="display:none;margin-bottom:16px">
-            <div class="create-post-top">
-              <div id="group-post-avatar" class="pet-avatar" style="font-size:22px">👤</div>
-              <textarea id="group-post-text" placeholder="Napisz coś do grupy..."></textarea>
+            <div id="group-topics-view">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                <div style="font-size:15px;font-weight:800;color:var(--bark)">💬 Tematy</div>
+                <button id="group-add-topic-btn" onclick="openCreateTopicModal()" style="display:none;background:var(--paw);color:white;border:none;border-radius:10px;padding:6px 14px;font-size:13px;font-weight:700;cursor:pointer">+ Nowy temat</button>
+              </div>
+              <div id="group-topics-list"><div class="loading-spinner">🐾</div></div>
             </div>
-            <div class="create-post-actions" style="justify-content:flex-end">
-              <select class="post-select" id="group-post-pet-select"><option value="">Wybierz zwierzę...</option></select>
-              <button class="btn-post" onclick="submitGroupPost()">Opublikuj 🐾</button>
+            <div id="group-topic-posts-view" style="display:none">
+              <button onclick="showGroupTopics()" style="background:none;border:none;font-size:14px;font-weight:800;color:var(--bark-light);cursor:pointer;display:flex;align-items:center;gap:4px;padding:4px 0;margin-bottom:12px">← Tematy</button>
+              <div class="card" style="margin-bottom:14px;padding:14px 18px;display:flex;align-items:center;gap:12px">
+                <div id="group-topic-header-icon" style="font-size:28px"></div>
+                <div>
+                  <div id="group-topic-header-name" style="font-size:17px;font-weight:900;color:var(--bark)"></div>
+                  <div id="group-topic-header-desc" style="font-size:13px;color:var(--bark-light);margin-top:2px"></div>
+                </div>
+              </div>
+              <div class="create-post" id="group-create-post" style="display:none;margin-bottom:14px">
+                <div class="create-post-top">
+                  <div id="group-post-avatar" class="pet-avatar" style="font-size:22px">👤</div>
+                  <textarea id="group-post-text" placeholder="Napisz coś w tym temacie..."></textarea>
+                </div>
+                <div class="create-post-actions" style="justify-content:flex-end">
+                  <select class="post-select" id="group-post-pet-select"><option value="">Wybierz zwierzę...</option></select>
+                  <button class="btn-post" onclick="submitGroupPost()">Opublikuj 🐾</button>
+                </div>
+              </div>
+              <div id="group-posts-list"><div class="loading-spinner">🐾</div></div>
             </div>
-          </div>
-          <div id="group-posts-list"><div class="loading-spinner">🐾</div></div>
         </div>
       </main>
       <aside class="sidebar-right">
@@ -2770,6 +2809,39 @@
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal('create-group-modal')">Anuluj</button>
       <button class="btn-save" onclick="createGroup()">Utwórz 👥</button>
+    </div>
+  </div>
+</div>
+
+<!-- CREATE TOPIC MODAL -->
+<div class="modal-overlay" id="create-topic-modal">
+  <div class="modal-box">
+    <div class="modal-title">💬 Nowy temat</div>
+    <div class="form-group">
+      <label class="form-label">Ikona tematu</label>
+      <div id="topic-emoji-picker" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+        <span onclick="selectTopicEmoji(this,'💬')" style="font-size:24px;cursor:pointer;padding:4px;border-radius:8px;border:2px solid var(--paw)" class="selected">💬</span>
+        <span onclick="selectTopicEmoji(this,'📢')" style="font-size:24px;cursor:pointer;padding:4px;border-radius:8px;border:2px solid transparent">📢</span>
+        <span onclick="selectTopicEmoji(this,'❓')" style="font-size:24px;cursor:pointer;padding:4px;border-radius:8px;border:2px solid transparent">❓</span>
+        <span onclick="selectTopicEmoji(this,'🏆')" style="font-size:24px;cursor:pointer;padding:4px;border-radius:8px;border:2px solid transparent">🏆</span>
+        <span onclick="selectTopicEmoji(this,'📸')" style="font-size:24px;cursor:pointer;padding:4px;border-radius:8px;border:2px solid transparent">📸</span>
+        <span onclick="selectTopicEmoji(this,'🐾')" style="font-size:24px;cursor:pointer;padding:4px;border-radius:8px;border:2px solid transparent">🐾</span>
+        <span onclick="selectTopicEmoji(this,'💡')" style="font-size:24px;cursor:pointer;padding:4px;border-radius:8px;border:2px solid transparent">💡</span>
+        <span onclick="selectTopicEmoji(this,'🎉')" style="font-size:24px;cursor:pointer;padding:4px;border-radius:8px;border:2px solid transparent">🎉</span>
+      </div>
+      <input type="hidden" id="topic-emoji-val" value="💬">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nazwa tematu *</label>
+      <input type="text" class="form-input" id="topic-name-input" placeholder="np. Pytania i odpowiedzi" maxlength="60">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Opis (opcjonalnie)</label>
+      <input type="text" class="form-input" id="topic-desc-input" placeholder="O czym są posty w tym temacie?" maxlength="120">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('create-topic-modal')">Anuluj</button>
+      <button class="btn-save" onclick="createTopic()">Utwórz temat 💬</button>
     </div>
   </div>
 </div>
@@ -4316,6 +4388,7 @@ window.deleteVaccine = async (petId, vaccineId) => {
 //  ETAP 5: 🦮 KALENDARZ SPACERÓW
 // ═══════════════════════════════════
 let walkModalPetId = null;
+let _editWalkId = null; // null = nowy spacer, string = edycja istniejącego
 const DAY_NAMES = { 0:'Nd', 1:'Pn', 2:'Wt', 3:'Śr', 4:'Cz', 5:'Pt', 6:'Sb' };
 const DAY_FULL  = { 0:'Niedziela', 1:'Poniedziałek', 2:'Wtorek', 3:'Środa', 4:'Czwartek', 5:'Piątek', 6:'Sobota' };
 
@@ -4380,7 +4453,10 @@ async function renderWalkList(petId) {
       ${!isPast && !isWalkOwner ? `<button class="walk-join-btn ${iJoined ? 'joined' : ''}" onclick="joinWalk('${petId}','${w.id}',${!!iJoined})">
         ${iJoined ? '✅ Dołączyłeś' : '➕ Dołącz'}
       </button>` : ''}
-      ${isWalkOwner && !isPast ? `<button class="vaccine-btn-delete" onclick="deleteWalk('${petId}','${w.id}')">✕</button>` : ''}
+      ${isWalkOwner && !isPast ? `
+        <button class="vaccine-btn-delete" style="background:var(--sky);color:white;margin-right:4px" onclick="startEditWalk('${petId}','${w.id}')" title="Edytuj">✏️</button>
+        <button class="vaccine-btn-delete" onclick="deleteWalk('${petId}','${w.id}')">✕</button>
+      ` : ''}
     </div>`;
   }).join('');
 }
@@ -4416,22 +4492,49 @@ async function renderWeeklyWalkList(petId) {
   }).join('');
 }
 
+// Wypełnia formularz danymi istniejącego spaceru do edycji
+window.startEditWalk = async (petId, walkId) => {
+  const snap = await get(ref(db, 'walks/' + petId + '/oneTime/' + walkId));
+  if (!snap.exists()) return;
+  const w = snap.val();
+  _editWalkId = walkId;
+  document.getElementById('walk-title-input').value = w.title || '';
+  document.getElementById('walk-datetime-input').value = w.datetime || '';
+  document.getElementById('walk-place-input').value = w.place || '';
+  document.getElementById('walk-max-input').value = w.maxJoiners || 5;
+  const btn = document.querySelector('#walk-tab-once .btn-save');
+  if (btn) { btn.textContent = '💾 Zapisz zmiany'; btn.style.background = 'var(--sky)'; }
+  showToast('Edytujesz spacer — zmień dane i zapisz ✏️');
+};
+
 window.addWalk = async () => {
   const title = document.getElementById('walk-title-input').value.trim();
   const datetime = document.getElementById('walk-datetime-input').value;
   if (!title || !datetime) { showToast('Podaj tytuł i datę!'); return; }
   const maxJoiners = parseInt(document.getElementById('walk-max-input').value) || 5;
   const place = document.getElementById('walk-place-input').value.trim();
-  await push(ref(db, `walks/${walkModalPetId}/oneTime`), {
-    title, datetime, place, maxJoiners,
-    ownerId: currentUser.uid,
-    ownerName: currentUser.displayName || 'Właściciel',
-    createdAt: Date.now()
-  });
+
+  if (_editWalkId) {
+    // Tryb edycji — update istniejącego
+    await update(ref(db, 'walks/' + walkModalPetId + '/oneTime/' + _editWalkId), {
+      title, datetime, place, maxJoiners
+    });
+    _editWalkId = null;
+    const btn = document.querySelector('#walk-tab-once .btn-save');
+    if (btn) { btn.textContent = 'Zaplanuj 📅'; btn.style.background = ''; }
+    showToast('Spacer zaktualizowany! ✏️');
+  } else {
+    await push(ref(db, 'walks/' + walkModalPetId + '/oneTime'), {
+      title, datetime, place, maxJoiners,
+      ownerId: currentUser.uid,
+      ownerName: currentUser.displayName || 'Właściciel',
+      createdAt: Date.now()
+    });
+    showToast('Spacer zaplanowany! 📅');
+  }
   document.getElementById('walk-title-input').value = '';
   document.getElementById('walk-place-input').value = '';
   await renderWalkList(walkModalPetId);
-  showToast('Spacer zaplanowany! 📅');
 };
 
 window.addWeeklyWalk = async () => {
@@ -6968,8 +7071,12 @@ window.filterGroupsList = (q) => {
   renderGroupsList(filtered);
 };
 
+let _currentTopicId = null;
+let _currentTopicData = null;
+
 window.openGroup = async (groupId) => {
   _currentGroupId = groupId;
+  _currentTopicId = null;
   document.getElementById('groups-browse-view').style.display = 'none';
   document.getElementById('groups-inner-view').style.display = 'block';
 
@@ -6988,11 +7095,174 @@ window.openGroup = async (groupId) => {
   joinBtn.textContent = isMember ? '✅ Dołączyłeś' : '⭐ Dołącz';
   joinBtn.className = 'btn-follow' + (isMember ? ' following' : '');
 
-  const createPostEl = document.getElementById('group-create-post');
-  createPostEl.style.display = (isMember && !isDemoMode) ? 'block' : 'none';
+  // Przycisk usuwania grupy - tylko dla twórcy
+  const delBtn = document.getElementById('group-delete-btn');
+  const isCreator = currentUser && group.creatorId === currentUser.uid;
+  delBtn.style.display = (isCreator && !isDemoMode) ? 'inline-flex' : 'none';
+
+  // Przycisk nowego tematu - dla twórcy i członków
+  const addTopicBtn = document.getElementById('group-add-topic-btn');
+  addTopicBtn.style.display = (isMember && !isDemoMode) ? 'block' : 'none';
+
+  document.getElementById('group-breadcrumb').textContent = '';
+  showGroupTopics();
+  await loadGroupTopics(groupId);
+};
+
+window.showGroupTopics = () => {
+  document.getElementById('group-topics-view').style.display = 'block';
+  document.getElementById('group-topic-posts-view').style.display = 'none';
+  document.getElementById('group-breadcrumb').textContent = '';
+  _currentTopicId = null;
+};
+
+async function loadGroupTopics(groupId) {
+  const el = document.getElementById('group-topics-list');
+  el.innerHTML = '<div class="loading-spinner">🐾</div>';
+
+  if (isDemoMode || groupId.startsWith('dg-')) {
+    const demoTopics = DEMO_GROUP_TOPICS[groupId] || [];
+    el.innerHTML = demoTopics.length
+      ? demoTopics.map(t => renderTopicCard(t)).join('')
+      : '<div class="empty-state"><div class="emoji">💬</div><p>Brak tematów. Twórca grupy może je dodać.</p></div>';
+    return;
+  }
+  try {
+    const snap = await get(ref(db, 'groupTopics/' + groupId));
+    const topics = [];
+    if (snap.exists()) snap.forEach(c => { topics.push({ id: c.key, ...c.val() }); });
+    topics.sort((a, b) => (a.order || 0) - (b.order || 0) || a.createdAt - b.createdAt);
+    el.innerHTML = topics.length
+      ? topics.map(t => renderTopicCard(t)).join('')
+      : '<div class="empty-state"><div class="emoji">💬</div><p>Brak tematów. Kliknij "+ Nowy temat" aby dodać.</p></div>';
+  } catch(e) { el.innerHTML = '<div class="empty-state"><p>Błąd ładowania tematów.</p></div>'; }
+}
+
+function renderTopicCard(t) {
+  const isCreator = currentUser && _currentGroupData && _currentGroupData.creatorId === currentUser.uid && !isDemoMode;
+  const delBtn = isCreator
+    ? '<button class="topic-delete-btn" onclick="event.stopPropagation();deleteTopic(\'' + t.id + '\')" title="Usuń temat">✕</button>'
+    : '';
+  return '<div class="topic-card" onclick="openTopic(\'' + t.id + '\')">' +
+    '<div class="topic-card-icon">' + (t.emoji || '💬') + '</div>' +
+    '<div class="topic-card-info">' +
+      '<div class="topic-card-name">' + escapeHtml(t.name || '') + '</div>' +
+      (t.description ? '<div class="topic-card-desc">' + escapeHtml(t.description) + '</div>' : '') +
+      '<div class="topic-card-meta">💬 ' + (t.postCount || 0) + ' postów</div>' +
+    '</div>' +
+    (delBtn ? '<div class="topic-owner-actions">' + delBtn + '</div>' : '') +
+    '<div class="topic-card-arrow">›</div>' +
+  '</div>';
+}
+
+window.openTopic = async (topicId) => {
+  const topics = document.querySelectorAll('.topic-card');
+  let topic = null;
+  // Szukamy w danych — spróbuj z Firebase lub demo
+  if (isDemoMode || (_currentGroupId && _currentGroupId.startsWith('dg-'))) {
+    const demoTopics = DEMO_GROUP_TOPICS[_currentGroupId] || [];
+    topic = demoTopics.find(t => t.id === topicId) || { id: topicId, name: topicId, emoji: '💬' };
+  } else {
+    try {
+      const snap = await get(ref(db, 'groupTopics/' + _currentGroupId + '/' + topicId));
+      topic = snap.exists() ? { id: topicId, ...snap.val() } : { id: topicId, name: topicId, emoji: '💬' };
+    } catch(e) { topic = { id: topicId, name: topicId, emoji: '💬' }; }
+  }
+  _currentTopicId = topicId;
+  _currentTopicData = topic;
+
+  document.getElementById('group-breadcrumb').textContent = '/ ' + (topic.name || '');
+  document.getElementById('group-topic-header-icon').textContent = topic.emoji || '💬';
+  document.getElementById('group-topic-header-name').textContent = topic.name || '';
+  document.getElementById('group-topic-header-desc').textContent = topic.description || '';
+
+  const isMember = _myGroupIds.has(_currentGroupId);
+  document.getElementById('group-create-post').style.display = (isMember && !isDemoMode) ? 'block' : 'none';
   if (isMember && !isDemoMode) loadMyPetsIntoGroupSelect();
 
-  await loadGroupPosts(groupId);
+  document.getElementById('group-topics-view').style.display = 'none';
+  document.getElementById('group-topic-posts-view').style.display = 'block';
+
+  await loadGroupPosts(_currentGroupId, topicId);
+};
+
+window.openCreateTopicModal = () => {
+  if (!currentUser) return;
+  document.getElementById('topic-name-input').value = '';
+  document.getElementById('topic-desc-input').value = '';
+  document.getElementById('topic-emoji-val').value = '💬';
+  document.querySelectorAll('#topic-emoji-picker span').forEach(s => {
+    s.style.borderColor = 'transparent';
+    s.classList.remove('selected');
+  });
+  const first = document.querySelector('#topic-emoji-picker span');
+  if (first) { first.style.borderColor = 'var(--paw)'; first.classList.add('selected'); }
+  openModal('create-topic-modal');
+};
+
+window.selectTopicEmoji = (el, emoji) => {
+  document.querySelectorAll('#topic-emoji-picker span').forEach(s => {
+    s.style.borderColor = 'transparent'; s.classList.remove('selected');
+  });
+  el.style.borderColor = 'var(--paw)';
+  el.classList.add('selected');
+  document.getElementById('topic-emoji-val').value = emoji;
+};
+
+window.createTopic = async () => {
+  const name = document.getElementById('topic-name-input').value.trim();
+  if (!name) { showToast('Podaj nazwę tematu!'); return; }
+  const emoji = document.getElementById('topic-emoji-val').value || '💬';
+  const desc = document.getElementById('topic-desc-input').value.trim();
+  try {
+    const snap = await get(ref(db, 'groupTopics/' + _currentGroupId));
+    const order = snap.exists() ? snap.size : 0;
+    await push(ref(db, 'groupTopics/' + _currentGroupId), {
+      name, emoji, description: desc, order,
+      creatorId: currentUser.uid, createdAt: Date.now(), postCount: 0
+    });
+    closeModal('create-topic-modal');
+    showToast('Temat "' + name + '" utworzony! 💬');
+    await loadGroupTopics(_currentGroupId);
+  } catch(e) { showToast('Błąd: ' + e.message); }
+};
+
+window.deleteTopic = async (topicId) => {
+  if (!confirm('Usunąć temat? Wszystkie posty w nim zostaną usunięte.')) return;
+  try {
+    await remove(ref(db, 'groupTopics/' + _currentGroupId + '/' + topicId));
+    await remove(ref(db, 'groupPosts/' + _currentGroupId + '/' + topicId));
+    showToast('Temat usunięty');
+    await loadGroupTopics(_currentGroupId);
+  } catch(e) { showToast('Błąd: ' + e.message); }
+};
+
+window.deleteGroup = async () => {
+  if (!_currentGroupData || !currentUser) return;
+  const name = _currentGroupData.name || 'ta grupa';
+  if (!confirm('Usunąć grupę "' + name + '"? Tej akcji nie można cofnąć.')) return;
+  const groupId = _currentGroupId;
+  const isDemo = groupId.startsWith('dg-') || groupId.startsWith('local-');
+  if (isDemo) {
+    _allGroups = _allGroups.filter(g => g.id !== groupId);
+    _myGroupIds.delete(groupId);
+    _saveDemoGroupIds();
+    showGroupsBrowse();
+    renderGroupsList(_allGroups);
+    showToast('Grupa usunięta lokalnie');
+    return;
+  }
+  try {
+    await remove(ref(db, 'groups/' + groupId));
+    await remove(ref(db, 'groupMembers/' + currentUser.uid + '/' + groupId));
+    await remove(ref(db, 'groupTopics/' + groupId));
+    await remove(ref(db, 'groupPosts/' + groupId));
+    _allGroups = _allGroups.filter(g => g.id !== groupId);
+    _myGroupIds.delete(groupId);
+    showGroupsBrowse();
+    await loadGroupsList();
+    showToast('Grupa "' + name + '" usunięta 🗑️');
+  } catch(e) { showToast('Błąd: ' + e.message); }
 };
 
 function loadMyPetsIntoGroupSelect() {
@@ -7005,25 +7275,28 @@ function loadMyPetsIntoGroupSelect() {
   if (currentUser?.photoURL) avatar.innerHTML = '<img src="' + currentUser.photoURL + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover">';
 }
 
-async function loadGroupPosts(groupId) {
+async function loadGroupPosts(groupId, topicId) {
   const el = document.getElementById('group-posts-list');
   el.innerHTML = '<div class="loading-spinner">🐾</div>';
+  const path = topicId
+    ? 'groupPosts/' + groupId + '/' + topicId
+    : 'groupPosts/' + groupId;
 
-  if (isDemoMode) {
-    const demoPosts = DEMO_GROUP_POSTS[groupId] || [];
+  if (isDemoMode || groupId.startsWith('dg-')) {
+    const demoPosts = (DEMO_GROUP_POSTS[groupId] || []).filter(p => !topicId || p.topicId === topicId);
     el.innerHTML = demoPosts.length
       ? demoPosts.map(p => renderPostCard(p)).join('')
-      : '<div class="empty-state"><div class="emoji">📝</div><p>Brak postów w tej grupie. Bądź pierwszy!</p></div>';
+      : '<div class="empty-state"><div class="emoji">📝</div><p>Brak postów w tym temacie. Bądź pierwszy!</p></div>';
     return;
   }
   try {
-    const snap = await get(ref(db, 'groupPosts/' + groupId));
+    const snap = await get(ref(db, path));
     const posts = [];
     if (snap.exists()) snap.forEach(c => { posts.push({ id: c.key, ...c.val() }); });
     posts.sort((a, b) => b.createdAt - a.createdAt);
     el.innerHTML = posts.length
       ? posts.map(p => renderPostCard(p)).join('')
-      : '<div class="empty-state"><div class="emoji">📝</div><p>Brak postów w tej grupie. Bądź pierwszy!</p></div>';
+      : '<div class="empty-state"><div class="emoji">📝</div><p>Brak postów w tym temacie. Bądź pierwszy!</p></div>';
   } catch(e) { el.innerHTML = '<div class="empty-state"><p>Błąd ładowania postów.</p></div>'; }
 }
 
@@ -7097,20 +7370,27 @@ function _refreshMyGroupsSidebar() {
 
 window.submitGroupPost = async () => {
   if (!currentUser || !_currentGroupId) return;
+  if (!_currentTopicId) { showToast('Wybierz temat przed publikacją!'); return; }
   const text = document.getElementById('group-post-text').value.trim();
   const petId = document.getElementById('group-post-pet-select').value;
-  if (!text) { showToast('Napisz coś do grupy!'); return; }
+  if (!text) { showToast('Napisz coś!'); return; }
   const pet = myPets[petId] || {};
   try {
-    await push(ref(db, 'groupPosts/' + _currentGroupId), {
+    const path = 'groupPosts/' + _currentGroupId + '/' + _currentTopicId;
+    await push(ref(db, path), {
       text, petId: petId || null, petName: pet.name || currentUser.displayName,
       petSpecies: pet.species || '', petAvatarUrl: pet.avatarUrl || currentUser.photoURL || '',
       ownerName: currentUser.displayName, ownerId: currentUser.uid,
-      createdAt: Date.now(), reactions: {}, comments: {}, groupId: _currentGroupId
+      createdAt: Date.now(), reactions: {}, comments: {},
+      groupId: _currentGroupId, topicId: _currentTopicId
     });
+    // Zaktualizuj licznik postów w temacie
+    const topicRef = ref(db, 'groupTopics/' + _currentGroupId + '/' + _currentTopicId + '/postCount');
+    const cSnap = await get(topicRef);
+    await set(topicRef, (cSnap.exists() ? cSnap.val() : 0) + 1);
     document.getElementById('group-post-text').value = '';
-    showToast('Opublikowano w grupie! 🐾');
-    await loadGroupPosts(_currentGroupId);
+    showToast('Opublikowano! 🐾');
+    await loadGroupPosts(_currentGroupId, _currentTopicId);
   } catch(e) { showToast('Błąd: ' + e.message); }
 };
 
@@ -7175,6 +7455,39 @@ window.createGroup = async () => {
 };
 
 // Demo dane dla grup
+const DEMO_GROUP_TOPICS = {
+  'dg-1': [
+    { id: 'dgt-1-1', emoji: '📢', name: 'Ogłoszenia i spacery', description: 'Wspólne wyjścia, eventy, spotkania', postCount: 3, createdAt: Date.now() - 86400000*28 },
+    { id: 'dgt-1-2', emoji: '❓', name: 'Pytania i porady', description: 'Karma, zdrowie, tresura — pytaj śmiało', postCount: 7, createdAt: Date.now() - 86400000*25 },
+    { id: 'dgt-1-3', emoji: '📸', name: 'Zdjęcia labradorów', description: 'Pochwal się swoim pupilem!', postCount: 12, createdAt: Date.now() - 86400000*20 },
+  ],
+  'dg-2': [
+    { id: 'dgt-2-1', emoji: '💡', name: 'Porady dla nowych właścicieli', description: 'Maine Coon 101 — wszystko co musisz wiedzieć', postCount: 5, createdAt: Date.now() - 86400000*55 },
+    { id: 'dgt-2-2', emoji: '📸', name: 'Galeria kotów', description: 'Wasze piękne Maine Coon-y', postCount: 22, createdAt: Date.now() - 86400000*50 },
+    { id: 'dgt-2-3', emoji: '🏆', name: 'Wystawy i osiągnięcia', description: 'Wyniki, tytuły, certyfikaty', postCount: 4, createdAt: Date.now() - 86400000*45 },
+  ],
+  'dg-3': [
+    { id: 'dgt-3-1', emoji: '🏆', name: 'Zawody i wyniki', description: 'Relacje z zawodów agility', postCount: 8, createdAt: Date.now() - 86400000*18 },
+    { id: 'dgt-3-2', emoji: '💡', name: 'Trening i technika', description: 'Ćwiczenia, wskazówki, filmy', postCount: 15, createdAt: Date.now() - 86400000*15 },
+    { id: 'dgt-3-3', emoji: '📢', name: 'Kalendarz zawodów', description: 'Nadchodzące imprezy agility', postCount: 3, createdAt: Date.now() - 86400000*10 },
+  ],
+  'dg-4': [
+    { id: 'dgt-4-1', emoji: '💬', name: 'Rozmowy ogólne', description: 'O wszystkim i o niczym', postCount: 31, createdAt: Date.now() - 86400000*85 },
+    { id: 'dgt-4-2', emoji: '❓', name: 'Pytania i pomoc', description: 'Masz pytanie? Tu je zadaj!', postCount: 18, createdAt: Date.now() - 86400000*80 },
+    { id: 'dgt-4-3', emoji: '🎉', name: 'Urodziny i rocznice', description: 'Świętuj z nami!', postCount: 9, createdAt: Date.now() - 86400000*70 },
+    { id: 'dgt-4-4', emoji: '📸', name: 'Zdjęcia zwierzaków', description: 'Pochwal się swoim pupilem', postCount: 45, createdAt: Date.now() - 86400000*65 },
+  ],
+  'dg-5': [
+    { id: 'dgt-5-1', emoji: '📢', name: 'Spotkania Golden Ownerów', description: 'Organizujemy wspólne spacery', postCount: 6, createdAt: Date.now() - 86400000*12 },
+    { id: 'dgt-5-2', emoji: '📸', name: 'Golden foto-galeria', description: 'Złote chwile 🌟', postCount: 19, createdAt: Date.now() - 86400000*10 },
+  ],
+  'dg-6': [
+    { id: 'dgt-6-1', emoji: '🥗', name: 'Dieta i żywienie', description: 'Co jedzą nasze króliki?', postCount: 7, createdAt: Date.now() - 86400000*40 },
+    { id: 'dgt-6-2', emoji: '❓', name: 'Zdrowie i weterynarz', description: 'Objawy, choroby, szczepienia', postCount: 4, createdAt: Date.now() - 86400000*35 },
+    { id: 'dgt-6-3', emoji: '📸', name: 'Zdjęcia króliczków', description: 'Uszy do góry! 🐇', postCount: 11, createdAt: Date.now() - 86400000*30 },
+  ],
+};
+
 const DEMO_GROUPS = [
   { id: 'dg-1', emoji: '🐕', name: 'Labradorowcy Warszawy', description: 'Dla właścicieli labradorów z Warszawy i okolic', species: 'Pies', memberCount: 47, createdAt: Date.now() - 86400000*30 },
   { id: 'dg-2', emoji: '🐈', name: 'Koty Maine Coon Polska', description: 'Najlepsze koty świata i ich opiekunowie 🐱', species: 'Kot', memberCount: 132, createdAt: Date.now() - 86400000*60 },
