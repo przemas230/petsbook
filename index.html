@@ -165,6 +165,32 @@
   body.dark-mode .event-card { background: var(--surface); }
   body.dark-mode .rsvp-btn { background: var(--surface2); border-color: var(--border); color: var(--text); }
 
+  /* ── STATS DASHBOARD ── */
+  .heatmap-grid { display: flex; gap: 3px; }
+  .heatmap-col { display: flex; flex-direction: column; gap: 3px; }
+  .heatmap-cell { width: 13px; height: 13px; border-radius: 2px; cursor: default; flex-shrink: 0; }
+  .heatmap-cell:hover { outline: 2px solid var(--bark); }
+  .hm-0 { background: var(--cream); }
+  .hm-1 { background: #fcd9c8; }
+  .hm-2 { background: #f4a57a; }
+  .hm-3 { background: var(--paw); }
+  .hm-4 { background: #b84d23; }
+  .heatmap-month-labels { display: flex; gap: 3px; margin-bottom: 4px; font-size: 10px; color: var(--bark-light); font-weight: 700; }
+  .compare-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .compare-pet-name { font-size: 13px; font-weight: 700; color: var(--bark); min-width: 90px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .compare-bar-track { flex: 1; background: var(--cream); border-radius: 20px; height: 14px; overflow: hidden; }
+  .compare-bar-fill { height: 100%; border-radius: 20px; background: var(--paw); transition: width 0.6s; }
+  .compare-bar-val { font-size: 12px; font-weight: 800; color: var(--bark-light); min-width: 28px; text-align: right; }
+  .activity-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--cream); font-size: 13px; }
+  .activity-row:last-child { border-bottom: none; }
+  body.dark-mode .hm-0 { background: var(--surface2); }
+  body.dark-mode .compare-bar-track { background: var(--surface2); }
+  body.dark-mode .activity-row { border-color: var(--border); }
+  @media (max-width: 900px) {
+    #dashboard-summary-cards { grid-template-columns: repeat(2,1fr) !important; }
+    .heatmap-cell { width: 11px; height: 11px; }
+  }
+
   /* ── SEARCH PAGE ── */
   .search-pets-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
   .search-pet-card { background: white; border-radius: 16px; padding: 16px; text-align: center; cursor: pointer; box-shadow: var(--card-shadow); transition: transform 0.15s; }
@@ -2274,6 +2300,49 @@
         </div>
       </div>
       <div id="mypets-list" class="pets-grid"></div>
+
+      <!-- DASHBOARD STATYSTYK -->
+      <div id="owner-stats-dashboard" style="display:none;margin-top:32px">
+        <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:900;margin-bottom:16px">📊 Twoje statystyki</div>
+
+        <!-- Karty sumaryczne -->
+        <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px" id="dashboard-summary-cards">
+          <div class="stat-card"><div class="stat-number" id="ds-total-posts">–</div><div class="stat-label">📝 Posty</div></div>
+          <div class="stat-card"><div class="stat-number" id="ds-total-reactions">–</div><div class="stat-label">❤️ Reakcje</div></div>
+          <div class="stat-card"><div class="stat-number" id="ds-total-followers">–</div><div class="stat-label">👥 Obserwujący</div></div>
+          <div class="stat-card"><div class="stat-number" id="ds-total-pets">–</div><div class="stat-label">🐾 Zwierzęta</div></div>
+        </div>
+
+        <!-- Heatmapa aktywności -->
+        <div class="stats-chart-wrap" style="margin-bottom:16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <div class="stats-chart-title" style="margin-bottom:0">🗓️ Aktywność (ostatnie 12 tygodni)</div>
+            <button onclick="exportStatsCSV()" style="background:var(--grass);color:white;border:none;border-radius:10px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer">⬇️ Eksport CSV</button>
+          </div>
+          <div id="activity-heatmap" style="overflow-x:auto"></div>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:11px;color:var(--bark-light)">
+            <span>Mniej</span>
+            <div style="width:12px;height:12px;border-radius:2px;background:var(--cream)"></div>
+            <div style="width:12px;height:12px;border-radius:2px;background:#fcd9c8"></div>
+            <div style="width:12px;height:12px;border-radius:2px;background:#f4a57a"></div>
+            <div style="width:12px;height:12px;border-radius:2px;background:var(--paw)"></div>
+            <div style="width:12px;height:12px;border-radius:2px;background:#b84d23"></div>
+            <span>Więcej</span>
+          </div>
+        </div>
+
+        <!-- Porównanie zwierząt -->
+        <div class="stats-chart-wrap" id="pets-comparison-wrap" style="display:none;margin-bottom:16px">
+          <div class="stats-chart-title">🐾 Porównanie aktywności zwierząt</div>
+          <div id="pets-comparison-chart"></div>
+        </div>
+
+        <!-- Tabela ostatniej aktywności -->
+        <div class="stats-chart-wrap">
+          <div class="stats-chart-title">📅 Ostatnia aktywność</div>
+          <div id="dashboard-activity-list"></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -3389,6 +3458,8 @@ function loadMyPets() {
 
     sidebarEl.innerHTML = sidebarHTML || '<p style="font-size:13px;color:#aaa;font-weight:600;padding:8px">Brak zwierząt</p>';
     mypetsList.innerHTML = mypetsHTML || `<div class="empty-state" style="grid-column:1/-1"><div class="emoji">🐾</div><p>Nie masz jeszcze żadnych zwierząt</p></div>`;
+    // Załaduj dashboard statystyk
+    loadOwnerDashboard();
   });
 }
 
@@ -7944,6 +8015,205 @@ window.createGroup = async () => {
 };
 
 // Demo dane dla grup
+// ═══════════════════════════════════
+//  📊  DASHBOARD STATYSTYK
+// ═══════════════════════════════════
+
+let _dashboardData = null; // cache danych dashboardu
+
+async function loadOwnerDashboard() {
+  if (!currentUser || isDemoMode) return;
+  const dash = document.getElementById('owner-stats-dashboard');
+  if (!dash) return;
+  dash.style.display = 'block';
+
+  // Pobierz posty z Firebase
+  let allPosts = [];
+  try {
+    const snap = await get(ref(db, 'posts'));
+    if (snap.exists()) snap.forEach(c => {
+      const p = c.val();
+      if (p.ownerId === currentUser.uid && !p.isStory) allPosts.push({ id: c.key, ...p });
+    });
+  } catch(e) {}
+
+  // Agreguj po zwierzęciu
+  const byPet = {};
+  let totalReactions = 0;
+  allPosts.forEach(p => {
+    if (!byPet[p.petId]) byPet[p.petId] = { name: p.petName, species: p.petSpecies, posts: 0, reactions: 0, lastPost: 0, avatar: p.petAvatarUrl || '' };
+    byPet[p.petId].posts++;
+    if (p.createdAt > byPet[p.petId].lastPost) byPet[p.petId].lastPost = p.createdAt;
+    const r = p.reactions ? Object.values(p.reactions).reduce((s, v) => s + Object.keys(v).length, 0) : 0;
+    byPet[p.petId].reactions += r;
+    totalReactions += r;
+  });
+
+  // Obserwujący — zsumuj ze wszystkich zwierząt
+  let totalFollowers = 0;
+  const myPetIds = Object.keys(myPets || {});
+  for (const pid of myPetIds) {
+    try {
+      const s = await get(ref(db, 'petFollowers/' + pid));
+      if (s.exists()) totalFollowers += Object.keys(s.val()).length;
+    } catch(e) {}
+  }
+
+  _dashboardData = { allPosts, byPet, totalReactions, totalFollowers, myPetIds };
+
+  // Karty summary
+  document.getElementById('ds-total-posts').textContent     = allPosts.length;
+  document.getElementById('ds-total-reactions').textContent = totalReactions;
+  document.getElementById('ds-total-followers').textContent = totalFollowers;
+  document.getElementById('ds-total-pets').textContent      = myPetIds.length;
+
+  // Heatmapa
+  _renderHeatmap(allPosts);
+
+  // Porównanie zwierząt
+  _renderPetsComparison(byPet);
+
+  // Ostatnia aktywność
+  _renderActivityList(allPosts, byPet);
+}
+
+function _renderHeatmap(posts) {
+  const el = document.getElementById('activity-heatmap');
+  if (!el) return;
+  const WEEKS = 12;
+  const DAYS  = 7;
+  const now   = new Date();
+  // Cofamy się do poniedziałku 12 tygodni temu
+  const startDate = new Date(now);
+  startDate.setDate(startDate.getDate() - (WEEKS * 7) + 1);
+  startDate.setHours(0, 0, 0, 0);
+
+  // Zlicz posty per dzień
+  const dayCounts = {};
+  posts.forEach(p => {
+    const d = new Date(p.createdAt);
+    const key = d.toISOString().slice(0, 10);
+    dayCounts[key] = (dayCounts[key] || 0) + 1;
+  });
+  const max = Math.max(1, ...Object.values(dayCounts));
+
+  // Buduj kolumny (tygodnie)
+  const MONTH_PL = ['Sty','Lut','Mar','Kwi','Maj','Cze','Lip','Sie','Wrz','Paź','Lis','Gru'];
+  let monthLabels = '';
+  let cols = '';
+  let prevMonth = -1;
+
+  for (let w = 0; w < WEEKS; w++) {
+    let colCells = '';
+    let monthLabel = '';
+    for (let d = 0; d < DAYS; d++) {
+      const date = new Date(startDate);
+      date.setDate(startDate.getDate() + w * 7 + d);
+      if (date > now) { colCells += '<div class="heatmap-cell hm-0" style="opacity:0"></div>'; continue; }
+      const key = date.toISOString().slice(0, 10);
+      const cnt = dayCounts[key] || 0;
+      const lvl = cnt === 0 ? 0 : cnt <= 1 ? 1 : cnt <= 2 ? 2 : cnt <= 4 ? 3 : 4;
+      const dateStr = date.toLocaleDateString('pl-PL');
+      colCells += '<div class="heatmap-cell hm-' + lvl + '" title="' + dateStr + ': ' + cnt + ' post' + (cnt !== 1 ? 'ów' : '') + '"></div>';
+      if (date.getMonth() !== prevMonth && d === 0) {
+        monthLabel = MONTH_PL[date.getMonth()];
+        prevMonth = date.getMonth();
+      }
+    }
+    monthLabels += '<div style="width:13px;font-size:9px;color:var(--bark-light);text-align:center;flex-shrink:0">' + (monthLabel || '') + '</div>';
+    cols += '<div class="heatmap-col">' + colCells + '</div>';
+  }
+  el.innerHTML = '<div class="heatmap-month-labels" style="padding-left:0">' + monthLabels + '</div>' +
+    '<div class="heatmap-grid">' + cols + '</div>';
+}
+
+function _renderPetsComparison(byPet) {
+  const wrap = document.getElementById('pets-comparison-wrap');
+  const el   = document.getElementById('pets-comparison-chart');
+  if (!wrap || !el) return;
+  const pets = Object.entries(byPet).sort((a,b) => b[1].posts - a[1].posts);
+  if (pets.length < 2) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  const maxPosts = Math.max(1, ...pets.map(([,v]) => v.posts));
+  el.innerHTML = pets.map(([pid, p]) => {
+    const pct = Math.round((p.posts / maxPosts) * 100);
+    const emoji = speciesEmoji(p.species);
+    return '<div class="compare-bar-row">' +
+      '<div class="compare-pet-name">' + emoji + ' ' + escapeHtml(p.name || 'Zwierzę') + '</div>' +
+      '<div class="compare-bar-track"><div class="compare-bar-fill" style="width:' + pct + '%"></div></div>' +
+      '<div class="compare-bar-val">' + p.posts + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function _renderActivityList(posts, byPet) {
+  const el = document.getElementById('dashboard-activity-list');
+  if (!el) return;
+  const recent = [...posts].sort((a,b) => b.createdAt - a.createdAt).slice(0, 8);
+  if (!recent.length) { el.innerHTML = '<div style="color:var(--bark-light);font-size:13px">Brak aktywności</div>'; return; }
+  el.innerHTML = recent.map(p => {
+    const pet = byPet[p.petId] || {};
+    const reactions = p.reactions ? Object.values(p.reactions).reduce((s,v) => s + Object.keys(v).length, 0) : 0;
+    const comments  = p.comments  ? Object.keys(p.comments).length : 0;
+    return '<div class="activity-row">' +
+      '<div style="font-size:20px">' + speciesEmoji(pet.species || p.petSpecies) + '</div>' +
+      '<div style="flex:1;min-width:0">' +
+        '<div style="font-weight:700;color:var(--bark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' +
+          escapeHtml(pet.name || p.petName || 'Zwierzę') + '</div>' +
+        '<div style="font-size:12px;color:var(--bark-light);margin-top:1px">' +
+          escapeHtml((p.text || '').slice(0, 50) + ((p.text || '').length > 50 ? '…' : '')) + '</div>' +
+      '</div>' +
+      '<div style="text-align:right;flex-shrink:0">' +
+        '<div style="font-size:11px;color:var(--bark-light)">' + timeAgo(p.createdAt) + '</div>' +
+        '<div style="font-size:11px;color:var(--bark-light);margin-top:2px">❤️' + reactions + ' 💬' + comments + '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+// ─── Eksport CSV ────────────────────────────────────────────
+window.exportStatsCSV = () => {
+  if (!_dashboardData) { showToast('Brak danych do eksportu'); return; }
+  const { allPosts, byPet, totalFollowers } = _dashboardData;
+
+  // Nagłówek
+  let csv = 'Data,Zwierze,Gatunek,Tresc,Reakcje,Komentarze\n';
+  const sorted = [...allPosts].sort((a,b) => b.createdAt - a.createdAt);
+  sorted.forEach(p => {
+    const d    = new Date(p.createdAt).toLocaleDateString('pl-PL');
+    const pet  = escapeCSV(p.petName || '');
+    const spec = escapeCSV(p.petSpecies || '');
+    const txt  = escapeCSV((p.text || '').replace(/[\r\n]+/g,' '));
+    const r    = p.reactions ? Object.values(p.reactions).reduce((s,v) => s + Object.keys(v).length, 0) : 0;
+    const c    = p.comments  ? Object.keys(p.comments).length : 0;
+    csv += d + ',' + pet + ',' + spec + ',"' + txt + '",' + r + ',' + c + '\n';
+  });
+
+  // Podsumowanie per zwierzę
+  csv += '\nZwierze,Gatunek,Posty,Reakcje,Ostatni post\n';
+  Object.values(byPet).forEach(p => {
+    csv += escapeCSV(p.name) + ',' + escapeCSV(p.species || '') + ',' + p.posts + ',' + p.reactions + ',' +
+      (p.lastPost ? new Date(p.lastPost).toLocaleDateString('pl-PL') : '') + '\n';
+  });
+
+  // Pobierz plik
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = 'petsbook-statystyki-' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Eksportowano CSV ⬇️');
+};
+
+function escapeCSV(s) {
+  return (s || '').replace(/"/g, '""');
+}
+
+// ─── Podpięcie do strony Moje zwierzęta ─────────────────────
+const _origShowPage = window.showPage;
+
 // ═══════════════════════════════════
 //  🔍  WYSZUKIWANIE ZAAWANSOWANE
 // ═══════════════════════════════════
