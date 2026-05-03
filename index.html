@@ -82,6 +82,12 @@
   body.dark-mode .btn-cancel { background: var(--surface2) !important; color: var(--text) !important; border-color: var(--border) !important; }
   body.dark-mode .walk-modal-tabs { background: var(--surface2); }
   body.dark-mode .likes-popup-overlay { background: rgba(0,0,0,0.7); }
+  body.dark-mode .form-input { background: var(--surface2) !important; color: var(--text) !important; border-color: var(--border) !important; }
+  body.dark-mode .form-label { color: var(--text) !important; }
+  body.dark-mode .vaccine-form-section, body.dark-mode .walk-form-section { background: var(--surface2) !important; }
+  body.dark-mode .group-card { background: var(--surface) !important; }
+  body.dark-mode .group-card-name, body.dark-mode .group-card-desc { color: var(--text) !important; }
+  body.dark-mode .group-sidebar-item { background: var(--surface2) !important; color: var(--text) !important; }
 
   /* ── GROUPS ── */
   .group-card { background: white; border-radius: 16px; padding: 18px 20px; margin-bottom: 12px; cursor: pointer; box-shadow: var(--card-shadow); display: flex; align-items: center; gap: 16px; transition: transform 0.15s; }
@@ -2614,7 +2620,7 @@
     <div class="modal-title">💉 Kalendarz szczepień</div>
     <div id="vaccine-pet-name" style="font-size:13px;color:var(--bark-light);font-weight:700;margin-bottom:16px"></div>
     <div id="vaccine-list" style="margin-bottom:20px"></div>
-    <div style="background:var(--cream);border-radius:14px;padding:16px;margin-bottom:4px">
+    <div class="vaccine-form-section" style="background:var(--cream);border-radius:14px;padding:16px;margin-bottom:4px">
       <div style="font-size:13px;font-weight:800;margin-bottom:12px;color:var(--bark-light);text-transform:uppercase;letter-spacing:.5px">Dodaj szczepienie</div>
       <div class="form-group" style="margin-bottom:10px">
         <input class="form-input" id="vaccine-name-input" placeholder="Nazwa szczepionki (np. Wścieklizna)">
@@ -2652,7 +2658,7 @@
     <!-- Lista jednorazowych -->
     <div id="walk-tab-once">
       <div id="walk-list" style="margin-bottom:16px"></div>
-      <div style="background:var(--cream);border-radius:14px;padding:16px">
+      <div class="walk-form-section" style="background:var(--cream);border-radius:14px;padding:16px">
         <div style="font-size:12px;font-weight:800;margin-bottom:10px;color:var(--bark-light);text-transform:uppercase;letter-spacing:.5px">Dodaj jednorazowy spacer / wyjście specjalne</div>
         <div class="form-group" style="margin-bottom:10px">
           <input class="form-input" id="walk-title-input" placeholder="np. Wybieg dla psów, Błonia – piknik...">
@@ -2681,7 +2687,7 @@
     <!-- Harmonogram tygodniowy -->
     <div id="walk-tab-weekly" style="display:none">
       <div id="walk-weekly-list" style="margin-bottom:16px"></div>
-      <div style="background:var(--cream);border-radius:14px;padding:16px">
+      <div class="walk-form-section" style="background:var(--cream);border-radius:14px;padding:16px">
         <div style="font-size:12px;font-weight:800;margin-bottom:10px;color:var(--bark-light);text-transform:uppercase;letter-spacing:.5px">Dodaj stały spacer tygodniowy</div>
         <div class="form-group" style="margin-bottom:10px">
           <input class="form-input" id="weekly-title-input" placeholder="np. Poranny spacer, Wieczorny wybieg...">
@@ -7007,6 +7013,32 @@ window.toggleGroupMembership = async () => {
   if (!currentUser || !_currentGroupId) return;
   const isMember = _myGroupIds.has(_currentGroupId);
   const btn = document.getElementById('group-join-btn');
+  const isDemo = _currentGroupId.startsWith('dg-');
+
+  if (isDemo) {
+    // Grupy demo — obsługuj lokalnie, bez Firebase
+    if (isMember) {
+      _myGroupIds.delete(_currentGroupId);
+      if (_currentGroupData) _currentGroupData.memberCount = Math.max(0, (_currentGroupData.memberCount || 1) - 1);
+      btn.textContent = '⭐ Dołącz'; btn.className = 'btn-follow';
+      document.getElementById('group-create-post').style.display = 'none';
+      showToast('Opuściłeś grupę');
+    } else {
+      _myGroupIds.add(_currentGroupId);
+      if (_currentGroupData) _currentGroupData.memberCount = (_currentGroupData.memberCount || 0) + 1;
+      btn.textContent = '✅ Dołączyłeś'; btn.className = 'btn-follow following';
+      document.getElementById('group-create-post').style.display = 'block';
+      loadMyPetsIntoGroupSelect();
+      showToast('Dołączyłeś do grupy! 👥');
+    }
+    // Aktualizuj licznik w _allGroups
+    const gIdx = _allGroups.findIndex(g => g.id === _currentGroupId);
+    if (gIdx >= 0 && _currentGroupData) _allGroups[gIdx].memberCount = _currentGroupData.memberCount;
+    // Odśwież sidebar "Moje grupy" lokalnie bez przeładowania z Firebase
+    _refreshMyGroupsSidebar();
+    return;
+  }
+
   try {
     if (isMember) {
       await remove(ref(db, 'groupMembers/' + currentUser.uid + '/' + _currentGroupId));
@@ -7029,6 +7061,18 @@ window.toggleGroupMembership = async () => {
     loadMyGroups();
   } catch(e) { showToast('Błąd: ' + e.message); }
 };
+
+function _refreshMyGroupsSidebar() {
+  const myEl = document.getElementById('groups-my-list');
+  if (!myEl) return;
+  const myGroups = _allGroups.filter(g => _myGroupIds.has(g.id));
+  myEl.innerHTML = myGroups.length
+    ? myGroups.map(g => '<div class="group-sidebar-item" onclick="openGroup(\'' + g.id + '\')">' +
+        '<span style="font-size:24px">' + (g.emoji || '👥') + '</span>' +
+        '<span class="group-card-name" style="font-size:14px">' + (g.name || '') + '</span>' +
+        '</div>').join('')
+    : '<div style="font-size:13px;color:var(--bark-light)">Nie należysz jeszcze do żadnej grupy.</div>';
+}
 
 window.submitGroupPost = async () => {
   if (!currentUser || !_currentGroupId) return;
