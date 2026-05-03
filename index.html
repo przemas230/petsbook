@@ -1090,6 +1090,12 @@
   .profile-tag.species { background: #FFF0E8; color: var(--paw); }
   .profile-tag.location { background: #E8F5EE; color: var(--grass); }
   .profile-tag.followers { background: #FFF8DC; color: #B8860B; cursor: default; }
+  .premium-badge { display: inline-flex; align-items: center; gap: 4px; border-radius: 20px; padding: 3px 10px; font-size: 12px; font-weight: 900; letter-spacing: .3px; }
+  .premium-badge.verified { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+  .premium-badge.breeder { background: linear-gradient(135deg, #f6d365, #fda085); color: white; }
+  .premium-badge.champion { background: linear-gradient(135deg, #43e97b, #38f9d7); color: #1a6b4a; }
+  .post-card.promoted { border: 2px solid var(--gold); }
+  .promoted-label { font-size: 10px; font-weight: 800; color: var(--gold); letter-spacing: .5px; text-transform: uppercase; margin-bottom: 4px; }
   .profile-bio {
     padding: 0 24px 20px;
     font-size: 15px;
@@ -1797,7 +1803,7 @@
   }
   .chat-msg {
     max-width: 70%; padding: 10px 14px; border-radius: 16px;
-    font-size: 14px; font-weight: 600; line-height: 1.4;
+    font-size: 14px; font-weight: 600; line-height: 1.4; position: relative;
   }
   .chat-msg.mine {
     background: var(--paw); color: white;
@@ -1812,6 +1818,22 @@
   .chat-img { max-width: 220px; border-radius: 12px; display: block; margin-bottom: 4px; cursor: zoom-in; }
   .btn-chat-img { background: none; border: none; font-size: 20px; cursor: pointer; padding: 4px 8px; opacity: 0.7; flex-shrink: 0; }
   .btn-chat-img:hover { opacity: 1; }
+  .chat-msg-wrap { display: flex; flex-direction: column; gap: 2px; }
+  .chat-msg-wrap.mine { align-items: flex-end; }
+  .chat-msg-wrap.theirs { align-items: flex-start; }
+  .chat-msg-actions { display: none; gap: 4px; margin-top: 2px; }
+  .chat-msg-wrap:hover .chat-msg-actions { display: flex; }
+  .chat-react-btn { background: none; border: 1px solid var(--border); border-radius: 20px; padding: 2px 8px; font-size: 13px; cursor: pointer; transition: background 0.15s; }
+  .chat-react-btn:hover { background: var(--paw-light); }
+  .chat-reply-btn { background: none; border: none; font-size: 12px; color: var(--bark-light); cursor: pointer; font-weight: 700; padding: 2px 6px; }
+  .chat-reply-btn:hover { color: var(--paw); }
+  .chat-msg-reactions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+  .chat-reaction-chip { background: var(--cream); border: 1px solid var(--border); border-radius: 20px; padding: 2px 8px; font-size: 12px; cursor: pointer; font-weight: 700; }
+  .chat-reaction-chip:hover { background: var(--paw-light); }
+  .chat-reply-preview { background: rgba(0,0,0,0.08); border-left: 3px solid var(--paw); border-radius: 8px; padding: 4px 10px; font-size: 12px; margin-bottom: 6px; opacity: 0.8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .chat-reply-bar { background: var(--cream); border-top: 1px solid var(--border); padding: 6px 12px; display: none; align-items: center; gap: 8px; font-size: 13px; }
+  .chat-reply-bar.active { display: flex; }
+  .chat-reply-cancel { background: none; border: none; font-size: 16px; cursor: pointer; color: var(--bark-light); margin-left: auto; }
   .chat-img-preview { max-height: 60px; border-radius: 8px; margin: 4px 0 0 0; display: none; }
   .chat-input-row {
     padding: 12px 16px; border-top: 2px solid var(--cream);
@@ -2746,6 +2768,39 @@
   </div>
 </div>
 
+<!-- BADGE MODAL -->
+<div class="modal-overlay" id="badge-modal">
+  <div class="modal-box">
+    <div class="modal-title">🏅 Odznaka profilu</div>
+    <p style="font-size:14px;color:var(--bark-light);margin-bottom:16px">Wybierz odznakę widoczną na profilu i przy postach.</p>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">
+      <label style="display:flex;align-items:center;gap:12px;cursor:pointer;padding:10px;border-radius:12px;border:2px solid var(--border)" onclick="selectBadge('verified',this)">
+        <input type="radio" name="badge" value="verified" style="accent-color:#667eea">
+        <span class="premium-badge verified">✅ Zweryfikowany</span>
+        <span style="font-size:13px;color:var(--bark-light)">Potwierdzona tożsamość właściciela</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:12px;cursor:pointer;padding:10px;border-radius:12px;border:2px solid var(--border)" onclick="selectBadge('breeder',this)">
+        <input type="radio" name="badge" value="breeder" style="accent-color:#fda085">
+        <span class="premium-badge breeder">🏅 Hodowca</span>
+        <span style="font-size:13px;color:var(--bark-light)">Zarejestrowany hodowca z rodowodem</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:12px;cursor:pointer;padding:10px;border-radius:12px;border:2px solid var(--border)" onclick="selectBadge('champion',this)">
+        <input type="radio" name="badge" value="champion" style="accent-color:#43e97b">
+        <span class="premium-badge champion">🏆 Mistrz</span>
+        <span style="font-size:13px;color:var(--bark-light)">Zwierzę z tytułem mistrzowskim</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:12px;cursor:pointer;padding:10px;border-radius:12px;border:2px solid var(--border)" onclick="selectBadge('',this)">
+        <input type="radio" name="badge" value="" style="accent-color:#ccc">
+        <span style="font-size:13px;color:var(--bark-light)">Brak odznaki</span>
+      </label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('badge-modal')">Anuluj</button>
+      <button class="btn-save" onclick="saveBadge()">Zapisz 🏅</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
@@ -3319,13 +3374,16 @@ function renderPostCard(p) {
   const timeStr = timeAgo(p.createdAt);
   const isMyPost = p.ownerId === currentUser.uid;
   const canManagePost = isMyPost || (myPets[p.petId] != null);
+  const promotedLabel = p.promoted ? `<div class="promoted-label">⭐ Promowany post</div>` : '';
+  const petBadge = p.petPremium ? premiumBadgeHTML(p.petPremium) : '';
 
   return `
-    <div class="post-card" id="post-${p.id}">
+    <div class="post-card${p.promoted ? ' promoted' : ''}" id="post-${p.id}">
+      ${promotedLabel}
       <div class="post-header">
         <div class="post-pet-avatar" onclick="showPetProfile('${p.petId}')">${avatarHTML}</div>
         <div class="post-meta">
-          <div class="post-pet-name" onclick="showPetProfile('${p.petId}')">${p.petName || 'Zwierzę'}</div>
+          <div class="post-pet-name" onclick="showPetProfile('${p.petId}')">${p.petName || 'Zwierzę'} ${petBadge}</div>
           <div class="post-owner">${firstNameOnly(p.ownerName)}</div>
         </div>
         <div class="post-time">${timeStr}</div>
@@ -3334,6 +3392,7 @@ function renderPostCard(p) {
           <button class="post-menu-btn" onclick="togglePostMenu('${p.id}')">⋯</button>
           <div class="post-menu-dropdown" id="post-menu-${p.id}">
             <button class="post-menu-item" onclick="openEditPostModal('${p.id}')">✏️ Edytuj post</button>
+            <button class="post-menu-item" onclick="togglePromotePost('${p.id}',${!!p.promoted})">⭐ ${p.promoted ? 'Usuń promocję' : 'Promuj post'}</button>
             <button class="post-menu-item danger" onclick="openDeletePostModal('${p.id}')">🗑️ Usuń post</button>
           </div>
         </div>` : ''}
@@ -4503,7 +4562,7 @@ window.showPetProfile = async (petId) => {
           ${canEdit ? '<div class="edit-overlay">📷</div>' : ''}
         </div>
         <div class="profile-text">
-          <div class="profile-pet-name">${p.name}</div>
+          <div class="profile-pet-name">${p.name} ${premiumBadgeHTML(p.premium)}</div>
           <div class="profile-tags">
             <span class="profile-tag species">${emoji} ${p.species}</span>
             ${p.breed ? `<span class="profile-tag">${escapeHtml(p.breed)} <a href="https://www.google.com/search?q=${encodeURIComponent(p.breed + ' rasa ' + p.species)}" target="_blank" rel="noopener" style="text-decoration:none;font-size:12px;margin-left:2px" title="Szukaj rasy w Google">🔍</a></span>` : ''}
@@ -4522,6 +4581,7 @@ window.showPetProfile = async (petId) => {
           ${canEdit ? `<button class="btn-save" style="background:var(--grass)" onclick="openCoOwnersModal('${petId}')">👥 Opiekunowie</button>` : ''}
           ${canEdit ? `<button class="btn-save" style="background:#9B59B6;color:white" onclick="openVaccineModal('${petId}','${p.name}')">💉 Szczepienia</button>` : ''}
           ${canEdit ? `<button class="btn-save" style="background:var(--sky);color:white" onclick="openWalkModal('${petId}','${p.name}')">🦮 Spacery</button>` : ''}
+          ${isOwner ? `<button class="btn-save" style="background:linear-gradient(135deg,#667eea,#764ba2);color:white" onclick="openBadgeModal('${petId}','${p.premium||''}')">🏅 Odznaka</button>` : ''}
           ${isOwner ? `<button class="btn-save" style="background:#27AE60;color:white" onclick="exportPetProfile('${petId}')">📤 Eksportuj</button>` : ''}
           ${isOwner ? `<button class="btn-danger" onclick="openDeletePetModal('${petId}')">🗑️ Usuń</button>` : ''}
           <button class="btn-save" style="background:#aaa;color:white" onclick="sharePetProfile('${petId}')">🔗 Udostępnij</button>
@@ -4964,6 +5024,18 @@ function escapeHtml(s) {
   return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+function premiumBadgeHTML(badge) {
+  if (!badge) return '';
+  const badges = {
+    verified: '✅ Zweryfikowany',
+    breeder: '🏅 Hodowca',
+    champion: '🏆 Mistrz'
+  };
+  const label = badges[badge];
+  if (!label) return '';
+  return `<span class="premium-badge ${badge}">${label}</span>`;
+}
+
 function renderTextWithHashtags(text) {
   if (!text) return '';
   return escapeHtml(text).replace(/#([\wąćęłńóśźżĄĆĘŁŃÓŚŹŻ]+)/g, (match, tag) =>
@@ -5343,6 +5415,11 @@ window.openChatV1 = (chatId, otherId, otherName, otherPhoto) => {
       <div class="chat-header-name">${escapeHtml(otherName)}</div>
     </div>
     <div class="chat-messages" id="chat-messages-area"></div>
+    <div class="chat-reply-bar" id="chat-reply-bar">
+      <span style="color:var(--bark-light)">↩️ Odpowiadasz na:</span>
+      <span id="chat-reply-preview-text" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700"></span>
+      <button class="chat-reply-cancel" onclick="cancelReply()">✕</button>
+    </div>
     <div class="chat-input-row">
       <button class="btn-chat-img" onclick="document.getElementById('chat-img-input').click()" title="Wyślij zdjęcie">📷</button>
       <input type="file" id="chat-img-input" accept="image/*" style="display:none" onchange="handleChatImage(this)">
@@ -5380,10 +5457,34 @@ window.openChatV1 = (chatId, otherId, otherName, otherPhoto) => {
         ? `<img src="${m.imageUrl}" class="chat-img" referrerpolicy="no-referrer" onclick="openGalleryLightbox('${m.imageUrl}')" loading="lazy">`
         : '';
       const textHTML = m.text ? `<div>${escapeHtml(m.text)}</div>` : '';
-      return `<div class="chat-msg ${mine ? 'mine' : 'theirs'}">
-        ${imgHTML}${textHTML}
-        <div class="chat-msg-time">${timeAgo(m.createdAt)}</div>
-        ${status}
+      // Reply preview
+      const replyHTML = m.replyTo
+        ? `<div class="chat-reply-preview">↩️ ${escapeHtml(m.replyTo.text || '📷 Zdjęcie').slice(0, 60)}</div>`
+        : '';
+      // Reakcje
+      const reactMap = m.reactions || {};
+      const reactChips = Object.entries(reactMap).map(([emoji, users]) => {
+        const count = Object.keys(users).length;
+        if (!count) return '';
+        const iReacted = users[currentUser.uid];
+        return `<span class="chat-reaction-chip${iReacted ? ' active' : ''}" onclick="toggleChatReaction('${m.id}','${emoji}')">${emoji} ${count}</span>`;
+      }).join('');
+      const reactionsHTML = reactChips ? `<div class="chat-msg-reactions">${reactChips}</div>` : '';
+      // Przyciski akcji
+      const REACT_EMOJIS = ['❤️','😂','😮','👍','🐾'];
+      const reactBtns = REACT_EMOJIS.map(e => `<button class="chat-react-btn" onclick="toggleChatReaction('${m.id}','${e}')">${e}</button>`).join('');
+      const actions = `<div class="chat-msg-actions">
+        ${reactBtns}
+        <button class="chat-reply-btn" onclick="setReply('${m.id}','${escapeHtml(m.text||'📷').replace(/'/g,"\\'")}')">↩️ Odpowiedz</button>
+      </div>`;
+      return `<div class="chat-msg-wrap ${mine ? 'mine' : 'theirs'}">
+        <div class="chat-msg ${mine ? 'mine' : 'theirs'}">
+          ${replyHTML}${imgHTML}${textHTML}
+          <div class="chat-msg-time">${timeAgo(m.createdAt)}</div>
+          ${status}
+        </div>
+        ${reactionsHTML}
+        ${actions}
       </div>`;
     }).join('');
     area.scrollTop = area.scrollHeight;
@@ -5400,18 +5501,38 @@ window.handleChatImage = (input) => {
   if (prev) { prev.src = URL.createObjectURL(file); prev.style.display = 'block'; }
 };
 
+let _chatReplyTo = null; // { id, text }
+
+window.setReply = (msgId, text) => {
+  _chatReplyTo = { id: msgId, text };
+  const bar = document.getElementById('chat-reply-bar');
+  const preview = document.getElementById('chat-reply-preview-text');
+  if (bar) bar.classList.add('active');
+  if (preview) preview.textContent = text.slice(0, 80);
+  document.getElementById('chat-input-field')?.focus();
+};
+
+window.cancelReply = () => {
+  _chatReplyTo = null;
+  const bar = document.getElementById('chat-reply-bar');
+  if (bar) bar.classList.remove('active');
+};
+
+window.toggleChatReaction = async (msgId, emoji) => {
+  if (!activeChatId || !currentUser) return;
+  const reactRef = ref(db, `chats/${activeChatId}/messages/${msgId}/reactions/${emoji}/${currentUser.uid}`);
+  try {
+    const snap = await get(reactRef);
+    if (snap.exists()) await remove(reactRef);
+    else await set(reactRef, true);
+  } catch(e) {}
+};
+
 window.sendChatMessageV1 = async () => {
   const input = document.getElementById('chat-input-field');
   const text = input.value.trim();
   if (!text && !chatImageFile) return;
   if (!activeChatId) return;
-
-  // Walidacja inline - shake jeśli brak tekstu i obrazka
-  if (!text && !chatImageFile) {
-    input.style.borderColor = 'var(--paw)';
-    setTimeout(() => { input.style.borderColor = ''; }, 1500);
-    return;
-  }
 
   const btn = document.querySelector('.btn-chat-send');
   if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
@@ -5423,6 +5544,7 @@ window.sendChatMessageV1 = async () => {
       createdAt: Date.now()
     };
     if (text) msgData.text = text;
+    if (_chatReplyTo) { msgData.replyTo = { id: _chatReplyTo.id, text: _chatReplyTo.text }; cancelReply(); }
     if (chatImageFile) {
       msgData.imageUrl = await uploadToCloudinary(chatImageFile);
       chatImageFile = null;
@@ -5976,6 +6098,57 @@ async function checkReminders() {
 // ═══════════════════════════════════
 //  📤  EKSPORT / 📥 IMPORT PROFILU
 // ═══════════════════════════════════
+// ═══════════════════════════════════
+//  🏅  ODZNAKI PREMIUM + PROMOWANIE
+// ═══════════════════════════════════
+let _badgePetId = null;
+let _selectedBadge = '';
+
+window.openBadgeModal = (petId, currentBadge) => {
+  _badgePetId = petId;
+  _selectedBadge = currentBadge || '';
+  document.querySelectorAll('#badge-modal input[name=badge]').forEach(r => {
+    r.checked = r.value === _selectedBadge;
+    const lbl = r.closest('label');
+    if (lbl) lbl.style.borderColor = r.checked ? 'var(--paw)' : 'var(--border)';
+  });
+  openModal('badge-modal');
+};
+
+window.selectBadge = (val, labelEl) => {
+  _selectedBadge = val;
+  document.querySelectorAll('#badge-modal label').forEach(l => l.style.borderColor = 'var(--border)');
+  if (labelEl) labelEl.style.borderColor = 'var(--paw)';
+};
+
+window.saveBadge = async () => {
+  if (!_badgePetId) return;
+  try {
+    await update(ref(db, 'pets/' + _badgePetId), { premium: _selectedBadge || null });
+    closeModal('badge-modal');
+    showToast(_selectedBadge ? 'Odznaka przyznana! ' + premiumBadgeHTML(_selectedBadge) : 'Odznaka usunięta');
+    showPetProfile(_badgePetId);
+  } catch(e) { showToast('Błąd: ' + e.message); }
+};
+
+window.togglePromotePost = async (postId, currentlyPromoted) => {
+  try {
+    await update(ref(db, 'posts/' + postId), { promoted: !currentlyPromoted });
+    showToast(!currentlyPromoted ? '⭐ Post promowany!' : 'Promocja usunięta');
+    const card = document.getElementById('post-' + postId);
+    if (card) {
+      card.classList.toggle('promoted', !currentlyPromoted);
+      let lbl = card.querySelector('.promoted-label');
+      if (!currentlyPromoted) {
+        if (!lbl) { lbl = document.createElement('div'); lbl.className = 'promoted-label'; card.prepend(lbl); }
+        lbl.textContent = '⭐ Promowany post';
+      } else {
+        lbl?.remove();
+      }
+    }
+  } catch(e) { showToast('Błąd: ' + e.message); }
+};
+
 window.exportPetProfile = async (petId) => {
   showToast('Przygotowuję eksport...');
   try {
@@ -6209,7 +6382,6 @@ const STORY_DURATION = 5000; // ms na jeden story
 function listenStories() {
   if (!currentUser) return;
   if (isDemoMode) {
-    // W trybie demo — użyj DEMO_POSTS z flagą isStory
     const stories = DEMO_POSTS.filter(p => p.isStory);
     stories.sort((a, b) => b.createdAt - a.createdAt);
     const groups = {};
@@ -6222,20 +6394,23 @@ function listenStories() {
     return;
   }
   onValue(ref(db, 'posts'), snap => {
-    if (!snap.exists()) { renderStoriesBar([]); return; }
     const stories = [];
-    snap.forEach(c => {
-      const p = { id: c.key, ...c.val() };
-      if (p.isStory) stories.push(p);
+    if (snap.exists()) {
+      snap.forEach(c => {
+        const p = { id: c.key, ...c.val() };
+        if (p.isStory) stories.push(p);
+      });
+    }
+    // Zawsze domieszaj demo-stories żeby pasek nie był pusty
+    DEMO_POSTS.filter(p => p.isStory).forEach(ds => {
+      if (!stories.find(s => s.id === ds.id)) stories.push(ds);
     });
     stories.sort((a, b) => b.createdAt - a.createdAt);
-    // Grupuj po petId
     const groups = {};
     stories.forEach(s => {
-      if (!groups[s.petId]) groups[s.petId] = { petId: s.petId, petName: s.petName, avatarUrl: s.petAvatarUrl, ownerId: s.ownerId, stories: [] };
+      if (!groups[s.petId]) groups[s.petId] = { petId: s.petId, petName: s.petName, avatarUrl: s.petAvatarUrl || s.petAvatarURL, ownerId: s.ownerId, stories: [] };
       groups[s.petId].stories.push(s);
     });
-    // Moje stories na początku
     const arr = Object.values(groups);
     arr.sort((a, b) => {
       const aMe = Object.keys(myPets).includes(a.petId) ? 0 : 1;
@@ -6903,19 +7078,35 @@ window.createGroup = async () => {
   const emoji = _selectedGroupEmoji || '🐾';
   const desc = document.getElementById('group-desc-input').value.trim();
   const species = document.getElementById('group-species-input').value;
+  const newGroup = {
+    name, emoji, description: desc, species,
+    creatorId: currentUser.uid, creatorName: currentUser.displayName,
+    memberCount: 1, createdAt: Date.now()
+  };
   try {
-    const newRef = await push(ref(db, 'groups'), {
-      name, emoji, description: desc, species,
-      creatorId: currentUser.uid, creatorName: currentUser.displayName,
-      memberCount: 1, createdAt: Date.now()
-    });
+    const newRef = await push(ref(db, 'groups'), newGroup);
     await set(ref(db, 'groupMembers/' + currentUser.uid + '/' + newRef.key), true);
     closeModal('create-group-modal');
     showToast('Grupa "' + name + '" utworzona! 👥');
     await loadGroupsList();
     await loadMyGroups();
     openGroup(newRef.key);
-  } catch(e) { showToast('Błąd: ' + e.message); }
+  } catch(e) {
+    // Permission denied — utwórz lokalnie
+    if (e.message && e.message.includes('permission')) {
+      const localId = 'local-' + Date.now();
+      const localGroup = { ...newGroup, id: localId };
+      _allGroups.unshift(localGroup);
+      _myGroupIds.add(localId);
+      closeModal('create-group-modal');
+      renderGroupsList(_allGroups);
+      renderGroupsPopular(_allGroups.slice(0, 4));
+      showToast('Grupa utworzona lokalnie 👥\n⚠️ Dodaj regułę Firebase: "groups": {".read":true,".write":"auth!=null"}');
+      openGroup(localId);
+    } else {
+      showToast('Błąd: ' + e.message);
+    }
+  }
 };
 
 // Demo dane dla grup
