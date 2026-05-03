@@ -75,6 +75,13 @@
   body.dark-mode .sidebar-right { background: transparent; }
   body.dark-mode .profile-hero { background: var(--surface); }
   body.dark-mode .edit-post-textarea { background: var(--surface2) !important; color: var(--text) !important; }
+  body.dark-mode .modal-box { background: var(--surface) !important; color: var(--text) !important; }
+  body.dark-mode .modal-overlay { background: rgba(0,0,0,0.7) !important; }
+  body.dark-mode .modal-title,
+  body.dark-mode label { color: var(--text) !important; }
+  body.dark-mode .btn-cancel { background: var(--surface2) !important; color: var(--text) !important; border-color: var(--border) !important; }
+  body.dark-mode .walk-modal-tabs { background: var(--surface2); }
+  body.dark-mode .likes-popup-overlay { background: rgba(0,0,0,0.7); }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: 'Nunito', sans-serif;
@@ -5276,6 +5283,12 @@ const DEMO_POSTS = [
   { id: 'dp-29', petId:'demo-26', petName:'Fretka',   petSpecies:'Fretka', petAvatarUrl:DEMO_PETS[25].avatarUrl, ownerName:'Adrian M.', ownerId:'demo-owner-26', text:'Dzisiejszy łup: jeden but, kapsel i długopis 🧦', breedImg:'Ferret', imageUrl:'', createdAt:_d(9),  reactions:{laugh:{'u1':true,'u2':true,'u3':true,'u4':true}}, comments:{'c11':{userName:'Julia M.',text:'Fretki są najzabawniejsze 😂',createdAt:_d(8)}} },
   // Tofik (demo-8)
   { id: 'dp-30', petId:'demo-8',  petName:'Tofik',    petSpecies:'Pies', petAvatarUrl:DEMO_PETS[7].avatarUrl,  ownerName:'Paweł N.',   ownerId:'demo-owner-11', text:'Krótkie nogi, wielki duch. Dziś zdobyłem kanapę 🏔️', breedImg:'Dachshund', imageUrl:'', createdAt:_d(35), reactions:{laugh:{'u2':true},heart:{'u5':true}}, comments:{} },
+  // ── Demo Stories (isStory:true — pojawiają się w pasku na górze feedu) ──
+  { id: 'ds-1', petId:'demo-1',  petName:'Burek',   petSpecies:'Pies', petAvatarUrl:DEMO_PETS[0].avatarUrl,  ownerName:'Marek K.',   ownerId:'demo-owner-1',  text:'Poranek z filiżanką kawy ☕ A właściwie z moją miseczką wody 🐾', imageUrl:'', createdAt:_d(0.5), reactions:{}, comments:{}, isStory:true },
+  { id: 'ds-2', petId:'demo-2',  petName:'Zuzia',   petSpecies:'Pies', petAvatarUrl:DEMO_PETS[1].avatarUrl,  ownerName:'Piotr L.',   ownerId:'demo-owner-3',  text:'Dzień dobry! Złoty ranek wymaga złotego retrieverka 🌅', imageUrl:'', createdAt:_d(1), reactions:{}, comments:{}, isStory:true },
+  { id: 'ds-3', petId:'demo-11', petName:'Mruczek', petSpecies:'Kot',  petAvatarUrl:DEMO_PETS[10].avatarUrl, ownerName:'Anna W.',    ownerId:'demo-owner-2',  text:'Znalazłem idealny patch słońca. Nie przeszkadzać. 😸', imageUrl:'', createdAt:_d(2), reactions:{}, comments:{}, isStory:true },
+  { id: 'ds-4', petId:'demo-7',  petName:'Luna',    petSpecies:'Pies', petAvatarUrl:DEMO_PETS[6].avatarUrl,  ownerName:'Ola P.',     ownerId:'demo-owner-10', text:'Trening syberyjski: siedzę w zimnej wodzie i wyglądam efektownie ❄️🐺', imageUrl:'', createdAt:_d(3), reactions:{}, comments:{}, isStory:true },
+  { id: 'ds-5', petId:'demo-13', petName:'Cleo',    petSpecies:'Kot',  petAvatarUrl:DEMO_PETS[12].avatarUrl, ownerName:'Sandra K.',  ownerId:'demo-owner-14', text:'Dzisiejsza ofiara: ulubiona roślina doniczkowa właścicielki 🌿', imageUrl:'', createdAt:_d(4), reactions:{}, comments:{}, isStory:true },
 ];
 
 let isDemoMode = false;
@@ -5511,17 +5524,6 @@ window.exitDemo = () => {
   document.getElementById('demo-banner').style.display = 'none';
 };
 
-const _origShowPage = window.showPage;
-window.showPage = (page) => {
-  _origShowPage(page);
-  if (isDemoMode && page === 'explore') renderDemoExplore();
-  if (isDemoMode && page === 'mypets') renderDemoMyPets();
-  if (isDemoMode && page === 'chat') {
-    document.getElementById('chat-conversations-list').innerHTML = `<div class="empty-state" style="padding:20px 0"><div class="emoji" style="font-size:32px">🔒</div><p style="font-size:13px">Zaloguj się aby używać czatu</p></div>`;
-    document.getElementById('chat-main-panel').innerHTML = `<div class="chat-empty"><div class="emoji">🔒</div><div>Zaloguj się aby pisać wiadomości</div></div>`;
-  }
-};
-
 function renderDemoExplore() {
   const el = document.getElementById('explore-results');
   el.innerHTML = DEMO_PETS.map(p => {
@@ -5566,13 +5568,12 @@ function initPWA() {
   document.getElementById('pwa-manifest').href = URL.createObjectURL(blob);
 
   if ('serviceWorker' in navigator) {
-    const swCode = `
-      self.addEventListener('install', e => self.skipWaiting());
-      self.addEventListener('activate', e => e.waitUntil(clients.claim()));
-      self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => caches.match(e.request))));
-    `;
-    const swBlob = new Blob([swCode], { type: 'application/javascript' });
-    navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(err => console.warn('SW:', err));
+    // Używamy data URL zamiast blob URL (blob: nie jest obsługiwany przez SW)
+    const swCode = `self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('activate',e=>e.waitUntil(clients.claim()));self.addEventListener('fetch',e=>{if(e.request.method==='GET')e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));});`;
+    const swDataUrl = 'data:application/javascript;base64,' + btoa(swCode);
+    navigator.serviceWorker.register(swDataUrl, { type: 'module' }).catch(() => {
+      // Niektóre przeglądarki nie obsługują data: dla SW — ignorujemy cicho
+    });
   }
 }
 
@@ -5875,7 +5876,20 @@ const STORY_DURATION = 5000; // ms na jeden story
 
 // Nasłuchuj stories (posty z isStory:true) - uruchamiane z loadFeed
 function listenStories() {
-  if (!currentUser || isDemoMode) return;
+  if (!currentUser) return;
+  if (isDemoMode) {
+    // W trybie demo — użyj DEMO_POSTS z flagą isStory
+    const stories = DEMO_POSTS.filter(p => p.isStory);
+    stories.sort((a, b) => b.createdAt - a.createdAt);
+    const groups = {};
+    stories.forEach(s => {
+      if (!groups[s.petId]) groups[s.petId] = { petId: s.petId, petName: s.petName, avatarUrl: s.petAvatarUrl, ownerId: s.ownerId, stories: [] };
+      groups[s.petId].stories.push(s);
+    });
+    _storyGroups = Object.values(groups);
+    renderStoriesBar(_storyGroups);
+    return;
+  }
   onValue(ref(db, 'posts'), snap => {
     if (!snap.exists()) { renderStoriesBar([]); return; }
     const stories = [];
@@ -6215,21 +6229,28 @@ function initLanguage() {
 // ═══════════════════════════════════
 let _pageHistory = ['feed'];
 
-const _origShowPageNav = window.showPage;
+// Jeden wrapper łączący historię nawigacji + logikę demo
+const _origShowPageBase = window.showPage;
 window.showPage = (page) => {
   const current = _pageHistory[_pageHistory.length - 1];
   if (current !== page) _pageHistory.push(page);
   if (_pageHistory.length > 20) _pageHistory.shift();
-  _origShowPageNav(page);
+  _origShowPageBase(page);
+  if (isDemoMode && page === 'explore') renderDemoExplore();
+  if (isDemoMode && page === 'mypets') renderDemoMyPets();
+  if (isDemoMode && page === 'chat') {
+    document.getElementById('chat-conversations-list').innerHTML = `<div class="empty-state" style="padding:20px 0"><div class="emoji" style="font-size:32px">🔒</div><p style="font-size:13px">Zaloguj się aby używać czatu</p></div>`;
+    document.getElementById('chat-main-panel').innerHTML = `<div class="chat-empty"><div class="emoji">🔒</div><div>Zaloguj się aby pisać wiadomości</div></div>`;
+  }
 };
 
 window.goBack = () => {
   if (_pageHistory.length > 1) {
     _pageHistory.pop();
     const prev = _pageHistory[_pageHistory.length - 1];
-    _origShowPageNav(prev);
+    _origShowPageBase(prev);
   } else {
-    _origShowPageNav('feed');
+    _origShowPageBase('feed');
   }
 };
 
