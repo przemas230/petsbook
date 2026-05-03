@@ -1360,7 +1360,7 @@
     height: 52px;
   }
   .bottom-tab.active { color: var(--paw); }
-  .bottom-tab-icon { font-size: 18px; line-height: 1; display: inline; }
+  .bottom-tab-icon { font-size: 13px; line-height: 1; display: inline; }
 
   /* ── RESPONSIVE: ogólne mobile ── */
   @media (max-width: 900px) {
@@ -2240,6 +2240,27 @@
         </div>
       </div>
       <div id="mypets-list" class="pets-grid"></div>
+    </div>
+  </div>
+
+  <!-- OWNER PROFILE PAGE -->
+  <div id="page-owner" style="display:none">
+    <div style="max-width:800px;margin:0 auto;padding:clamp(12px,3vw,24px) clamp(10px,3vw,20px)">
+      <button onclick="goBackOwner()" style="background:none;border:none;font-size:14px;font-weight:800;color:var(--bark-light);cursor:pointer;margin-bottom:16px;display:flex;align-items:center;gap:6px;padding:6px 0">← Wróć</button>
+      <div class="card card-pad" style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap">
+          <div id="owner-avatar" style="width:72px;height:72px;border-radius:50%;background:var(--cream);display:flex;align-items:center;justify-content:center;font-size:32px;flex-shrink:0;overflow:hidden"></div>
+          <div style="flex:1;min-width:0">
+            <div id="owner-name" style="font-size:22px;font-weight:900;font-family:'Fraunces',serif;color:var(--bark)"></div>
+            <div id="owner-meta" style="font-size:13px;color:var(--bark-light);margin-top:4px"></div>
+          </div>
+          <button id="owner-chat-btn" onclick="openOwnerChat()" style="display:none;background:var(--paw);color:white;border:none;border-radius:12px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer">💬 Napisz</button>
+        </div>
+      </div>
+      <div style="font-size:16px;font-weight:900;font-family:'Fraunces',serif;margin-bottom:14px">🐾 Zwierzęta właściciela</div>
+      <div id="owner-pets-list" class="pets-grid" style="margin-bottom:28px"><div class="loading-spinner">🐾</div></div>
+      <div style="font-size:16px;font-weight:900;font-family:'Fraunces',serif;margin-bottom:14px">📝 Ostatnie posty</div>
+      <div id="owner-posts-list"><div class="loading-spinner">🐾</div></div>
     </div>
   </div>
 
@@ -3579,7 +3600,7 @@ function renderPostCard(p) {
         <div class="post-pet-avatar" onclick="showPetProfile('${p.petId}')">${avatarHTML}</div>
         <div class="post-meta">
           <div class="post-pet-name" onclick="showPetProfile('${p.petId}')">${p.petName || 'Zwierzę'} ${petBadge}</div>
-          <div class="post-owner">${firstNameOnly(p.ownerName)}</div>
+          <div class="post-owner" onclick="openOwnerProfile('${p.ownerId||''}','${(p.ownerName||'').replace(/'/g,'')}')" style="cursor:pointer;text-decoration:underline dotted">${firstNameOnly(p.ownerName)}</div>
         </div>
         <div class="post-time">${timeStr}</div>
         ${canManagePost ? `
@@ -4413,7 +4434,7 @@ function renderDemoPostCardInFeed(p) {
         <div class="post-pet-avatar" onclick="showDemoPetProfile('${p.petId}')">${avatarHTML}</div>
         <div class="post-meta">
           <div class="post-pet-name" onclick="showDemoPetProfile('${p.petId}')">${p.petName}<span class="demo-post-badge">demo</span></div>
-          <div class="post-owner">${firstNameOnly(p.ownerName)}</div>
+          <div class="post-owner" onclick="openOwnerProfile('${p.ownerId||''}','${(p.ownerName||'').replace(/'/g,'')}')" style="cursor:pointer;text-decoration:underline dotted">${firstNameOnly(p.ownerName)}</div>
         </div>
         <div class="post-time">${timeStr}</div>
       </div>
@@ -5178,7 +5199,7 @@ window.initExplore = async () => {
 //  PAGE NAVIGATION
 // ═══════════════════════════════════
 window.showPage = (page) => {
-  ['feed','explore','mypets','profile','chat','search','groups'].forEach(p => {
+  ['feed','explore','mypets','profile','owner','chat','search','groups'].forEach(p => {
     document.getElementById(`page-${p}`).style.display = p === page ? 'block' : 'none';
   });
   ['feed','explore','mypets','chat','groups'].forEach(t => {
@@ -6093,7 +6114,7 @@ function renderDemoPostCard(p) {
         <div class="post-pet-avatar" onclick="showDemoPetProfile('${p.petId}')">${avatarHTML}</div>
         <div class="post-meta">
           <div class="post-pet-name" onclick="showDemoPetProfile('${p.petId}')">${p.petName}</div>
-          <div class="post-owner">${firstNameOnly(p.ownerName)}</div>
+          <div class="post-owner" onclick="openOwnerProfile('${p.ownerId||''}','${(p.ownerName||'').replace(/'/g,'')}')" style="cursor:pointer;text-decoration:underline dotted">${firstNameOnly(p.ownerName)}</div>
         </div>
         <div class="post-time">${timeStr}</div>
       </div>
@@ -7629,6 +7650,178 @@ window.createGroup = async () => {
 };
 
 // Demo dane dla grup
+// ═══════════════════════════════════
+//  👤  PROFIL WŁAŚCICIELA
+// ═══════════════════════════════════
+
+let _ownerProfileHistory = null; // zapamiętuje skąd przyszliśmy
+
+window.openOwnerProfile = async (ownerId, ownerName) => {
+  if (!ownerId) return;
+  // Zapamiętaj aktualną stronę żeby móc wrócić
+  const pages = ['feed','explore','mypets','profile','chat','search','groups'];
+  _ownerProfileHistory = pages.find(p => {
+    const el = document.getElementById('page-' + p);
+    return el && el.style.display !== 'none';
+  }) || 'feed';
+
+  showPage('owner');
+
+  // Avatar
+  const avatarEl = document.getElementById('owner-avatar');
+  const nameEl   = document.getElementById('owner-name');
+  const metaEl   = document.getElementById('owner-meta');
+  const chatBtn  = document.getElementById('owner-chat-btn');
+
+  nameEl.textContent = ownerName || 'Właściciel';
+  avatarEl.innerHTML = '<span style="font-size:32px">👤</span>';
+  metaEl.textContent = 'Ładowanie...';
+  chatBtn.style.display = 'none';
+  document.getElementById('owner-pets-list').innerHTML = '<div class="loading-spinner">🐾</div>';
+  document.getElementById('owner-posts-list').innerHTML = '<div class="loading-spinner">🐾</div>';
+
+  // Czy to demo właściciel?
+  const isDemoOwner = ownerId.startsWith('demo-owner-') || isDemoMode;
+
+  if (isDemoOwner) {
+    _renderOwnerDemo(ownerId, ownerName);
+    return;
+  }
+
+  // Pobierz dane właściciela z userStatus/userMeta
+  try {
+    const [statusSnap, metaSnap] = await Promise.all([
+      get(ref(db, 'userStatus/' + ownerId)).catch(() => null),
+      get(ref(db, 'userMeta/' + ownerId)).catch(() => null),
+    ]);
+
+    const status = statusSnap?.exists() ? statusSnap.val() : {};
+    const meta   = metaSnap?.exists()   ? metaSnap.val()   : {};
+    const photo  = status.photoURL || meta.photoURL || null;
+    const name   = status.displayName || ownerName || 'Właściciel';
+
+    nameEl.textContent = name;
+    if (photo) {
+      avatarEl.innerHTML = '<img src="' + photo + '" referrerpolicy="no-referrer" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
+    }
+
+    // Pokaż przycisk czatu jeśli to nie my
+    if (currentUser && ownerId !== currentUser.uid) {
+      chatBtn.style.display = 'inline-flex';
+      chatBtn.dataset.ownerId   = ownerId;
+      chatBtn.dataset.ownerName = name;
+    }
+  } catch(e) {}
+
+  await _loadOwnerPets(ownerId);
+  await _loadOwnerPosts(ownerId);
+};
+
+async function _loadOwnerPets(ownerId) {
+  const el = document.getElementById('owner-pets-list');
+  try {
+    const snap = await get(ref(db, 'pets'));
+    const pets = [];
+    if (snap.exists()) {
+      snap.forEach(c => {
+        const p = c.val();
+        if (p.ownerId === ownerId || (p.coOwners && p.coOwners[ownerId])) {
+          pets.push({ id: c.key, ...p });
+        }
+      });
+    }
+    const metaEl = document.getElementById('owner-meta');
+    metaEl.textContent = pets.length + ' ' + _petWord(pets.length);
+
+    if (!pets.length) {
+      el.innerHTML = '<div class="empty-state"><div class="emoji">🐾</div><p>Brak zwierząt do wyświetlenia.</p></div>';
+      return;
+    }
+    el.innerHTML = pets.map(p => _renderOwnerPetCard(p)).join('');
+  } catch(e) {
+    el.innerHTML = '<div class="empty-state"><p>Nie można załadować zwierząt.</p></div>';
+  }
+}
+
+async function _loadOwnerPosts(ownerId) {
+  const el = document.getElementById('owner-posts-list');
+  try {
+    const snap = await get(ref(db, 'posts'));
+    const posts = [];
+    if (snap.exists()) {
+      snap.forEach(c => {
+        const p = c.val();
+        if (p.ownerId === ownerId && !p.isStory) posts.push({ id: c.key, ...p });
+      });
+    }
+    posts.sort((a, b) => b.createdAt - a.createdAt);
+    const recent = posts.slice(0, 10);
+    el.innerHTML = recent.length
+      ? recent.map(p => renderPostCard(p)).join('')
+      : '<div class="empty-state"><div class="emoji">📝</div><p>Brak postów.</p></div>';
+  } catch(e) {
+    el.innerHTML = '<div class="empty-state"><p>Nie można załadować postów.</p></div>';
+  }
+}
+
+function _renderOwnerPetCard(p) {
+  const avatar = p.avatarUrl
+    ? '<img src="' + p.avatarUrl + '" referrerpolicy="no-referrer" style="width:100%;height:100%;object-fit:cover;border-radius:50%">'
+    : (speciesEmoji(p.species) || '🐾');
+  return '<div class="card" style="padding:14px 16px;display:flex;align-items:center;gap:14px;cursor:pointer;margin-bottom:10px" onclick="showPetProfile(\''  + p.id + '\')">' +
+    '<div style="width:52px;height:52px;border-radius:50%;background:var(--cream);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;overflow:hidden">' + avatar + '</div>' +
+    '<div style="flex:1;min-width:0">' +
+      '<div style="font-weight:900;font-size:15px;color:var(--bark)">' + escapeHtml(p.name || '') + '</div>' +
+      '<div style="font-size:12px;color:var(--bark-light);margin-top:2px">' + (p.species || '') + (p.breed ? ' · ' + p.breed : '') + (p.location ? ' · 📍' + p.location : '') + '</div>' +
+    '</div>' +
+    '<span style="font-size:18px;color:var(--bark-light)">›</span>' +
+  '</div>';
+}
+
+function _petWord(n) {
+  if (n === 1) return 'zwierzę';
+  if (n >= 2 && n <= 4) return 'zwierzęta';
+  return 'zwierząt';
+}
+
+function _renderOwnerDemo(ownerId, ownerName) {
+  const nameEl = document.getElementById('owner-name');
+  const metaEl = document.getElementById('owner-meta');
+  nameEl.textContent = ownerName || 'Właściciel demo';
+  metaEl.textContent = 'Profil demo';
+
+  // Znajdź zwierzęta demo powiązane z tym właścicielem
+  const demoPets = Object.values(DEMO_PETS || {}).filter(p => p.ownerName === ownerName);
+  const petsEl = document.getElementById('owner-pets-list');
+  petsEl.innerHTML = demoPets.length
+    ? demoPets.map(p => _renderOwnerPetCard(p)).join('')
+    : '<div class="empty-state"><div class="emoji">🐾</div><p>Brak zwierząt demo.</p></div>';
+
+  // Posty demo
+  const demoPosts = (typeof DEMO_POSTS !== 'undefined' ? DEMO_POSTS : [])
+    .filter(p => p.ownerName === ownerName && !p.isStory).slice(0, 6);
+  const postsEl = document.getElementById('owner-posts-list');
+  postsEl.innerHTML = demoPosts.length
+    ? demoPosts.map(p => renderPostCard(p)).join('')
+    : '<div class="empty-state"><div class="emoji">📝</div><p>Brak postów.</p></div>';
+}
+
+window.goBackOwner = () => {
+  showPage(_ownerProfileHistory || 'feed');
+};
+
+window.openOwnerChat = () => {
+  const btn = document.getElementById('owner-chat-btn');
+  const ownerId   = btn.dataset.ownerId;
+  const ownerName = btn.dataset.ownerName;
+  if (!ownerId) return;
+  showPage('chat');
+  // Krótki timeout żeby strona czatu się załadowała
+  setTimeout(() => {
+    if (typeof openChatWith === 'function') openChatWith(ownerId, ownerName);
+  }, 300);
+};
+
 // ═══════════════════════════════════
 //  📅  EVENTY
 // ═══════════════════════════════════
