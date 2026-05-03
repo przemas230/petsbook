@@ -107,6 +107,23 @@
   body.dark-mode .group-card { background: var(--surface); }
   body.dark-mode .group-card-name { color: var(--text); }
 
+  /* ── GROUP POST CATEGORIES ── */
+  .post-category-badge { display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:800;margin-bottom:6px; }
+  .cat-dyskusja   { background:#EBF8FF;color:#2B6CB0; }
+  .cat-pytanie    { background:#FFFBEB;color:#B7791F; }
+  .cat-ogloszenie { background:#FFF5F5;color:#C53030; }
+  .cat-osiagniecie{ background:#F0FFF4;color:#276749; }
+  .cat-zabawne    { background:#FAF5FF;color:#6B46C1; }
+
+  /* ── GROUP MEMBERS ── */
+  .member-item { display:flex;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px solid var(--cream); }
+  .member-item:last-child { border-bottom:none; }
+  .member-avatar { width:40px;height:40px;border-radius:50%;background:var(--cream);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;overflow:hidden; }
+  .member-name { flex:1;font-weight:700;font-size:14px;color:var(--bark); }
+  .member-role { font-size:11px;color:var(--bark-light);font-weight:600; }
+  .member-kick-btn { background:none;border:1px solid #e53e3e;color:#e53e3e;border-radius:8px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer; }
+  body.dark-mode .member-item { border-color:var(--border); }
+
   /* ── GROUP TOPICS ── */
   .topic-card { background: white; border-radius: 14px; padding: 14px 18px; margin-bottom: 10px; cursor: pointer; box-shadow: var(--card-shadow); display: flex; align-items: center; gap: 14px; transition: transform 0.15s, box-shadow 0.15s; }
   .topic-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.1); }
@@ -2340,6 +2357,8 @@
                 </div>
                 <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
                   <button id="group-join-btn" class="btn-follow" onclick="toggleGroupMembership()" style="min-width:110px"></button>
+                  <button id="group-invite-btn" onclick="copyGroupInviteLink()" style="display:none;background:var(--grass);color:white;border:none;border-radius:10px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">🔗 Zaproś</button>
+                  <button id="group-members-btn" onclick="openGroupMembers()" style="display:none;background:none;border:1px solid var(--paw);color:var(--paw);border-radius:10px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">👥 Członkowie</button>
                   <button id="group-delete-btn" onclick="deleteGroup()" style="display:none;background:none;border:1px solid #e53e3e;color:#e53e3e;border-radius:10px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">🗑️ Usuń</button>
                 </div>
               </div>
@@ -2365,7 +2384,14 @@
                   <div id="group-post-avatar" class="pet-avatar" style="font-size:22px">👤</div>
                   <textarea id="group-post-text" placeholder="Napisz coś w tym temacie..."></textarea>
                 </div>
-                <div class="create-post-actions" style="justify-content:flex-end">
+                <div class="create-post-actions" style="justify-content:flex-end;flex-wrap:wrap;gap:6px">
+                  <select class="post-select" id="group-post-category" style="min-width:130px">
+                    <option value="dyskusja">💬 Dyskusja</option>
+                    <option value="pytanie">❓ Pytanie</option>
+                    <option value="ogloszenie">📢 Ogłoszenie</option>
+                    <option value="osiagniecie">🏆 Osiągnięcie</option>
+                    <option value="zabawne">😄 Zabawne</option>
+                  </select>
                   <select class="post-select" id="group-post-pet-select"><option value="">Wybierz zwierzę...</option></select>
                   <button class="btn-post" onclick="submitGroupPost()">Opublikuj 🐾</button>
                 </div>
@@ -2984,6 +3010,19 @@
   </div>
 </div>
 
+<!-- GROUP MEMBERS MODAL -->
+<div class="modal-overlay" id="group-members-modal">
+  <div class="modal-box" style="max-width:480px">
+    <div class="modal-title">👥 Członkowie grupy</div>
+    <div id="group-members-list" style="max-height:400px;overflow-y:auto;margin-bottom:16px">
+      <div class="loading-spinner">🐾</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('group-members-modal')">Zamknij</button>
+    </div>
+  </div>
+</div>
+
 <!-- BADGE MODAL -->
 <div class="modal-overlay" id="badge-modal">
   <div class="modal-box">
@@ -3589,7 +3628,8 @@ function renderPostCard(p) {
   const isLiked = p.likes && p.likes[currentUser.uid];
   const timeStr = timeAgo(p.createdAt);
   const isMyPost = p.ownerId === currentUser.uid;
-  const canManagePost = isMyPost || (myPets[p.petId] != null);
+  const isGroupModerator = p.groupId && _currentGroupData && _currentGroupData.creatorId === currentUser.uid;
+  const canManagePost = isMyPost || (myPets[p.petId] != null) || isGroupModerator;
   const promotedLabel = p.promoted ? `<div class="promoted-label">⭐ Promowany post</div>` : '';
   const petBadge = p.petPremium ? premiumBadgeHTML(p.petPremium) : '';
 
@@ -3613,6 +3653,7 @@ function renderPostCard(p) {
           </div>
         </div>` : ''}
       </div>
+      ${p.category && p.groupId ? renderCategoryBadge(p.category) : ''}
       ${p.text ? `<div class="post-text">${renderTextWithHashtags(p.text)}</div>` : ''}
       ${p.imageUrl ? `<img src="${p.imageUrl}" class="post-img" loading="lazy" referrerpolicy="no-referrer" onclick="openGalleryLightbox('${p.imageUrl}')" style="cursor:zoom-in">` : ''}
       <div class="reactions-bar">
@@ -7290,14 +7331,13 @@ window.openGroup = async (groupId) => {
   joinBtn.textContent = isMember ? '✅ Dołączyłeś' : '⭐ Dołącz';
   joinBtn.className = 'btn-follow' + (isMember ? ' following' : '');
 
-  // Przycisk usuwania grupy - tylko dla twórcy
-  const delBtn = document.getElementById('group-delete-btn');
+  // Przyciski dla twórcy / członków
   const isCreator = currentUser && group.creatorId === currentUser.uid;
-  delBtn.style.display = (isCreator && !isDemoMode) ? 'inline-flex' : 'none';
+  document.getElementById('group-delete-btn').style.display    = (isCreator && !isDemoMode) ? 'inline-flex' : 'none';
+  document.getElementById('group-invite-btn').style.display    = (isMember  && !isDemoMode) ? 'inline-flex' : 'none';
+  document.getElementById('group-members-btn').style.display   = (isCreator && !isDemoMode) ? 'inline-flex' : 'none';
+  document.getElementById('group-add-topic-btn').style.display = (isMember  && !isDemoMode) ? 'block' : 'none';
 
-  // Przycisk nowego tematu - dla twórcy i członków
-  const addTopicBtn = document.getElementById('group-add-topic-btn');
-  addTopicBtn.style.display = (isMember && !isDemoMode) ? 'block' : 'none';
 
   document.getElementById('group-breadcrumb').textContent = '';
   showGroupTopics();
@@ -7571,13 +7611,14 @@ window.submitGroupPost = async () => {
   if (!text) { showToast('Napisz coś!'); return; }
   const pet = myPets[petId] || {};
   try {
+    const category = document.getElementById('group-post-category')?.value || 'dyskusja';
     const path = 'groupPosts/' + _currentGroupId + '/' + _currentTopicId;
     await push(ref(db, path), {
       text, petId: petId || null, petName: pet.name || currentUser.displayName,
       petSpecies: pet.species || '', petAvatarUrl: pet.avatarUrl || currentUser.photoURL || '',
       ownerName: currentUser.displayName, ownerId: currentUser.uid,
       createdAt: Date.now(), reactions: {}, comments: {},
-      groupId: _currentGroupId, topicId: _currentTopicId
+      groupId: _currentGroupId, topicId: _currentTopicId, category
     });
     // Zaktualizuj licznik postów w temacie
     const topicRef = ref(db, 'groupTopics/' + _currentGroupId + '/' + _currentTopicId + '/postCount');
@@ -7586,6 +7627,129 @@ window.submitGroupPost = async () => {
     document.getElementById('group-post-text').value = '';
     showToast('Opublikowano! 🐾');
     await loadGroupPosts(_currentGroupId, _currentTopicId);
+  } catch(e) { showToast('Błąd: ' + e.message); }
+};
+
+// ─── Kategorie postów ───────────────────────────────────────
+const GROUP_CATEGORIES = {
+  dyskusja:    { label: 'Dyskusja',    icon: '💬', cls: 'cat-dyskusja' },
+  pytanie:     { label: 'Pytanie',     icon: '❓', cls: 'cat-pytanie' },
+  ogloszenie:  { label: 'Ogłoszenie',  icon: '📢', cls: 'cat-ogloszenie' },
+  osiagniecie: { label: 'Osiągnięcie', icon: '🏆', cls: 'cat-osiagniecie' },
+  zabawne:     { label: 'Zabawne',     icon: '😄', cls: 'cat-zabawne' },
+};
+
+function renderCategoryBadge(cat) {
+  const c = GROUP_CATEGORIES[cat];
+  if (!c) return '';
+  return '<div class="post-category-badge ' + c.cls + '">' + c.icon + ' ' + c.label + '</div>';
+}
+
+// ─── Link zaproszeniowy ──────────────────────────────────────
+window.copyGroupInviteLink = () => {
+  const groupId = _currentGroupId;
+  if (!groupId) return;
+  const url = window.location.origin + window.location.pathname + '?joinGroup=' + groupId;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(() => showToast('Link skopiowany! 🔗 Wyślij go znajomym'));
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = url;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('Link skopiowany! 🔗');
+  }
+};
+
+// ─── Obsługa linku zaproszeniowego przy wejściu na stronę ───
+function checkGroupInviteParam() {
+  const params = new URLSearchParams(window.location.search);
+  const gid = params.get('joinGroup');
+  if (!gid) return;
+  // Wyczyść parametr z URL
+  window.history.replaceState({}, '', window.location.pathname);
+  // Poczekaj na załadowanie listy grup i otwórz
+  const tryOpen = (attempts) => {
+    if (_allGroups.length > 0) {
+      showPage('groups');
+      setTimeout(() => openGroup(gid), 300);
+    } else if (attempts > 0) {
+      setTimeout(() => tryOpen(attempts - 1), 500);
+    }
+  };
+  tryOpen(10);
+}
+
+// ─── Lista członków + kick ───────────────────────────────────
+window.openGroupMembers = async () => {
+  const el = document.getElementById('group-members-list');
+  el.innerHTML = '<div class="loading-spinner">🐾</div>';
+  openModal('group-members-modal');
+
+  try {
+    const snap = await get(ref(db, 'groupMembers'));
+    const memberIds = [];
+    if (snap.exists()) {
+      snap.forEach(userNode => {
+        if (userNode.child(_currentGroupId).exists()) {
+          memberIds.push(userNode.key);
+        }
+      });
+    }
+    if (!memberIds.length) {
+      el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--bark-light)">Brak członków w bazie.</div>';
+      return;
+    }
+
+    // Pobierz dane każdego członka z userStatus
+    const members = await Promise.all(memberIds.map(async uid => {
+      try {
+        const s = await get(ref(db, 'userStatus/' + uid));
+        const d = s.exists() ? s.val() : {};
+        return { uid, name: d.displayName || 'Użytkownik', photo: d.photoURL || null };
+      } catch(e) { return { uid, name: 'Użytkownik', photo: null }; }
+    }));
+
+    const isCreator = currentUser && _currentGroupData && _currentGroupData.creatorId === currentUser.uid;
+
+    el.innerHTML = members.map(m => {
+      const isOwner = m.uid === (_currentGroupData?.creatorId || '');
+      const avatarHTML = m.photo
+        ? '<img src="' + m.photo + '" referrerpolicy="no-referrer" style="width:100%;height:100%;border-radius:50%;object-fit:cover">'
+        : '👤';
+      const kickBtn = (isCreator && !isOwner && m.uid !== currentUser?.uid)
+        ? '<button class="member-kick-btn" data-uid="' + m.uid + '" data-name="' + escapeHtml(m.name) + '" onclick="kickMember(this.dataset.uid,this.dataset.name)">🚫 Usuń</button>'
+        : '';
+      return '<div class="member-item">' +
+        '<div class="member-avatar">' + avatarHTML + '</div>' +
+        '<div style="flex:1">' +
+          '<div class="member-name">' + escapeHtml(m.name) + '</div>' +
+          '<div class="member-role">' + (isOwner ? '👑 Twórca' : '👤 Członek') + '</div>' +
+        '</div>' +
+        kickBtn +
+      '</div>';
+    }).join('');
+  } catch(e) {
+    el.innerHTML = '<div style="padding:16px;color:#e53e3e">Błąd: ' + e.message + '</div>';
+  }
+};
+
+window.kickMember = async (uid, name) => {
+  if (!confirm('Usunąć ' + name + ' z grupy?')) return;
+  try {
+    await remove(ref(db, 'groupMembers/' + uid + '/' + _currentGroupId));
+    // Zaktualizuj licznik
+    const cnt = Math.max(0, (_currentGroupData?.memberCount || 1) - 1);
+    await update(ref(db, 'groups/' + _currentGroupId), { memberCount: cnt });
+    if (_currentGroupData) _currentGroupData.memberCount = cnt;
+    document.getElementById('group-header-meta').textContent =
+      '👥 ' + cnt + ' członków' +
+      (_currentGroupData?.species ? ' · ' + _currentGroupData.species : '') +
+      ' · Założona ' + (_currentGroupData?.createdAt ? new Date(_currentGroupData.createdAt).toLocaleDateString('pl-PL') : '?');
+    showToast(name + ' usunięty z grupy 🚫');
+    await openGroupMembers(); // odśwież listę
   } catch(e) { showToast('Błąd: ' + e.message); }
 };
 
@@ -8118,6 +8282,7 @@ window.goBack = () => {
 initPWA();
 initDarkMode();
 initLanguage();
+checkGroupInviteParam();
 </script>
 </body>
 </html>
