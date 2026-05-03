@@ -1342,26 +1342,25 @@
   .bottom-tab {
     flex: 1;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
     justify-content: center;
-    gap: 2px;
-    padding: 6px 2px 4px;
+    gap: 5px;
+    padding: 0 2px;
     border: none;
     background: none;
     font-family: 'Nunito', sans-serif;
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 700;
     color: var(--bark-light);
     cursor: pointer;
     transition: color 0.15s;
     white-space: nowrap;
     line-height: 1;
-    min-height: 52px;
-    max-height: 56px;
+    height: 52px;
   }
   .bottom-tab.active { color: var(--paw); }
-  .bottom-tab-icon { font-size: 20px; line-height: 1; display: block; }
+  .bottom-tab-icon { font-size: 18px; line-height: 1; display: inline; }
 
   /* ── RESPONSIVE: ogólne mobile ── */
   @media (max-width: 900px) {
@@ -2280,7 +2279,7 @@
     <button class="bottom-tab active" id="btab-feed" onclick="showPage('feed')"><span class="bottom-tab-icon">🏠</span>Tablica</button>
     <button class="bottom-tab" id="btab-explore" onclick="showPage('explore')"><span class="bottom-tab-icon">🔍</span>Odkryj</button>
     <button class="bottom-tab" id="btab-mypets" onclick="showPage('mypets')"><span class="bottom-tab-icon">🐾</span>Moje</button>
-    <button class="bottom-tab" id="btab-groups" onclick="showPage('groups')"><span class="bottom-tab-icon">👥</span>Grupy</button>
+    <button class="bottom-tab" id="btab-groups" onclick="showPage('groups')"><span class="bottom-tab-icon">👤</span>Grupy</button>
     <button class="bottom-tab" id="btab-chat" onclick="showPage('chat')"><span class="bottom-tab-icon">💬</span>Czat</button>
   </nav>
 
