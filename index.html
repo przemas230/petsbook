@@ -5493,7 +5493,10 @@ window.openChatV1 = (chatId, otherId, otherName, otherPhoto) => {
         ${actions}
       </div>`;
     }).join('');
-    area.scrollTop = area.scrollHeight;
+    requestAnimationFrame(() => {
+      area.scrollTop = area.scrollHeight;
+      setTimeout(() => { area.scrollTop = area.scrollHeight; }, 300);
+    });
   });
 };
 
@@ -6851,7 +6854,21 @@ let _currentGroupData = null;
 let _allGroups = [];
 let _myGroupIds = new Set();
 
+function _loadDemoGroupIds() {
+  try {
+    const saved = JSON.parse(localStorage.getItem("myDemoGroupIds") || "[]");
+    saved.forEach(id => _myGroupIds.add(id));
+  } catch(e) {}
+}
+function _saveDemoGroupIds() {
+  try {
+    const demoIds = [..._myGroupIds].filter(id => id.startsWith("dg-") || id.startsWith("local-"));
+    localStorage.setItem("myDemoGroupIds", JSON.stringify(demoIds));
+  } catch(e) {}
+}
+
 window.initGroupsPage = async () => {
+  _loadDemoGroupIds();
   showGroupsBrowse();
   await loadGroupsList();
   if (!isDemoMode) loadMyGroups();
@@ -6895,6 +6912,8 @@ async function loadMyGroups() {
     const snap = await get(ref(db, 'groupMembers/' + currentUser.uid));
     _myGroupIds = new Set();
     if (snap.exists()) snap.forEach(c => { _myGroupIds.add(c.key); });
+    // Zachowaj też lokalnie dołączone grupy demo
+    try { JSON.parse(localStorage.getItem("myDemoGroupIds") || "[]").forEach(id => _myGroupIds.add(id)); } catch(e) {}
     const myGroups = _allGroups.filter(g => _myGroupIds.has(g.id));
     myEl.innerHTML = myGroups.length
       ? myGroups.map(g => '<div class="group-sidebar-item" onclick="openGroup(\'' + g.id + '\')">' +
@@ -7034,6 +7053,8 @@ window.toggleGroupMembership = async () => {
     // Aktualizuj licznik w _allGroups
     const gIdx = _allGroups.findIndex(g => g.id === _currentGroupId);
     if (gIdx >= 0 && _currentGroupData) _allGroups[gIdx].memberCount = _currentGroupData.memberCount;
+    // Zapisz stan do localStorage
+    _saveDemoGroupIds();
     // Odśwież sidebar "Moje grupy" lokalnie bez przeładowania z Firebase
     _refreshMyGroupsSidebar();
     return;
