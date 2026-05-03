@@ -1287,19 +1287,19 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
-    padding: 6px;
+    gap: 1px;
+    padding: 5px 2px;
     border: none;
     background: none;
     font-family: 'Nunito', sans-serif;
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 700;
     color: var(--bark-light);
     cursor: pointer;
     transition: color 0.15s;
   }
   .bottom-tab.active { color: var(--paw); }
-  .bottom-tab-icon { font-size: 22px; }
+  .bottom-tab-icon { font-size: 20px; }
 
   /* ── RESPONSIVE: małe ekrany ≤ 390px (iPhone SE, starsze Androidy) ── */
   @media (max-width: 390px) {
@@ -2181,6 +2181,95 @@
       <span class="bottom-tab-icon">💬</span>Czat
     </button>
   </nav>
+
+  <!-- GROUPS PAGE -->
+  <div id="page-groups" style="display:none">
+    <div class="main-layout">
+      <aside class="sidebar-left">
+        <div class="card card-pad">
+          <div class="section-title">👥 Moje grupy</div>
+          <div id="groups-my-list" style="margin-bottom:12px"><div class="loading-spinner" style="font-size:20px">🐾</div></div>
+          <button class="btn-add-pet" onclick="openCreateGroupModal()">➕ Utwórz grupę</button>
+        </div>
+      </aside>
+      <main>
+        <div id="groups-browse-view">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+            <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:900;color:var(--bark)">👥 Społeczności</div>
+            <button class="btn-add-pet" style="margin:0" onclick="openCreateGroupModal()">➕ Utwórz grupę</button>
+          </div>
+          <div class="feed-filter-bar" style="margin-bottom:16px">
+            <input type="text" id="groups-search-input" placeholder="🔍 Szukaj grup..." style="flex:1;background:transparent;border:none;font-family:'Nunito',sans-serif;font-size:14px;font-weight:600;color:var(--bark);outline:none" oninput="filterGroupsList(this.value)">
+          </div>
+          <div id="groups-list"></div>
+        </div>
+        <div id="groups-inner-view" style="display:none">
+          <button onclick="showGroupsBrowse()" style="background:none;border:none;font-size:14px;font-weight:800;color:var(--bark-light);cursor:pointer;display:flex;align-items:center;gap:6px;padding:6px 0;margin-bottom:12px">← Wszystkie grupy</button>
+          <div class="card" id="group-header-card" style="margin-bottom:16px;padding:20px 24px">
+            <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+              <div id="group-header-emoji" style="font-size:48px;line-height:1"></div>
+              <div style="flex:1">
+                <div id="group-header-name" style="font-size:22px;font-weight:900;color:var(--bark)"></div>
+                <div id="group-header-desc" style="font-size:14px;color:var(--bark-light);margin-top:4px"></div>
+                <div id="group-header-meta" style="font-size:13px;color:var(--bark-light);margin-top:6px"></div>
+              </div>
+              <button id="group-join-btn" class="btn-follow" onclick="toggleGroupMembership()" style="min-width:120px"></button>
+            </div>
+          </div>
+          <div class="create-post" id="group-create-post" style="display:none;margin-bottom:16px">
+            <div class="create-post-top">
+              <div id="group-post-avatar" class="pet-avatar" style="font-size:22px">👤</div>
+              <textarea id="group-post-text" placeholder="Napisz coś do grupy..."></textarea>
+            </div>
+            <div class="create-post-actions" style="justify-content:flex-end">
+              <select class="post-select" id="group-post-pet-select"><option value="">Wybierz zwierzę...</option></select>
+              <button class="btn-post" onclick="submitGroupPost()">Opublikuj 🐾</button>
+            </div>
+          </div>
+          <div id="group-posts-list"><div class="loading-spinner">🐾</div></div>
+        </div>
+      </main>
+      <aside class="sidebar-right">
+        <div class="card card-pad">
+          <div class="section-title">🔥 Popularne grupy</div>
+          <div id="groups-popular-list"></div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- SEARCH PAGE -->
+  <div id="page-search" style="display:none">
+    <div class="main-layout">
+      <aside class="sidebar-left"></aside>
+      <main>
+        <div>
+          <button onclick="goBack()" style="background:none;border:none;font-size:14px;font-weight:800;color:var(--bark-light);cursor:pointer;display:flex;align-items:center;gap:6px;padding:6px 0;margin-bottom:12px">← Wróć</button>
+          <div id="search-page-query-label" style="font-size:20px;font-weight:900;color:var(--bark);margin-bottom:4px"></div>
+          <div id="search-page-count" style="font-size:13px;color:var(--bark-light);margin-bottom:20px"></div>
+        </div>
+        <div id="search-section-pets" style="display:none">
+          <div class="section-title" style="margin-bottom:12px">🐾 Zwierzęta</div>
+          <div id="search-results-pets" class="search-pets-grid"></div>
+        </div>
+        <div id="search-section-tags" style="display:none;margin-top:20px">
+          <div class="section-title" style="margin-bottom:12px">🏷️ Hashtagi</div>
+          <div id="search-results-tags" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+        </div>
+        <div id="search-section-posts" style="display:none;margin-top:20px">
+          <div class="section-title" style="margin-bottom:12px">📝 Posty</div>
+          <div id="search-results-posts"></div>
+        </div>
+        <div id="search-empty" style="display:none;text-align:center;padding:60px 20px">
+          <div style="font-size:48px;margin-bottom:12px">🔍</div>
+          <div style="font-weight:800;font-size:18px;color:var(--bark)">Brak wyników</div>
+          <div style="color:var(--bark-light);margin-top:8px;font-size:14px">Spróbuj innej frazy lub sprawdź pisownię</div>
+        </div>
+      </main>
+      <aside class="sidebar-right"></aside>
+    </div>
+  </div>
+
 </div>
 
 <!-- ADD/EDIT PET MODAL -->
@@ -2609,97 +2698,6 @@
     </div>
   </div>
 </div>
-
-  <!-- GROUPS PAGE -->
-  <div id="page-groups" style="display:none">
-    <div class="main-layout">
-      <aside class="sidebar-left">
-        <div class="card card-pad">
-          <div class="section-title">👥 Moje grupy</div>
-          <div id="groups-my-list" style="margin-bottom:12px"><div class="loading-spinner" style="font-size:20px">🐾</div></div>
-          <button class="btn-add-pet" onclick="openCreateGroupModal()">➕ Utwórz grupę</button>
-        </div>
-      </aside>
-      <main>
-        <!-- Widok: lista grup -->
-        <div id="groups-browse-view">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
-            <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:900;color:var(--bark)">👥 Społeczności</div>
-            <button class="btn-add-pet" style="margin:0" onclick="openCreateGroupModal()">➕ Utwórz grupę</button>
-          </div>
-          <div class="feed-filter-bar" style="margin-bottom:16px">
-            <input type="text" id="groups-search-input" placeholder="🔍 Szukaj grup..." style="flex:1;background:transparent;border:none;font-family:'Nunito',sans-serif;font-size:14px;font-weight:600;color:var(--bark);outline:none" oninput="filterGroupsList(this.value)">
-          </div>
-          <div id="groups-list"></div>
-        </div>
-        <!-- Widok: wnętrze grupy -->
-        <div id="groups-inner-view" style="display:none">
-          <button onclick="showGroupsBrowse()" style="background:none;border:none;font-size:14px;font-weight:800;color:var(--bark-light);cursor:pointer;display:flex;align-items:center;gap:6px;padding:6px 0;margin-bottom:12px">← Wszystkie grupy</button>
-          <div class="card" id="group-header-card" style="margin-bottom:16px;padding:20px 24px">
-            <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
-              <div id="group-header-emoji" style="font-size:48px;line-height:1"></div>
-              <div style="flex:1">
-                <div id="group-header-name" style="font-size:22px;font-weight:900;color:var(--bark)"></div>
-                <div id="group-header-desc" style="font-size:14px;color:var(--bark-light);margin-top:4px"></div>
-                <div id="group-header-meta" style="font-size:13px;color:var(--bark-light);margin-top:6px"></div>
-              </div>
-              <button id="group-join-btn" class="btn-follow" onclick="toggleGroupMembership()" style="min-width:120px"></button>
-            </div>
-          </div>
-          <!-- Post w grupie -->
-          <div class="create-post" id="group-create-post" style="display:none;margin-bottom:16px">
-            <div class="create-post-top">
-              <div id="group-post-avatar" class="pet-avatar" style="font-size:22px">👤</div>
-              <textarea id="group-post-text" placeholder="Napisz coś do grupy..."></textarea>
-            </div>
-            <div class="create-post-actions" style="justify-content:flex-end">
-              <select class="post-select" id="group-post-pet-select"><option value="">Wybierz zwierzę...</option></select>
-              <button class="btn-post" onclick="submitGroupPost()">Opublikuj 🐾</button>
-            </div>
-          </div>
-          <div id="group-posts-list"><div class="loading-spinner">🐾</div></div>
-        </div>
-      </main>
-      <aside class="sidebar-right">
-        <div class="card card-pad" id="groups-sidebar-popular">
-          <div class="section-title">🔥 Popularne grupy</div>
-          <div id="groups-popular-list"></div>
-        </div>
-      </aside>
-    </div>
-  </div>
-
-  <!-- SEARCH PAGE -->
-  <div id="page-search" style="display:none">
-    <div class="main-layout">
-      <aside class="sidebar-left"></aside>
-      <main>
-        <div>
-          <button onclick="goBack()" style="background:none;border:none;font-size:14px;font-weight:800;color:var(--bark-light);cursor:pointer;display:flex;align-items:center;gap:6px;padding:6px 0;margin-bottom:12px">← Wróć</button>
-          <div id="search-page-query-label" style="font-size:20px;font-weight:900;color:var(--bark);margin-bottom:4px"></div>
-          <div id="search-page-count" style="font-size:13px;color:var(--bark-light);margin-bottom:20px"></div>
-        </div>
-        <div id="search-section-pets" style="display:none">
-          <div class="section-title" style="margin-bottom:12px">🐾 Zwierzęta</div>
-          <div id="search-results-pets" class="search-pets-grid"></div>
-        </div>
-        <div id="search-section-tags" style="display:none;margin-top:20px">
-          <div class="section-title" style="margin-bottom:12px">🏷️ Hashtagi</div>
-          <div id="search-results-tags" style="display:flex;flex-wrap:wrap;gap:8px"></div>
-        </div>
-        <div id="search-section-posts" style="display:none;margin-top:20px">
-          <div class="section-title" style="margin-bottom:12px">📝 Posty</div>
-          <div id="search-results-posts"></div>
-        </div>
-        <div id="search-empty" style="display:none;text-align:center;padding:60px 20px">
-          <div style="font-size:48px;margin-bottom:12px">🔍</div>
-          <div style="font-weight:800;font-size:18px;color:var(--bark)">Brak wyników</div>
-          <div style="color:var(--bark-light);margin-top:8px;font-size:14px">Spróbuj innej frazy lub sprawdź pisownię</div>
-        </div>
-      </main>
-      <aside class="sidebar-right"></aside>
-    </div>
-  </div>
 
 <!-- CREATE GROUP MODAL -->
 <div class="modal-overlay" id="create-group-modal">
@@ -3248,6 +3246,7 @@ window.onFeedRadiusChange = (val) => {
 };
 
 window.applyFeedFilters = () => {
+  if (isDemoMode) { renderDemoFeed(); return; }
   const newSpecies = document.getElementById('feed-filter-species')?.value || '';
   if (newSpecies !== feedSpeciesFilter) feedDisplayLimit = 20;
   feedSpeciesFilter = newSpecies;
@@ -5598,6 +5597,13 @@ window.startDemo = () => {
   isDemoMode = true;
   currentUser = { uid: 'demo-viewer', displayName: 'Gość demo', photoURL: null };
   myPets = {};
+  // Przykładowe obserwowania — żeby zakładka "Obserwowani" nie była pusta
+  myFollows = {
+    'demo-1': true,  // Burek
+    'demo-2': true,  // Zuzia
+    'demo-11': true, // Mruczek
+    'demo-7': true,  // Luna
+  };
   document.getElementById('auth-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   document.getElementById('demo-banner').style.display = 'flex';
@@ -5629,9 +5635,16 @@ window.startDemo = () => {
 };
 
 function renderDemoFeed() {
+  // Załaduj demo posty do allFeedPosts (bez stories)
+  allFeedPosts = DEMO_POSTS.filter(p => !p.isStory).sort((a, b) => b.createdAt - a.createdAt);
   const el = document.getElementById('feed-posts');
-  el.innerHTML = DEMO_POSTS.map(p => renderDemoPostCard(p)).join('');
-  loadDemoBreedImages(DEMO_POSTS);
+  let posts = [...allFeedPosts];
+  if (feedTab === 'following') {
+    posts = posts.filter(p => myFollows[p.petId]);
+  }
+  el.innerHTML = posts.map(p => renderDemoPostCard(p)).join('');
+  loadDemoBreedImages(posts);
+  listenStories();
 }
 
 function renderDemoPostCard(p) {
@@ -6648,7 +6661,6 @@ window.initGroupsPage = async () => {
 
 async function loadGroupsList() {
   const listEl = document.getElementById('groups-list');
-  const popularEl = document.getElementById('groups-popular-list');
   listEl.innerHTML = '<div class="loading-spinner">🐾</div>';
 
   if (isDemoMode) {
@@ -6663,10 +6675,30 @@ async function loadGroupsList() {
     if (snap.exists()) {
       snap.forEach(c => { _allGroups.push({ id: c.key, ...c.val() }); });
     }
+    // Jeśli brak grup w Firebase — zasiej przykładowe
+    if (_allGroups.length === 0) {
+      await seedDefaultGroups();
+      const snap2 = await get(ref(db, 'groups'));
+      if (snap2.exists()) snap2.forEach(c => { _allGroups.push({ id: c.key, ...c.val() }); });
+    }
     _allGroups.sort((a, b) => (b.memberCount || 0) - (a.memberCount || 0));
     renderGroupsList(_allGroups);
     renderGroupsPopular(_allGroups.slice(0, 4));
   } catch(e) { listEl.innerHTML = '<div class="empty-state"><p>Błąd ładowania grup</p></div>'; }
+}
+
+async function seedDefaultGroups() {
+  const seeds = [
+    { emoji: '🐾', name: 'Zwierzaki PL – Ogólna', description: 'Ogólna społeczność dla wszystkich właścicieli zwierząt', species: '', memberCount: 0 },
+    { emoji: '🐕', name: 'Labradorowcy Polska', description: 'Dla właścicieli labradorów z całej Polski', species: 'Pies', memberCount: 0 },
+    { emoji: '🐈', name: 'Koty Maine Coon Polska', description: 'Najlepsze koty świata i ich opiekunowie 🐱', species: 'Kot', memberCount: 0 },
+    { emoji: '🏆', name: 'Agility Polska', description: 'Treningi, zawody, wyniki — wszystko o agility', species: 'Pies', memberCount: 0 },
+    { emoji: '🦮', name: 'Golden Retriever Fan Club', description: 'Bo złote retrievery to szczęście na czterech łapach 🌟', species: 'Pies', memberCount: 0 },
+    { emoji: '🐇', name: 'Królikarnia', description: 'Wszystko o królikach — dieta, zdrowie, zabawy', species: 'Królik', memberCount: 0 },
+  ];
+  for (const g of seeds) {
+    await push(ref(db, 'groups'), { ...g, creatorId: 'system', createdAt: Date.now() });
+  }
 }
 
 async function loadMyGroups() {
