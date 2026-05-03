@@ -613,8 +613,14 @@
   .create-post-actions {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     flex-wrap: wrap;
+  }
+  @media (max-width: 500px) {
+    .create-post-actions { gap: 6px; }
+    .create-post-actions .btn-post { margin-left: 0; width: 100%; justify-content: center; margin-top: 2px; }
+    .post-select { font-size: 12px; padding: 7px 8px; }
+    .btn-photo-upload { font-size: 12px; padding: 7px 10px; }
   }
   .post-select {
     background: var(--cream);
@@ -696,26 +702,27 @@
     background: var(--cream);
     border: 2px solid transparent;
     border-radius: 10px;
-    padding: 7px 12px;
+    padding: 7px 10px;
     font-family: 'Nunito', sans-serif;
     font-size: 13px;
     font-weight: 700;
     color: var(--bark);
     cursor: pointer;
     flex: 1;
-    min-width: 140px;
+    min-width: 0;
+    max-width: 160px;
   }
   .feed-filter-select:focus { outline: none; border-color: var(--paw-light); }
   .feed-radius-wrap {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     flex: 2;
-    min-width: 200px;
+    min-width: 0;
   }
-  .feed-radius-wrap label { font-size: 13px; font-weight: 700; white-space: nowrap; }
-  .feed-radius-wrap input[type=range] { flex: 1; accent-color: var(--paw); }
-  #feed-radius-val { font-size: 13px; font-weight: 800; color: var(--paw); min-width: 52px; }
+  .feed-radius-wrap label { font-size: 12px; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
+  .feed-radius-wrap input[type=range] { flex: 1; min-width: 0; accent-color: var(--paw); }
+  #feed-radius-val { font-size: 12px; font-weight: 800; color: var(--paw); white-space: nowrap; flex-shrink: 0; }
 
   /* ── FEED POSTS ── */
   .post-card {
@@ -1381,6 +1388,9 @@
 
   /* ── RESPONSIVE: ogólne mobile ── */
   @media (max-width: 900px) {
+    .create-post { padding: 14px; }
+    .feed-filter-bar { padding: 12px 14px; }
+    .feed-filter-row { gap: 6px; }
     html, body { max-width: 100vw; overflow-x: hidden; }
     .topnav-inner { height: 54px; padding: 0 12px; gap: 8px; }
     .nav-logo { font-size: 22px; }
@@ -1998,8 +2008,13 @@
   <nav class="topnav">
     <div class="topnav-inner">
       <div class="nav-logo" onclick="showPage('feed')">Pets<span>Book</span></div>
-      <div class="nav-search">
-        <input type="text" placeholder="Szukaj zwierząt..." id="global-search" oninput="handleSearch(this.value)">
+      <div class="nav-search" style="position:relative">
+        <input type="text" placeholder="Szukaj zwierząt..." id="global-search"
+          oninput="handleSearch(this.value);showSearchSuggestions(this.value)"
+          onkeydown="handleSearchKey(event)"
+          onfocus="showSearchSuggestions(this.value)"
+          autocomplete="off">
+        <div id="search-suggestions-dropdown" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:white;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);z-index:200;overflow:hidden;max-height:260px;overflow-y:auto"></div>
       </div>
       <div class="nav-tabs">
         <button class="nav-tab active" id="tab-feed" onclick="showPage('feed')">🏠 Tablica</button>
@@ -2414,23 +2429,72 @@
     <div class="main-layout">
       <aside class="sidebar-left"></aside>
       <main>
-        <div>
-          <button onclick="goBack()" style="background:none;border:none;font-size:14px;font-weight:800;color:var(--bark-light);cursor:pointer;display:flex;align-items:center;gap:6px;padding:6px 0;margin-bottom:12px">← Wróć</button>
+        <!-- Nagłówek + filtry -->
+        <div style="margin-bottom:16px">
+          <button onclick="goBack()" style="background:none;border:none;font-size:14px;font-weight:800;color:var(--bark-light);cursor:pointer;display:flex;align-items:center;gap:6px;padding:6px 0;margin-bottom:10px">← Wróć</button>
           <div id="search-page-query-label" style="font-size:20px;font-weight:900;color:var(--bark);margin-bottom:4px"></div>
-          <div id="search-page-count" style="font-size:13px;color:var(--bark-light);margin-bottom:20px"></div>
+          <div id="search-page-count" style="font-size:13px;color:var(--bark-light);margin-bottom:14px"></div>
+          <!-- Filtry zaawansowane -->
+          <div id="search-filters-bar" style="display:none;background:white;border-radius:14px;padding:14px 16px;box-shadow:var(--card-shadow);margin-bottom:16px">
+            <div style="font-size:12px;font-weight:800;color:var(--bark-light);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">🎛️ Filtry</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <select id="sf-species" class="post-select" style="flex:1;min-width:0" onchange="applySearchFilters()">
+                <option value="">Wszystkie gatunki</option>
+                <option value="Pies">🐕 Psy</option>
+                <option value="Kot">🐈 Koty</option>
+                <option value="Królik">🐇 Króliki</option>
+                <option value="Inne">🐾 Inne</option>
+              </select>
+              <select id="sf-badge" class="post-select" style="flex:1;min-width:0" onchange="applySearchFilters()">
+                <option value="">Wszystkie odznaki</option>
+                <option value="breeder">🏅 Hodowca</option>
+                <option value="verified">✅ Zweryfikowany</option>
+                <option value="champion">🏆 Mistrz</option>
+              </select>
+              <select id="sf-sort" class="post-select" style="flex:1;min-width:0" onchange="applySearchFilters()">
+                <option value="relevance">Trafność</option>
+                <option value="followers">Obserwujący ↓</option>
+                <option value="name">Nazwa A–Z</option>
+              </select>
+              <button onclick="clearSearchFilters()" style="background:none;border:1px solid var(--border);border-radius:10px;padding:6px 12px;font-size:12px;font-weight:700;color:var(--bark-light);cursor:pointer;white-space:nowrap">✕ Wyczyść</button>
+            </div>
+          </div>
         </div>
-        <div id="search-section-pets" style="display:none">
-          <div class="section-title" style="margin-bottom:12px">🐾 Zwierzęta</div>
-          <div id="search-results-pets" class="search-pets-grid"></div>
+
+        <!-- Historia + Trending (gdy brak zapytania) -->
+        <div id="search-home-panel">
+          <div id="search-history-section" style="display:none;margin-bottom:20px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+              <div style="font-size:15px;font-weight:800;color:var(--bark)">🕐 Ostatnie wyszukiwania</div>
+              <button onclick="clearSearchHistory()" style="background:none;border:none;font-size:12px;font-weight:700;color:var(--bark-light);cursor:pointer">Wyczyść</button>
+            </div>
+            <div id="search-history-list" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+          </div>
+          <div style="margin-bottom:20px">
+            <div style="font-size:15px;font-weight:800;color:var(--bark);margin-bottom:10px">🔥 Popularne hashtagi</div>
+            <div id="search-trending-tags" style="display:flex;flex-wrap:wrap;gap:8px"><div class="loading-spinner" style="font-size:16px">🐾</div></div>
+          </div>
         </div>
-        <div id="search-section-tags" style="display:none;margin-top:20px">
-          <div class="section-title" style="margin-bottom:12px">🏷️ Hashtagi</div>
-          <div id="search-results-tags" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+
+        <!-- Wyniki -->
+        <div id="search-results-wrap" style="display:none">
+          <div id="search-section-pets" style="display:none">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+              <div class="section-title" style="margin-bottom:0">🐾 Zwierzęta</div>
+              <button id="search-filter-toggle" onclick="toggleSearchFilters()" style="background:var(--cream);border:none;border-radius:10px;padding:5px 12px;font-size:12px;font-weight:700;color:var(--bark);cursor:pointer">🎛️ Filtry</button>
+            </div>
+            <div id="search-results-pets" class="search-pets-grid"></div>
+          </div>
+          <div id="search-section-tags" style="display:none;margin-top:20px">
+            <div class="section-title" style="margin-bottom:12px">🏷️ Hashtagi</div>
+            <div id="search-results-tags" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+          </div>
+          <div id="search-section-posts" style="display:none;margin-top:20px">
+            <div class="section-title" style="margin-bottom:12px">📝 Posty</div>
+            <div id="search-results-posts"></div>
+          </div>
         </div>
-        <div id="search-section-posts" style="display:none;margin-top:20px">
-          <div class="section-title" style="margin-bottom:12px">📝 Posty</div>
-          <div id="search-results-posts"></div>
-        </div>
+
         <div id="search-empty" style="display:none;text-align:center;padding:60px 20px">
           <div style="font-size:48px;margin-bottom:12px">🔍</div>
           <div style="font-weight:800;font-size:18px;color:var(--bark)">Brak wyników</div>
@@ -5096,7 +5160,13 @@ window.handleSearch = (val) => {
 
 window.runGlobalSearch = async (q) => {
   const query = q.toLowerCase();
+  addToSearchHistory(q);
   showPage('search');
+  // Pokaż panel wyników, ukryj home panel
+  const wrap = document.getElementById('search-results-wrap');
+  const home = document.getElementById('search-home-panel');
+  if (wrap) wrap.style.display = 'block';
+  if (home) home.style.display = 'none';
   document.getElementById('search-page-query-label').textContent = '🔍 Wyniki dla: "' + q + '"';
   document.getElementById('search-page-count').textContent = 'Szukam...';
 
@@ -5180,6 +5250,7 @@ window.runGlobalSearch = async (q) => {
     total > 0 ? 'Znaleziono: ' + total + ' wynik' + (total === 1 ? '' : total < 5 ? 'i' : 'ów') : '';
 
   // RENDER ZWIERZĘTA
+  _lastSearchPets = matchedPets; // cache do filtrowania
   if (matchedPets.length > 0) {
     document.getElementById('search-section-pets').style.display = 'block';
     document.getElementById('search-results-pets').innerHTML = matchedPets.map(p => {
@@ -5249,6 +5320,7 @@ window.showPage = (page) => {
   });
   if (page === 'explore') initExplore();
   if (page === 'groups') initGroupsPage();
+  if (page === 'search') _initSearchPage();
   if (page === 'chat' && !isDemoMode) initChatPage();
   if (page !== 'chat' && _chatListListener) { _chatListListener(); _chatListListener = null; }
 };
@@ -7814,6 +7886,214 @@ window.createGroup = async () => {
 };
 
 // Demo dane dla grup
+// ═══════════════════════════════════
+//  🔍  WYSZUKIWANIE ZAAWANSOWANE
+// ═══════════════════════════════════
+
+// ─── Historia wyszukiwań ────────────────────────────────────
+function getSearchHistory() {
+  try { return JSON.parse(localStorage.getItem('searchHistory') || '[]'); } catch(e) { return []; }
+}
+function addToSearchHistory(query) {
+  if (!query || query.length < 2) return;
+  let h = getSearchHistory().filter(q => q !== query);
+  h.unshift(query);
+  h = h.slice(0, 10);
+  localStorage.setItem('searchHistory', JSON.stringify(h));
+}
+window.clearSearchHistory = () => {
+  localStorage.removeItem('searchHistory');
+  renderSearchHistory();
+};
+function renderSearchHistory() {
+  const h = getSearchHistory();
+  const sec = document.getElementById('search-history-section');
+  const el  = document.getElementById('search-history-list');
+  if (!sec || !el) return;
+  if (!h.length) { sec.style.display = 'none'; return; }
+  sec.style.display = 'block';
+  el.innerHTML = h.map(q =>
+    '<button data-q="' + escapeHtml(q) + '" onclick="runSearchFromHistory(this.dataset.q)" ' +
+    'style="background:var(--cream);border:none;border-radius:20px;padding:6px 14px;font-size:13px;font-weight:700;color:var(--bark);cursor:pointer;display:flex;align-items:center;gap:6px">' +
+    '🕐 ' + escapeHtml(q) + '</button>'
+  ).join('');
+}
+window.runSearchFromHistory = (q) => {
+  const inp = document.getElementById('global-search');
+  if (inp) inp.value = q;
+  handleSearch(q);
+};
+
+// ─── Trending hashtagi ──────────────────────────────────────
+async function loadTrendingTags() {
+  const el = document.getElementById('search-trending-tags');
+  if (!el) return;
+  const tagCounts = {};
+  const weekAgo = Date.now() - 7 * 86400000;
+  const tagRe = /#[\wÀ-ž]+/g;
+
+  // Zbierz z DEMO_POSTS
+  (typeof DEMO_POSTS !== 'undefined' ? DEMO_POSTS : []).forEach(p => {
+    if (p.createdAt > weekAgo) {
+      const tags = (p.text || '').match(tagRe) || [];
+      tags.forEach(t => { tagCounts[t] = (tagCounts[t] || 0) + 1; });
+    }
+  });
+  // Zbierz z Firebase (jeśli zalogowany)
+  if (!isDemoMode) {
+    try {
+      const snap = await get(ref(db, 'posts'));
+      if (snap.exists()) snap.forEach(c => {
+        const p = c.val();
+        if (p.createdAt > weekAgo) {
+          const tags = (p.text || '').match(tagRe) || [];
+          tags.forEach(t => { tagCounts[t] = (tagCounts[t] || 0) + 1; });
+        }
+      });
+    } catch(e) {}
+  }
+  const sorted = Object.entries(tagCounts).sort((a,b) => b[1]-a[1]).slice(0, 12);
+  if (!sorted.length) {
+    // Fallback demo tagi
+    const demo = ['#labrador','#kot','#golden','#plaża','#szczepienia','#spacer','#maine_coon','#agility','#pies','#kociak'];
+    el.innerHTML = demo.map((t,i) =>
+      '<button data-q="' + escapeHtml(t) + '" onclick="runSearchFromHistory(this.dataset.q)" class="hashtag-chip" ' +
+      'style="background:var(--cream);border:none;border-radius:20px;padding:5px 12px;font-size:13px;font-weight:700;color:var(--paw);cursor:pointer">' +
+      t + '</button>'
+    ).join('');
+    return;
+  }
+  el.innerHTML = sorted.map(([tag, cnt]) =>
+    '<button data-q="' + escapeHtml(tag) + '" onclick="runSearchFromHistory(this.dataset.q)" ' +
+    'style="background:var(--cream);border:none;border-radius:20px;padding:5px 12px;font-size:13px;font-weight:700;color:var(--paw);cursor:pointer;display:flex;align-items:center;gap:4px">' +
+    escapeHtml(tag) + ' <span style="font-size:11px;color:var(--bark-light);font-weight:600">' + cnt + '</span></button>'
+  ).join('');
+}
+
+// ─── Autocomplete / sugestie ────────────────────────────────
+let _allPetNames = []; // cache nazw zwierząt
+
+async function _ensurePetNamesCache() {
+  if (_allPetNames.length) return;
+  const names = [];
+  if (typeof DEMO_PETS !== 'undefined') {
+    Object.values(DEMO_PETS).forEach(p => { if (p.name) names.push({ name: p.name, species: p.species, id: p.id, isDemo: true }); });
+  }
+  if (!isDemoMode) {
+    try {
+      const snap = await get(ref(db, 'pets'));
+      if (snap.exists()) snap.forEach(c => {
+        const p = c.val();
+        if (p.name) names.push({ name: p.name, species: p.species, id: c.key, isDemo: false });
+      });
+    } catch(e) {}
+  }
+  _allPetNames = names;
+}
+
+window.showSearchSuggestions = async (q) => {
+  const dd = document.getElementById('search-suggestions-dropdown');
+  if (!dd) return;
+  if (!q || q.length < 2) { dd.style.display = 'none'; return; }
+  await _ensurePetNamesCache();
+  const lower = q.toLowerCase();
+  const matches = _allPetNames.filter(p => p.name.toLowerCase().includes(lower)).slice(0, 6);
+  if (!matches.length) { dd.style.display = 'none'; return; }
+  dd.innerHTML = matches.map(p =>
+    '<div data-name="' + escapeHtml(p.name) + '" onclick="selectSuggestion(this.dataset.name)" ' +
+    'style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--cream);font-size:14px;font-weight:700;color:var(--bark)" ' +
+    'style="cursor:pointer;padding:10px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--cream);font-size:14px;font-weight:700;color:var(--bark)">' +
+    speciesEmoji(p.species) + ' ' + escapeHtml(p.name) +
+    '<span style="font-size:11px;color:var(--bark-light);font-weight:600;margin-left:auto">' + escapeHtml(p.species || '') + '</span>' +
+    '</div>'
+  ).join('');
+  dd.style.display = 'block';
+};
+
+window.selectSuggestion = (name) => {
+  const inp = document.getElementById('global-search');
+  if (inp) { inp.value = name; }
+  document.getElementById('search-suggestions-dropdown').style.display = 'none';
+  handleSearch(name);
+};
+
+window.handleSearchKey = (e) => {
+  if (e.key === 'Escape') {
+    document.getElementById('search-suggestions-dropdown').style.display = 'none';
+  }
+  if (e.key === 'Enter') {
+    document.getElementById('search-suggestions-dropdown').style.display = 'none';
+  }
+};
+
+// Zamknij dropdown po kliknięciu poza
+document.addEventListener('click', (e) => {
+  const dd = document.getElementById('search-suggestions-dropdown');
+  if (dd && !e.target.closest('.nav-search')) dd.style.display = 'none';
+});
+
+// ─── Filtry wyników ─────────────────────────────────────────
+let _lastSearchPets = []; // cache wyników pets do filtrowania
+
+window.toggleSearchFilters = () => {
+  const bar = document.getElementById('search-filters-bar');
+  if (!bar) return;
+  const visible = bar.style.display !== 'none';
+  bar.style.display = visible ? 'none' : 'block';
+};
+
+window.clearSearchFilters = () => {
+  ['sf-species','sf-badge','sf-sort'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  applySearchFilters();
+};
+
+window.applySearchFilters = () => {
+  const species = document.getElementById('sf-species')?.value || '';
+  const badge   = document.getElementById('sf-badge')?.value || '';
+  const sort    = document.getElementById('sf-sort')?.value || 'relevance';
+  let pets = [..._lastSearchPets];
+  if (species) pets = pets.filter(p => p.species === species);
+  if (badge)   pets = pets.filter(p => p.premium === badge);
+  if (sort === 'followers') pets.sort((a,b) => (b.followerCount||0) - (a.followerCount||0));
+  else if (sort === 'name') pets.sort((a,b) => (a.name||'').localeCompare(b.name||''));
+  const el = document.getElementById('search-results-pets');
+  const sec = document.getElementById('search-section-pets');
+  if (!el) return;
+  if (!pets.length) { if (sec) sec.style.display = 'none'; return; }
+  if (sec) sec.style.display = 'block';
+  el.innerHTML = pets.map(p => {
+    const clickFn = p._isDemo ? "showDemoPetProfile('" + p.id + "')" : "showPetProfile('" + p.id + "')";
+    return '<div class="search-pet-card" onclick="' + clickFn + '">' +
+      '<div class="search-pet-avatar">' + (p.avatarUrl ? '<img src="'+p.avatarUrl+'" referrerpolicy="no-referrer" style="width:100%;height:100%;border-radius:50%;object-fit:cover">' : speciesEmoji(p.species)) + '</div>' +
+      '<div class="search-pet-name">' + escapeHtml(p.name||'') + (p.premium ? ' ' + premiumBadgeHTML(p.premium) : '') + '</div>' +
+      '<div class="search-pet-meta">' + (p.breed||'') + (p.location ? ' · 📍'+p.location : '') + '</div>' +
+    '</div>';
+  }).join('');
+};
+
+// ─── Inicjalizacja strony search ────────────────────────────
+const _origInitSearch = window.showPage;
+window._initSearchPage = () => {
+  renderSearchHistory();
+  loadTrendingTags();
+  const wrap = document.getElementById('search-results-wrap');
+  const home = document.getElementById('search-home-panel');
+  const empty = document.getElementById('search-empty');
+  // Jeśli jest zapytanie z URL/nav — pokaż wyniki, inaczej panel główny
+  const q = document.getElementById('global-search')?.value || '';
+  if (q.length >= 2) {
+    if (wrap) wrap.style.display = 'block';
+    if (home) home.style.display = 'none';
+  } else {
+    if (wrap) wrap.style.display = 'none';
+    if (home) home.style.display = 'block';
+    if (empty) empty.style.display = 'none';
+  }
+};
+
 // ═══════════════════════════════════
 //  👤  PROFIL WŁAŚCICIELA
 // ═══════════════════════════════════
