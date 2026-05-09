@@ -683,13 +683,14 @@
     background: var(--cream);
     border: none;
     border-radius: 10px;
-    padding: 8px 14px;
+    padding: 9px 14px;
     font-size: 13px;
     font-weight: 700;
     font-family: 'Nunito', sans-serif;
     color: var(--bark-light);
     cursor: pointer;
     transition: background 0.15s;
+    line-height: 1.4;
   }
   .btn-photo-upload:hover { background: #EDD5B8; }
   .btn-post {
@@ -704,6 +705,7 @@
     font-family: 'Nunito', sans-serif;
     cursor: pointer;
     transition: all 0.2s;
+    line-height: 1.4;
   }
   .btn-post:hover { background: var(--bark); transform: translateY(-1px); }
   #post-image-preview { max-width: 100%; border-radius: 12px; margin-top: 10px; display: none; }
@@ -970,9 +972,10 @@
   .btn-story { 
     background: linear-gradient(135deg, var(--paw), #f5a623);
     color: white; border: none; border-radius: 10px;
-    padding: 8px 14px; font-size: 13px; font-weight: 800;
+    padding: 9px 14px; font-size: 13px; font-weight: 800;
     font-family: 'Nunito', sans-serif;
     cursor: pointer; white-space: nowrap;
+    line-height: 1.4;
   }
   .post-img {
     width: 100%;
@@ -2096,7 +2099,6 @@
         <div id="nav-avatar-wrap"></div>
         <button class="notif-btn" onclick="openSettings()" title="Ustawienia" style="font-size:16px">⚙️</button>
         <button id="pwa-install-btn" onclick="triggerPwaInstall()" style="display:none;background:var(--paw);color:white;border:none;border-radius:10px;padding:6px 10px;font-size:12px;font-weight:700;cursor:pointer;align-items:center;gap:4px">📲 Zainstaluj</button>
-        <button class="btn-signout" onclick="signOut()">Wyloguj</button>
       </div>
     </div>
   </nav>
@@ -2130,10 +2132,10 @@
             <select class="post-select" id="post-pet-select" style="width:100%">
               <option value="">Wybierz zwierzę...</option>
             </select>
-            <div style="display:flex;gap:8px">
-              <label style="cursor:pointer;flex:1">
+            <div style="display:flex;gap:8px;align-items:stretch">
+              <label style="cursor:pointer;flex:1;display:flex">
                 <input type="file" accept="image/*" style="display:none" id="post-image-input" onchange="handlePostImage(this)">
-                <div class="btn-photo-upload" style="text-align:center;width:100%;box-sizing:border-box">📷 Zdjęcie</div>
+                <div class="btn-photo-upload" style="text-align:center;width:100%;box-sizing:border-box;display:flex;align-items:center;justify-content:center">📷 Zdjęcie</div>
               </label>
               <button class="btn-story" onclick="openCreateStoryModal()" style="flex:1">✨ Story</button>
               <button class="btn-post" onclick="submitPost()" style="flex:2;margin-left:0">Opublikuj 🐾</button>
@@ -2761,9 +2763,13 @@
   <div class="modal-box">
     <div class="modal-title">👥 Opiekunowie</div>
     <div id="coowners-list-content"></div>
+    <div id="coowners-requests-section" style="display:none;margin-top:20px;padding-top:16px;border-top:2px solid var(--cream)">
+      <div class="form-label">⏳ Oczekujące prośby o dołączenie</div>
+      <div id="coowners-requests-list"></div>
+    </div>
     <div id="coowners-invite-section" style="margin-top:20px">
       <div class="form-label">Zaproś nowego opiekuna</div>
-      <p style="font-size:13px;font-weight:600;color:var(--bark-light);margin-bottom:10px">Podaj ten kod innemu użytkownikowi PetsBook. Po wpisaniu go w sekcji "Dołącz do zwierzęcia" na stronie Moje zwierzęta, uzyska dostęp do edycji.</p>
+      <p style="font-size:13px;font-weight:600;color:var(--bark-light);margin-bottom:10px">Podaj ten kod innemu użytkownikowi PetsBook. Po wpisaniu go w sekcji "Dołącz do zwierzęcia" na stronie Moje zwierzęta, wyśle Ci prośbę o akceptację.</p>
       <div class="invite-code-box" id="invite-code-display" onclick="copyInviteCode()" title="Kliknij aby skopiować"></div>
       <div class="map-location-info">🔁 Kliknij kod aby skopiować • Generuj nowy poniżej</div>
     </div>
@@ -2931,6 +2937,13 @@
         <button class="feed-tab active" id="lang-pl" onclick="setLanguage('pl',this)">🇵🇱 PL</button>
         <button class="feed-tab" id="lang-en" onclick="setLanguage('en',this)">🇬🇧 EN</button>
       </div>
+    </div>
+    <div class="settings-row" id="settings-signout-row" style="display:none;border-top:2px solid var(--cream);padding-top:14px;margin-top:6px">
+      <div>
+        <div class="settings-label">🚪 Wyloguj się</div>
+        <div class="settings-desc">Zakończ sesję i wróć do ekranu logowania</div>
+      </div>
+      <button class="btn-signout" onclick="signOut()">Wyloguj</button>
     </div>
     <div class="modal-actions">
       <button class="btn-save" id="settings-done-btn" onclick="closeSettings()">Gotowe</button>
@@ -3338,12 +3351,16 @@ onAuthStateChanged(auth, user => {
 // ── Init ──
 async function initApp() {
   const wrap = document.getElementById('nav-avatar-wrap');
+  const goToMyProfile = `onclick="openOwnerProfile('${currentUser.uid}','${(currentUser.displayName||'').replace(/'/g,'')}')" style="cursor:pointer"`;
   if (currentUser.photoURL) {
-    wrap.innerHTML = `<img src="${currentUser.photoURL}" class="nav-avatar" referrerpolicy="no-referrer">`;
+    wrap.innerHTML = `<img src="${currentUser.photoURL}" class="nav-avatar" referrerpolicy="no-referrer" ${goToMyProfile} title="Mój profil">`;
   } else {
-    wrap.innerHTML = `<div class="nav-avatar-placeholder">👤</div>`;
+    wrap.innerHTML = `<div class="nav-avatar-placeholder" ${goToMyProfile} title="Mój profil">👤</div>`;
   }
   const pa = document.getElementById('post-user-avatar');
+  pa.style.cursor = 'pointer';
+  pa.title = 'Mój profil';
+  pa.onclick = () => window.openOwnerProfile(currentUser.uid, currentUser.displayName || '');
   if (currentUser.photoURL) pa.innerHTML = `<img src="${currentUser.photoURL}" style="width:100%;height:100%;border-radius:50%;object-fit:cover" referrerpolicy="no-referrer">`;
 
   loadMyPets();
@@ -3436,6 +3453,15 @@ window.clickNotif = async (notifId, postId) => {
   // Mark as read
   await update(ref(db, `notifications/${currentUser.uid}/${notifId}`), { read: true });
   document.getElementById('notif-panel').classList.remove('open');
+  // Pobierz pełne powiadomienie aby sprawdzić typ
+  const nSnap = await get(ref(db, `notifications/${currentUser.uid}/${notifId}`));
+  const n = nSnap.exists() ? nSnap.val() : {};
+  // Prośba o opiekuna -> otwórz modal opiekunów dla zwierzęcia
+  if ((n.type === 'coOwnerRequest' || n.type === 'coOwnerAccepted' || n.type === 'coOwnerRejected') && n.petId) {
+    showPage('mypets');
+    setTimeout(() => openCoOwnersModal(n.petId), 300);
+    return;
+  }
   // Scroll to post
   if (postId) {
     showPage('feed');
@@ -4593,6 +4619,9 @@ window.toggleSetting = (key, btn) => {
 
 window.openSettings = () => {
   loadSettings();
+  // Pokaż wiersz "Wyloguj" tylko gdy użytkownik jest zalogowany
+  const signoutRow = document.getElementById('settings-signout-row');
+  if (signoutRow) signoutRow.style.display = currentUser ? 'flex' : 'none';
   document.getElementById('settings-modal').classList.add('open');
 };
 window.closeSettings = () => {
@@ -5773,7 +5802,100 @@ window.openCoOwnersModal = async (petId) => {
   } else {
     codeSection.style.display = 'none';
   }
+
+  // Sekcja oczekujących próśb - tylko dla właściciela
+  const reqSection = document.getElementById('coowners-requests-section');
+  const reqList = document.getElementById('coowners-requests-list');
+  if (isMainOwner) {
+    const reqSnap = await get(ref(db, `coOwnerRequests/${petId}`));
+    if (reqSnap.exists()) {
+      let reqHtml = '<div class="coowners-list">';
+      reqSnap.forEach(c => {
+        const r = c.val();
+        const requesterUid = c.key;
+        const photoHTML = r.photoURL
+          ? '<img src="' + r.photoURL + '" referrerpolicy="no-referrer">'
+          : '👤';
+        const safeName = (r.displayName || 'Użytkownik').replace(/'/g,'');
+        reqHtml += '<div class="coowner-item">'
+          + '<div class="coowner-avatar">' + photoHTML + '</div>'
+          + '<div class="coowner-name">' + escapeHtml(firstNameOnly(r.displayName) || 'Użytkownik') + '</div>'
+          + '<button class="btn-save" style="padding:4px 10px;font-size:12px;background:var(--grass)" onclick="acceptCoOwnerRequest(\'' + petId + '\',\'' + requesterUid + '\')">✅</button>'
+          + '<button class="btn-danger" style="padding:4px 10px;font-size:12px;margin-left:4px" onclick="rejectCoOwnerRequest(\'' + petId + '\',\'' + requesterUid + '\')">✕</button>'
+          + '</div>';
+      });
+      reqHtml += '</div>';
+      reqList.innerHTML = reqHtml;
+      reqSection.style.display = 'block';
+    } else {
+      reqSection.style.display = 'none';
+    }
+  } else {
+    reqSection.style.display = 'none';
+  }
+
   openModal('coowners-modal');
+};
+
+window.acceptCoOwnerRequest = async (petId, requesterUid) => {
+  try {
+    const reqSnap = await get(ref(db, `coOwnerRequests/${petId}/${requesterUid}`));
+    if (!reqSnap.exists()) { showToast('Prośba już nie istnieje'); return; }
+    const r = reqSnap.val();
+    const petSnap = await get(ref(db, `pets/${petId}`));
+    if (!petSnap.exists()) { showToast('Zwierzę nie istnieje'); return; }
+    const p = petSnap.val();
+    if (p.ownerId !== currentUser.uid) { showToast('Tylko właściciel może akceptować'); return; }
+
+    // Dodaj jako współopiekuna
+    await update(ref(db, `pets/${petId}/coOwners/${requesterUid}`), {
+      displayName: r.displayName || 'Opiekun',
+      photoURL: r.photoURL || null,
+      addedAt: Date.now()
+    });
+    // Usuń prośbę
+    await remove(ref(db, `coOwnerRequests/${petId}/${requesterUid}`));
+    // Powiadom proszącego
+    await push(ref(db, `notifications/${requesterUid}`), {
+      type: 'coOwnerAccepted',
+      petId: petId,
+      petName: p.name || 'zwierzę',
+      text: `✅ Zostałeś opiekunem ${p.name || 'zwierzęcia'}!`,
+      createdAt: Date.now(),
+      read: false
+    });
+    showToast(`✅ ${firstNameOnly(r.displayName) || 'Użytkownik'} został opiekunem`);
+    // Odśwież modal
+    openCoOwnersModal(petId);
+  } catch (e) {
+    console.error(e);
+    showToast('Błąd przy akceptacji prośby');
+  }
+};
+
+window.rejectCoOwnerRequest = async (petId, requesterUid) => {
+  try {
+    const reqSnap = await get(ref(db, `coOwnerRequests/${petId}/${requesterUid}`));
+    if (!reqSnap.exists()) { showToast('Prośba już nie istnieje'); return; }
+    const r = reqSnap.val();
+    await remove(ref(db, `coOwnerRequests/${petId}/${requesterUid}`));
+    // Powiadom proszącego
+    const petSnap = await get(ref(db, `pets/${petId}`));
+    const petName = petSnap.exists() ? (petSnap.val().name || 'zwierzęcia') : 'zwierzęcia';
+    await push(ref(db, `notifications/${requesterUid}`), {
+      type: 'coOwnerRejected',
+      petId: petId,
+      petName: petName,
+      text: `❌ Twoja prośba o dołączenie do ${petName} została odrzucona`,
+      createdAt: Date.now(),
+      read: false
+    });
+    showToast('Prośba odrzucona');
+    openCoOwnersModal(petId);
+  } catch (e) {
+    console.error(e);
+    showToast('Błąd przy odrzucaniu prośby');
+  }
 };
 
 window.copyInviteCode = () => {
@@ -5816,13 +5938,39 @@ window.joinPetByCode = async () => {
   if (p.ownerId === currentUser.uid) { showToast('Jesteś już właścicielem tego zwierzęcia!'); return; }
   if (p.coOwners && p.coOwners[currentUser.uid]) { showToast('Jesteś już opiekunem tego zwierzęcia!'); return; }
 
-  await update(ref(db, `pets/${foundId}/coOwners/${currentUser.uid}`), {
+  // Sprawdź czy już istnieje oczekująca prośba
+  const reqSnap = await get(ref(db, `coOwnerRequests/${foundId}/${currentUser.uid}`));
+  if (reqSnap.exists()) {
+    showToast('Już wysłałeś prośbę — czekaj na akceptację właściciela ⏳');
+    closeModal('join-pet-modal');
+    return;
+  }
+
+  // Zapisz prośbę
+  await set(ref(db, `coOwnerRequests/${foundId}/${currentUser.uid}`), {
     displayName: currentUser.displayName || 'Użytkownik',
     photoURL: currentUser.photoURL || null,
-    addedAt: Date.now()
+    requestedAt: Date.now(),
+    petName: p.name || 'zwierzę'
   });
+
+  // Powiadomienie dla właściciela
+  if (p.ownerId) {
+    await push(ref(db, `notifications/${p.ownerId}`), {
+      type: 'coOwnerRequest',
+      petId: foundId,
+      petName: p.name || 'zwierzę',
+      fromUid: currentUser.uid,
+      fromName: firstNameOnly(currentUser.displayName || 'Ktoś'),
+      fromPhoto: currentUser.photoURL || null,
+      text: `${firstNameOnly(currentUser.displayName || 'Ktoś')} chce zostać opiekunem ${p.name || 'Twojego zwierzęcia'}`,
+      createdAt: Date.now(),
+      read: false
+    });
+  }
+
   closeModal('join-pet-modal');
-  showToast(`Dołączyłeś do ${p.name}! 🐾`);
+  showToast(`Prośba wysłana! Czekaj na akceptację właściciela ${p.name || ''} ⏳`);
 };
 
 // ═══════════════════════════════════
