@@ -969,8 +969,9 @@
   /* ── CREATE STORY ── */
   .btn-story { 
     background: linear-gradient(135deg, var(--paw), #f5a623);
-    color: white; border: none; border-radius: 20px;
-    padding: 6px 14px; font-size: 13px; font-weight: 800;
+    color: white; border: none; border-radius: 10px;
+    padding: 8px 14px; font-size: 13px; font-weight: 800;
+    font-family: 'Nunito', sans-serif;
     cursor: pointer; white-space: nowrap;
   }
   .post-img {
@@ -3608,14 +3609,31 @@ window.savePet = async () => {
   const saveBtn = document.querySelector('#add-pet-modal .btn-save');
   if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Zapisuję...'; }
 
+  // Walidacja dat
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const birthdate = document.getElementById('pet-birthdate').value || '';
+  const adoptdate = document.getElementById('pet-adoptdate').value || '';
+  if (birthdate && birthdate > todayStr) {
+    showToast('Data urodzenia nie może być w przyszłości!');
+    window._isSavingPet = false;
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Zapisz'; }
+    return;
+  }
+  if (adoptdate && adoptdate > todayStr) {
+    showToast('Data adopcji nie może być w przyszłości!');
+    window._isSavingPet = false;
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Zapisz'; }
+    return;
+  }
+
   const petData = {
     name, species,
     breed: document.getElementById('pet-breed').value.trim(),
     age: document.getElementById('pet-age').value || '',
     location: document.getElementById('pet-location').value.trim(),
     bio: document.getElementById('pet-bio').value.trim(),
-    birthdate: document.getElementById('pet-birthdate').value || '',
-    adoptdate: document.getElementById('pet-adoptdate').value || '',
+    birthdate: birthdate,
+    adoptdate: adoptdate,
     ownerId: currentUser.uid,
     ownerName: firstNameOnly(currentUser.displayName) || 'Właściciel',
     createdAt: Date.now()
@@ -3849,11 +3867,12 @@ function renderPostCard(p) {
     : emoji;
   const likes = p.likes ? Object.keys(p.likes).length : 0;
   const comments = p.comments ? Object.keys(p.comments).length : 0;
-  const isLiked = p.likes && p.likes[currentUser.uid];
+  const myUid = currentUser ? currentUser.uid : null;
+  const isLiked = myUid && p.likes && p.likes[myUid];
   const timeStr = timeAgo(p.createdAt);
-  const isMyPost = p.ownerId === currentUser.uid;
-  const isGroupModerator = p.groupId && _currentGroupData && _currentGroupData.creatorId === currentUser.uid;
-  const canManagePost = isMyPost || (myPets[p.petId] != null) || isGroupModerator;
+  const isMyPost = myUid && p.ownerId === myUid;
+  const isGroupModerator = myUid && p.groupId && _currentGroupData && _currentGroupData.creatorId === myUid;
+  const canManagePost = isMyPost || (myUid && myPets[p.petId] != null) || isGroupModerator;
   const promotedLabel = p.promoted ? `<div class="promoted-label">⭐ Promowany post</div>` : '';
   const petBadge = p.petPremium ? premiumBadgeHTML(p.petPremium) : '';
 
@@ -3884,7 +3903,7 @@ function renderPostCard(p) {
         ${['❤️','😂','😲','😢','🐾'].map(em => {
           const key = {'❤️':'heart','😂':'laugh','😲':'wow','😢':'sad','🐾':'paw'}[em] || 'heart';
           const count = p.reactions && p.reactions[key] ? Object.keys(p.reactions[key]).length : 0;
-          const reacted = p.reactions && p.reactions[key] && p.reactions[key][currentUser.uid];
+          const reacted = myUid && p.reactions && p.reactions[key] && p.reactions[key][myUid];
           return `<button class="reaction-btn${reacted ? ' reacted' : ''}" onclick="toggleReaction('${p.id}','${em}','${p.ownerId}')">
             <span class="r-emoji">${em}</span>${count > 0 ? `<span class="r-count">${count}</span>` : ''}
           </button>`;
@@ -5132,7 +5151,7 @@ window.showPetProfile = async (petId) => {
           ${canEdit ? '<div class="edit-overlay">📷</div>' : ''}
         </div>
         <div class="profile-text">
-          <div class="profile-pet-name">${p.name} ${premiumBadgeHTML(p.premium)}</div>
+          <div class="profile-pet-name">${escapeHtml(p.name)} ${premiumBadgeHTML(p.premium)}</div>
           <div class="profile-tags">
             <span class="profile-tag species">${emoji} ${p.species}</span>
             ${p.breed ? `<span class="profile-tag">${escapeHtml(p.breed)} <a href="https://www.google.com/search?q=${encodeURIComponent(p.breed + ' rasa ' + p.species)}" target="_blank" rel="noopener" style="text-decoration:none;font-size:12px;margin-left:2px" title="Szukaj rasy w Google">🔍</a></span>` : ''}
@@ -6598,7 +6617,7 @@ window.showDemoPetProfile = (petId) => {
           <img src="${p.avatarUrl}" referrerpolicy="no-referrer" onerror="this.style.display='none'">
         </div>
         <div class="profile-text">
-          <div class="profile-pet-name">${p.name}</div>
+          <div class="profile-pet-name">${escapeHtml(p.name)}</div>
           <div class="profile-tags">
             <span class="profile-tag species">${emoji} ${p.species}</span>
             ${p.breed ? `<span class="profile-tag">${p.breed}</span>` : ''}
